@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "LumiInteraction": {
+      "title": "LumiAI Interaction",
+      "description": "A message interaction in the LumiAI platform.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The unique ID of the user who sent the message."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "userPhoto": {
+          "type": "string",
+          "description": "The URL of the user's profile photo."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the message was sent."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["user", "agent"],
+          "description": "The type of interaction (user or agent)."
+        }
+      },
+      "required": ["text", "userId", "userName", "timestamp", "type"]
+    }
+  },
+  "firestore": {
+    "/lumiai_interactions/{interactionId}": {
+      "schema": "LumiInteraction",
+      "description": "Collection of messages for the LumiAI platform."
+    }
+  }
+}

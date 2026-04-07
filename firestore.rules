@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, displayName, photoURL, role, createdAt
+    //
+    // Collection: lumis
+    // Fields: ownerUid, name, status, incubationProgress, color, createdAt
+    //
+    // Collection: chats/{userId}/messages
+    // Fields: role, content, senderUid, timestamp
+    //
+    // Collection: feedback
+    // Fields: email, message, timestamp
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "maoxiansheng946@gmail.com" && request.auth.token.email_verified == true));
+    }
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // User Profiles
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid) && request.resource.data.role == 'user';
+      allow update: if isOwner(uid) && request.resource.data.role == resource.data.role;
+      allow delete: if isAdmin();
+    }
+
+    // Lumi Agents
+    match /lumis/{lumiId} {
+      function isValidLumi(data) {
+        return data.ownerUid is string && 
+               data.name is string && data.name.size() < 100 &&
+               data.status in ['egg', 'incubating', 'hatched'];
+      }
+      allow read: if isAuthenticated() && (resource.data.ownerUid == request.auth.uid || resource.data.isPublic == true);
+      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid && isValidLumi(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.ownerUid == request.auth.uid && isValidLumi(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Chats and Messages
+    match /chats/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      match /messages/{messageId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Products (Store)
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Feedback
+    match /feedback/{feedbackId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    
+    // LumiAI Interactions (Message Board)
+    match /lumiai_interactions/{interactionId} {
+      function isValidInteraction(data) {
+        return data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
+               data.userId is string &&
+               data.userName is string && data.userName.size() < 100 &&
+               data.type in ['user', 'agent'];
+      }
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                    (request.resource.data.userId == request.auth.uid || isAdmin()) && 
+                    isValidInteraction(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+    
+    // Connection test
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

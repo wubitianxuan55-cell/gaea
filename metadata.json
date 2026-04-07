@@ -1,0 +1,5 @@
+{
+  "name": "LumiAI",
+  "description": "A celestial AI platform featuring Lumi agents, incubation mechanisms, and a spirit/skill marketplace.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
