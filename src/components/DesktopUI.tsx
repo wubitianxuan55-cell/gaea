@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
+import { toast } from 'sonner';
 import { HardcoreBootSequence } from './HardcoreBootSequence';
 import { GlobalNodeMap } from './GlobalNodeMap';
 import { sounds } from '../services/soundService';
-import { 
-  Rocket, 
-  MessageSquare, 
-  Cpu, 
-  Globe, 
-  Users, 
-  BookOpen, 
+import {
+  Rocket,
+  MessageSquare,
+  Cpu,
+  Globe,
+  Users,
+  BookOpen,
   Settings as SettingsIcon,
   Shield,
   Award,
@@ -43,7 +44,6 @@ import {
   Sparkles,
   Box
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { GlassCard } from './SharedUI';
 import { LocalAgentSphere } from './LocalAgentSphere';
 import { VoiceCallButton } from './VoiceCallButton';

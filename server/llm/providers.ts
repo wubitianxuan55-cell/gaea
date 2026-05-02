@@ -1,0 +1,522 @@
+import { ParsedToolCall, NormalizedLLMResponse } from '../tools/types';
+
+export interface NormalizedMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  toolCalls?: ParsedToolCall[];
+  toolCallId?: string;
+  name?: string;
+}
+
+interface ToolDeclaration {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+  };
+}
+
+// ── DeepSeek (OpenAI-compatible) ──
+
+export function formatDeepSeekRequest(params: {
+  model: string;
+  messages: NormalizedMessage[];
+  toolDeclarations: ToolDeclaration[];
+  maxTokens?: number;
+}): {
+  model: string;
+  messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>;
+  tools?: ToolDeclaration[];
+  tool_choice?: string;
+  max_tokens?: number;
+} {
+  const openaiMessages = params.messages.map(m => {
+    const entry: any = { role: m.role === 'assistant' ? 'assistant' : m.role === 'tool' ? 'tool' : m.role === 'system' ? 'system' : 'user' };
+    if (m.content !== null) entry.content = m.content;
+    if (m.toolCalls) {
+      entry.tool_calls = m.toolCalls.map(tc => ({
+        id: tc.id,
+        type: 'function',
+        function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+      }));
+    }
+    if (m.toolCallId) entry.tool_call_id = m.toolCallId;
+    if (m.name) entry.name = m.name;
+    return entry;
+  });
+
+  const hasTools = params.toolDeclarations.length > 0;
+
+  return {
+    model: params.model,
+    messages: openaiMessages,
+    ...(hasTools ? { tools: params.toolDeclarations, tool_choice: 'auto' } : {}),
+    ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
+  };
+}
+
+export function parseDeepSeekResponse(rawResponse: any): NormalizedLLMResponse {
+  const message = rawResponse.choices?.[0]?.message;
+  if (!message) return { text: null, toolCalls: null };
+
+  const text = message.content || null;
+
+  if (message.tool_calls && message.tool_calls.length > 0) {
+    const toolCalls: ParsedToolCall[] = message.tool_calls.map((tc: any) => {
+      let args: Record<string, any> = {};
+      try {
+        args = JSON.parse(tc.function?.arguments || '{}');
+      } catch { /* ignore parse errors */ }
+      return { id: tc.id, name: tc.function?.name || '', arguments: args };
+    });
+    return { text, toolCalls };
+  }
+
+  return { text, toolCalls: null };
+}
+
+// ── Gemini ──
+
+export function formatGeminiRequest(params: {
+  model: string;
+  messages: NormalizedMessage[];
+  toolDeclarations: ToolDeclaration[];
+  maxTokens?: number;
+}): {
+  modelConfig: { model: string; systemInstruction?: string; tools?: Array<{ functionDeclarations: any[] }> };
+  contents: Array<{ role: string; parts: any[] }>;
+} {
+  // Extract system message for Gemini's separate systemInstruction param
+  let systemInstruction: string | undefined;
+  const nonSystemMessages = params.messages.filter(m => {
+    if (m.role === 'system' && m.content) {
+      systemInstruction = m.content;
+      return false;
+    }
+    return true;
+  });
+
+  // Convert messages to Gemini contents format
+  const contents: Array<{ role: string; parts: any[] }> = [];
+
+  for (const m of nonSystemMessages) {
+    if (m.role === 'tool') {
+      // Tool results become user messages with functionResponse
+      const prevContent = contents.length > 0 ? contents[contents.length - 1] : null;
+      if (prevContent && prevContent.role === 'model') {
+        // Append functionResponse to a new user message
+        contents.push({
+          role: 'user',
+          parts: [{
+            functionResponse: {
+              name: m.name || '',
+              response: { content: m.content || '' },
+            },
+          }],
+        });
+      } else {
+        contents.push({
+          role: 'user',
+          parts: [{
+            functionResponse: {
+              name: m.name || '',
+              response: { content: m.content || '' },
+            },
+          }],
+        });
+      }
+      continue;
+    }
+
+    if (m.role === 'assistant') {
+      const parts: any[] = [];
+      if (m.content) {
+        parts.push({ text: m.content });
+      }
+      if (m.toolCalls) {
+        for (const tc of m.toolCalls) {
+          parts.push({
+            functionCall: {
+              name: tc.name,
+              args: tc.arguments,
+            },
+          });
+        }
+      }
+      contents.push({ role: 'model', parts });
+      continue;
+    }
+
+    // user messages
+    contents.push({
+      role: 'user',
+      parts: [{ text: m.content || '' }],
+    });
+  }
+
+  const hasTools = params.toolDeclarations.length > 0;
+
+  const modelConfig: any = { model: params.model };
+  if (systemInstruction) modelConfig.systemInstruction = systemInstruction;
+  if (hasTools) {
+    modelConfig.tools = [{
+      functionDeclarations: params.toolDeclarations.map(td => ({
+        name: td.function.name,
+        description: td.function.description,
+        parameters: td.function.parameters,
+      })),
+    }];
+  }
+
+  return { modelConfig, contents };
+}
+
+export function parseGeminiResponse(rawResponse: any): NormalizedLLMResponse {
+  const candidate = rawResponse.candidates?.[0];
+  if (!candidate) return { text: null, toolCalls: null };
+
+  const parts = candidate.content?.parts || [];
+  const textParts: string[] = [];
+  const toolCalls: ParsedToolCall[] = [];
+
+  for (const part of parts) {
+    if (part.text) {
+      textParts.push(part.text);
+    }
+    if (part.functionCall) {
+      toolCalls.push({
+        id: `gemini-${Date.now()}-${toolCalls.length}`,
+        name: part.functionCall.name || '',
+        arguments: part.functionCall.args || {},
+      });
+    }
+  }
+
+  return {
+    text: textParts.length > 0 ? textParts.join('\n') : null,
+    toolCalls: toolCalls.length > 0 ? toolCalls : null,
+  };
+}
+
+// ── OpenAI (same API format as DeepSeek) ──
+
+export const formatOpenAIRequest = formatDeepSeekRequest;
+export const parseOpenAIResponse = parseDeepSeekResponse;
+
+// ── Anthropic ──
+
+export function formatAnthropicRequest(params: {
+  model: string;
+  messages: NormalizedMessage[];
+  toolDeclarations: ToolDeclaration[];
+  maxTokens?: number;
+}): { model: string; max_tokens: number; system?: string; messages: any[]; tools?: any[] } {
+  // Extract system message to top-level
+  let system: string | undefined;
+  const nonSystem = params.messages.filter(m => {
+    if (m.role === 'system' && m.content) {
+      system = m.content;
+      return false;
+    }
+    return true;
+  });
+
+  const anthropicMessages: any[] = [];
+
+  for (const m of nonSystem) {
+    if (m.role === 'tool') {
+      anthropicMessages.push({
+        role: 'user',
+        content: [{ type: 'tool_result', tool_use_id: m.toolCallId, content: m.content || '' }],
+      });
+    } else if (m.role === 'assistant') {
+      const content: any[] = [];
+      if (m.content) content.push({ type: 'text', text: m.content });
+      if (m.toolCalls) {
+        for (const tc of m.toolCalls) {
+          content.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.arguments });
+        }
+      }
+      anthropicMessages.push({ role: 'assistant', content });
+    } else {
+      anthropicMessages.push({ role: 'user', content: m.content || '' });
+    }
+  }
+
+  const hasTools = params.toolDeclarations.length > 0;
+  const tools = hasTools
+    ? params.toolDeclarations.map(td => ({
+        name: td.function.name,
+        description: td.function.description,
+        input_schema: td.function.parameters,
+      }))
+    : undefined;
+
+  return {
+    model: params.model,
+    max_tokens: params.maxTokens || 4096,
+    ...(system ? { system } : {}),
+    messages: anthropicMessages,
+    ...(tools ? { tools } : {}),
+  };
+}
+
+export function parseAnthropicResponse(rawResponse: any): NormalizedLLMResponse {
+  const content = rawResponse.content || [];
+  const textParts: string[] = [];
+  const toolCalls: ParsedToolCall[] = [];
+
+  for (const block of content) {
+    if (block.type === 'text' && block.text) {
+      textParts.push(block.text);
+    }
+    if (block.type === 'tool_use') {
+      toolCalls.push({
+        id: block.id,
+        name: block.name,
+        arguments: block.input || {},
+      });
+    }
+  }
+
+  return {
+    text: textParts.length > 0 ? textParts.join('\n') : null,
+    toolCalls: toolCalls.length > 0 ? toolCalls : null,
+  };
+}
+
+// ── LLM Call Router ──
+
+export async function makeLLMCall(
+  messages: NormalizedMessage[],
+  toolDeclarations: ToolDeclaration[],
+  config: { provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic'; model: string; maxTokens?: number },
+  getDeepSeek: () => any,
+  getGemini: () => any,
+  getOpenAI?: () => any,
+  getAnthropic?: () => any,
+): Promise<NormalizedLLMResponse> {
+  if (config.provider === 'deepseek') {
+    const client = getDeepSeek();
+    if (!client) throw new Error('DeepSeek not configured (DEEPSEEK_API_KEY missing)');
+
+    const params = formatDeepSeekRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const response = await client.chat.completions.create(params);
+    return parseDeepSeekResponse(response);
+  }
+
+  if (config.provider === 'gemini') {
+    const client = getGemini();
+    if (!client) throw new Error('Gemini not configured (GEMINI_API_KEY missing)');
+
+    const { modelConfig, contents } = formatGeminiRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const modelInstance = client.getGenerativeModel(modelConfig);
+    const result = await modelInstance.generateContent({ contents });
+    return parseGeminiResponse(result);
+  }
+
+  if (config.provider === 'openai') {
+    const client = getOpenAI?.();
+    if (!client) throw new Error('OpenAI not configured (OPENAI_API_KEY missing)');
+
+    const params = formatOpenAIRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const response = await client.chat.completions.create(params);
+    return parseOpenAIResponse(response);
+  }
+
+  if (config.provider === 'anthropic') {
+    const client = getAnthropic?.();
+    if (!client) throw new Error('Anthropic not configured (ANTHROPIC_API_KEY missing)');
+
+    const params = formatAnthropicRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const response = await client.messages.create(params);
+    return parseAnthropicResponse(response);
+  }
+
+  throw new Error(`Unsupported provider: ${config.provider}`);
+}
+
+// ── Streaming LLM Call Router ──
+
+export type StreamCallback = (chunk: string) => void;
+
+export async function makeLLMCallStreaming(
+  messages: NormalizedMessage[],
+  toolDeclarations: ToolDeclaration[],
+  config: { provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic'; model: string; maxTokens?: number },
+  onChunk: StreamCallback,
+  getDeepSeek: () => any,
+  getGemini: () => any,
+  getOpenAI?: () => any,
+  getAnthropic?: () => any,
+): Promise<NormalizedLLMResponse> {
+  // ── DeepSeek / OpenAI (OpenAI-compatible streaming) ──
+  if (config.provider === 'deepseek' || config.provider === 'openai') {
+    const client = config.provider === 'deepseek' ? getDeepSeek() : getOpenAI?.();
+    if (!client) throw new Error(`${config.provider} not configured`);
+
+    const params: any = formatDeepSeekRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+    params.stream = true;
+
+    const stream = await client.chat.completions.create(params);
+    const accumulatedText: string[] = [];
+    const toolCallAccumulators: Map<number, { id: string; name: string; args: string }> = new Map();
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta;
+      if (!delta) continue;
+
+      if (delta.content) {
+        accumulatedText.push(delta.content);
+        onChunk(delta.content);
+      }
+
+      if (delta.tool_calls) {
+        for (const tc of delta.tool_calls) {
+          const idx = tc.index ?? 0;
+          if (!toolCallAccumulators.has(idx)) {
+            toolCallAccumulators.set(idx, { id: tc.id || '', name: tc.function?.name || '', args: '' });
+          }
+          const acc = toolCallAccumulators.get(idx)!;
+          if (tc.id) acc.id = tc.id;
+          if (tc.function?.name) acc.name = tc.function.name;
+          if (tc.function?.arguments) acc.args += tc.function.arguments;
+        }
+      }
+    }
+
+    const text = accumulatedText.length > 0 ? accumulatedText.join('') : null;
+    if (toolCallAccumulators.size > 0) {
+      const toolCalls: ParsedToolCall[] = [...toolCallAccumulators.values()].map(acc => {
+        let args: Record<string, any> = {};
+        try { args = JSON.parse(acc.args || '{}'); } catch { /* ignore parse errors */ }
+        return { id: acc.id, name: acc.name, arguments: args };
+      });
+      return { text, toolCalls };
+    }
+    return { text, toolCalls: null };
+  }
+
+  // ── Gemini streaming ──
+  if (config.provider === 'gemini') {
+    const client = getGemini();
+    if (!client) throw new Error('Gemini not configured (GEMINI_API_KEY missing)');
+
+    const { modelConfig, contents } = formatGeminiRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const modelInstance = client.getGenerativeModel(modelConfig);
+    const result = await modelInstance.generateContentStream({ contents });
+
+    const accumulatedText: string[] = [];
+    const toolCalls: ParsedToolCall[] = [];
+
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      if (text) {
+        accumulatedText.push(text);
+        onChunk(text);
+      }
+      const calls = chunk.functionCalls();
+      if (calls) {
+        for (let i = 0; i < calls.length; i++) {
+          toolCalls.push({
+            id: `gemini-${Date.now()}-${toolCalls.length}`,
+            name: calls[i].name || '',
+            arguments: calls[i].args || {},
+          });
+        }
+      }
+    }
+
+    // Also check the aggregated response for function calls
+    const aggregated = await result.response;
+    const parsed = parseGeminiResponse(aggregated);
+
+    return {
+      text: accumulatedText.length > 0 ? accumulatedText.join('') : parsed.text,
+      toolCalls: parsed.toolCalls && parsed.toolCalls.length > 0 ? parsed.toolCalls : (toolCalls.length > 0 ? toolCalls : null),
+    };
+  }
+
+  // ── Anthropic streaming ──
+  if (config.provider === 'anthropic') {
+    const client = getAnthropic?.();
+    if (!client) throw new Error('Anthropic not configured (ANTHROPIC_API_KEY missing)');
+
+    const params = formatAnthropicRequest({
+      model: config.model,
+      messages,
+      toolDeclarations,
+      maxTokens: config.maxTokens,
+    });
+
+    const stream = await client.messages.stream(params);
+
+    const textParts: string[] = [];
+    const toolCalls: ParsedToolCall[] = [];
+
+    for await (const event of stream) {
+      if (event.type === 'text' && event.text) {
+        textParts.push(event.text);
+        onChunk(event.text);
+      }
+      if (event.type === 'content_block_start' || event.type === 'content_block_delta') {
+        // Tool use blocks accumulate via message_stop
+      }
+    }
+
+    // Get final message for tool use blocks
+    const finalMessage = await stream.finalMessage();
+    for (const block of finalMessage.content) {
+      if (block.type === 'tool_use') {
+        toolCalls.push({
+          id: block.id,
+          name: block.name,
+          arguments: block.input || {},
+        });
+      }
+    }
+
+    return {
+      text: textParts.length > 0 ? textParts.join('') : null,
+      toolCalls: toolCalls.length > 0 ? toolCalls : null,
+    };
+  }
+
+  throw new Error(`Unsupported streaming provider: ${config.provider}`);
+}

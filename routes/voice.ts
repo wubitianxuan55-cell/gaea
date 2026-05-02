@@ -1,0 +1,192 @@
+import { Router, Request, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { synthesizeSpeech, cloneVoice, listVoices, getActiveProvider } from '../server/tts/adapter';
+import { readDB, writeDB } from '../db_layer';
+import { logger } from '../logger';
+
+const router = Router();
+
+// Ensure voice samples directory exists
+const samplesDir = path.join(process.cwd(), 'data', 'voice_samples');
+fs.mkdirSync(samplesDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const userId = (_req as any).userId || 'anonymous';
+    const userDir = path.join(samplesDir, userId);
+    fs.mkdirSync(userDir, { recursive: true });
+    cb(null, userDir);
+  },
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9_\-. ]/g, '');
+    cb(null, `${timestamp}_${safeName}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/wave', 'audio/ogg', 'audio/m4a'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported audio format: ${file.mimetype}`));
+    }
+  },
+});
+
+function getUserId(req: Request): string {
+  return (req as any).user?.uid || (req as any).userId || 'anonymous';
+}
+
+// POST /api/voice/samples — Upload voice sample(s) for cloning
+router.post('/voice/samples', upload.array('samples', 5), (req: Request, res: Response) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No audio files provided' });
+    }
+
+    const urls = files.map(f => `/api/voice/samples/${getUserId(req)}/${f.filename}`);
+    res.json({ urls, filenames: files.map(f => f.filename), count: files.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/voice/samples/:userId/:filename — Serve uploaded samples
+router.get('/voice/samples/:userId/:filename', (req: Request, res: Response) => {
+  const filePath = path.join(samplesDir, req.params.userId, req.params.filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Sample not found' });
+  }
+  res.sendFile(filePath);
+});
+
+// POST /api/voice/clone — Trigger voice cloning
+router.post('/voice/clone', async (req: Request, res: Response) => {
+  try {
+    const { sampleUrls, name, provider } = req.body;
+
+    if (!sampleUrls || !Array.isArray(sampleUrls) || sampleUrls.length === 0) {
+      return res.status(400).json({ error: 'At least one sample URL is required' });
+    }
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Voice name is required' });
+    }
+
+    const activeProvider = provider || getActiveProvider();
+    if (!activeProvider) {
+      return res.status(400).json({ error: 'No TTS provider configured. Set ELEVENLABS_API_KEY or FISHAUDIO_API_KEY.' });
+    }
+
+    // Convert relative URLs to absolute
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const absoluteUrls = sampleUrls.map((url: string) =>
+      url.startsWith('http') ? url : `${baseUrl}${url}`
+    );
+
+    const voiceId = await cloneVoice({ sampleUrls: absoluteUrls, name }, activeProvider);
+
+    // Store voice reference in user data
+    const db = readDB();
+    const userId = getUserId(req);
+    if (!db.voiceProfiles) db.voiceProfiles = {};
+    if (!db.voiceProfiles[userId]) db.voiceProfiles[userId] = [];
+    db.voiceProfiles[userId].push({
+      voiceId,
+      name,
+      provider: activeProvider,
+      createdAt: new Date().toISOString(),
+    });
+    writeDB(db);
+
+    res.json({ voiceId, name, provider: activeProvider });
+  } catch (err: any) {
+    logger.error('[Voice Clone Error]', err);
+    res.status(500).json({ error: 'Voice cloning service unavailable' });
+  }
+});
+
+// GET /api/voice/voices — List user's cloned voices + provider premade voices
+router.get('/voice/voices', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const db = readDB();
+    const userVoices = db.voiceProfiles?.[userId] || [];
+
+    // Also try to fetch premade voices from active provider
+    let premadeVoices: any[] = [];
+    const provider = getActiveProvider();
+    if (provider) {
+      try {
+        premadeVoices = await listVoices(provider);
+      } catch {
+        // Provider not available — just return user voices
+      }
+    }
+
+    res.json({
+      cloned: userVoices,
+      premade: premadeVoices,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/voice/:voiceId — Delete a cloned voice
+router.delete('/voice/:voiceId', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const db = readDB();
+    const userVoices = db.voiceProfiles?.[userId] || [];
+    const voiceIdx = userVoices.findIndex((v: any) => v.voiceId === req.params.voiceId);
+
+    if (voiceIdx === -1) {
+      return res.status(404).json({ error: 'Voice not found' });
+    }
+
+    const [removed] = userVoices.splice(voiceIdx, 1);
+    db.voiceProfiles[userId] = userVoices;
+    writeDB(db);
+
+    res.json({ deleted: removed });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/voice/synthesize — Synthesize speech (for TTS without full voice call)
+router.post('/voice/synthesize', async (req: Request, res: Response) => {
+  try {
+    const { text, voiceId, provider } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+
+    const activeProvider = provider || getActiveProvider();
+    if (!activeProvider) {
+      return res.status(400).json({ error: 'No TTS provider configured' });
+    }
+
+    const result = await synthesizeSpeech(text, {
+      provider: activeProvider,
+      voiceId: voiceId || 'default',
+    });
+
+    res.set('Content-Type', `audio/${result.format}`);
+    res.set('X-Audio-Format', result.format);
+    res.send(result.audioBuffer);
+  } catch (err: any) {
+    logger.error('[Voice Synthesize Error]', err);
+    res.status(500).json({ error: 'Speech synthesis unavailable' });
+  }
+});
+
+export default router;
