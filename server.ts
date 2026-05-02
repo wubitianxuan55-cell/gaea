@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -11,8 +12,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import { Server } from "socket.io";
 import http from "http";
-import { readDB, writeDB } from "./db_layer";
+import { readDB, writeDB, ensureDatabaseInitialized } from "./db_layer";
 import { logger } from "./logger";
+import { createStreamingSession, getActiveSTTProvider } from "./server/stt/adapter";
+import { synthesizeSpeech, getActiveProvider as getTTSProvider } from "./server/tts/adapter";
+import voiceRoutes from "./routes/voice";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -600,6 +604,9 @@ apiRouter.get("/modules/agents", (req, res) => {
   ]);
 });
 
+// Voice routes
+apiRouter.use("/", voiceRoutes);
+
 // Vite middleware for development
 const isProduction = process.env.NODE_ENV === "production" || 
                     (process.env.NODE_ENV !== "development" && fs.existsSync(path.join(process.cwd(), "dist")));
@@ -775,7 +782,213 @@ io.on("connection", (socket) => {
     }
   });
 
+  // --- Voice / Audio Pipeline ---
+
+  interface AudioSession {
+    sttSession: ReturnType<typeof createStreamingSession> | null;
+    isActive: boolean;
+    ttsAbortController: AbortController | null;
+    currentVoiceId: string | null;
+    personalityId: string;
+    accumulatedText: string;
+    isSpeaking: boolean;
+  }
+
+  function getAudioSession(): AudioSession {
+    if (!socket.data.audioSession) {
+      socket.data.audioSession = {
+        sttSession: null,
+        isActive: false,
+        ttsAbortController: null,
+        currentVoiceId: null,
+        personalityId: 'lumi',
+        accumulatedText: '',
+        isSpeaking: false,
+      };
+    }
+    return socket.data.audioSession as AudioSession;
+  }
+
+  socket.on("audio:start", async (data: { voiceId?: string; personalityId?: string }) => {
+    logger.info(`[Audio] Voice call started by ${socket.id}`);
+    const session = getAudioSession();
+    session.isActive = true;
+    session.accumulatedText = '';
+    session.isSpeaking = false;
+    session.currentVoiceId = data.voiceId || null;
+    session.personalityId = data.personalityId || 'lumi';
+
+    const sttProvider = getActiveSTTProvider();
+    if (sttProvider === 'deepgram') {
+      try {
+        session.sttSession = createStreamingSession({ provider: 'deepgram', language: 'zh-CN', interimResults: true });
+        session.sttSession.onResult(async (result) => {
+          if (result.text && result.isFinal) {
+            session.accumulatedText += result.text;
+            if (session.accumulatedText.trim().length > 0 && !session.isSpeaking) {
+              const userText = session.accumulatedText.trim();
+              session.accumulatedText = '';
+              session.isSpeaking = true;
+              socket.emit("audio:status", { status: "thinking" });
+
+              try {
+                const personality = personalities[session.personalityId] || personalities.lumi;
+                const messages = [
+                  { role: 'system', content: personality.systemInstruction },
+                  { role: 'user', content: userText },
+                ] as any[];
+
+                const provider = personality.model.startsWith('deepseek') ? 'deepseek' as const
+                  : personality.model.startsWith('gpt') ? 'openai' as const
+                  : personality.model.startsWith('claude') ? 'anthropic' as const
+                  : 'gemini' as const;
+
+                // Simple LLM call for voice
+                let responseText = '';
+                if (provider === 'deepseek') {
+                  const client = getDeepSeek();
+                  if (client) {
+                    const response = await client.chat.completions.create({
+                      model: personality.model,
+                      messages: messages as any,
+                    });
+                    responseText = response.choices[0].message.content || '';
+                  }
+                } else if (provider === 'openai') {
+                  const client = getOpenAI();
+                  if (client) {
+                    const response = await client.chat.completions.create({
+                      model: personality.model,
+                      messages: messages as any,
+                    });
+                    responseText = response.choices[0].message.content || '';
+                  }
+                } else if (provider === 'anthropic') {
+                  const client = getAnthropic();
+                  if (client) {
+                    const response = await client.messages.create({
+                      model: personality.model,
+                      max_tokens: 1024,
+                      messages: [{ role: 'user', content: userText }],
+                    });
+                    responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+                  }
+                } else {
+                  const client = getGemini();
+                  if (client) {
+                    const model = client.getGenerativeModel({ model: personality.model, systemInstruction: personality.systemInstruction });
+                    const result = await model.generateContent(userText);
+                    responseText = result.response.text();
+                  }
+                }
+
+                const ttsProvider = getTTSProvider();
+                if (ttsProvider && session.currentVoiceId) {
+                  try {
+                    socket.emit("audio:status", { status: "speaking" });
+                    session.ttsAbortController = new AbortController();
+                    const ttsResult = await synthesizeSpeech(responseText, {
+                      provider: ttsProvider,
+                      voiceId: session.currentVoiceId,
+                      signal: session.ttsAbortController.signal,
+                    });
+                    if (session.ttsAbortController) {
+                      session.ttsAbortController = null;
+                    }
+                    socket.emit("audio:response", ttsResult.audioBuffer);
+                  } catch (ttsErr: any) {
+                    if (ttsErr?.name === 'AbortError') {
+                      logger.info('[Audio] TTS aborted by user interrupt');
+                    } else {
+                      logger.error("[Audio TTS Error]:", ttsErr);
+                      socket.emit("agent:response", { text: responseText, agentName: personality.name });
+                    }
+                  }
+                } else {
+                  socket.emit("agent:response", { text: responseText, agentName: personality.name });
+                }
+
+                // Log interaction
+                const db = readDB();
+                db.interactions.push({
+                  id: crypto.randomUUID().slice(0, 9),
+                  content: userText,
+                  response: responseText,
+                  role: "user",
+                  personality: session.personalityId,
+                  timestamp: new Date().toISOString(),
+                  mode: 'voice',
+                } as any);
+                writeDB(db);
+
+              } catch (err: any) {
+                logger.error("[Audio LLM Error]:", err);
+                socket.emit("agent:error", { message: "Voice processing failed" });
+              } finally {
+                session.isSpeaking = false;
+                socket.emit("audio:status", { status: "listening" });
+              }
+            }
+          } else if (result.text && !result.isFinal) {
+            socket.emit("audio:transcript", { text: result.text, isFinal: false });
+          }
+        });
+
+        session.sttSession.onError((err: Error) => {
+          logger.error("[Audio STT Error]:", err);
+          socket.emit("audio:error", { message: err.message });
+        });
+
+        socket.emit("audio:status", { status: "listening" });
+      } catch (err: any) {
+        logger.error("[Audio Start Error]:", err);
+        socket.emit("audio:error", { message: err.message });
+      }
+    } else {
+      socket.emit("audio:status", { status: "listening" });
+      socket.emit("audio:error", { message: "No STT provider configured. Set DEEPGRAM_API_KEY." });
+    }
+  });
+
+  socket.on("audio:chunk", (data: Buffer) => {
+    const session = getAudioSession();
+    if (!session.isActive) return;
+    if (session.sttSession) {
+      session.sttSession.sendAudio(data);
+    }
+  });
+
+  socket.on("audio:interrupt", () => {
+    logger.info(`[Audio] Interrupt from ${socket.id}`);
+    const session = getAudioSession();
+    session.isSpeaking = false;
+    session.accumulatedText = '';
+    if (session.ttsAbortController) {
+      session.ttsAbortController.abort();
+      session.ttsAbortController = null;
+    }
+    socket.emit("audio:interrupt-ack", {});
+  });
+
+  socket.on("audio:stop", () => {
+    logger.info(`[Audio] Voice call ended by ${socket.id}`);
+    const session = getAudioSession();
+    session.isActive = false;
+    session.isSpeaking = false;
+    session.accumulatedText = '';
+    if (session.sttSession) {
+      session.sttSession.end();
+      session.sttSession = null;
+    }
+    socket.emit("audio:status", { status: "idle" });
+  });
+
   socket.on("disconnect", () => {
+    const session = socket.data.audioSession as AudioSession | undefined;
+    if (session?.sttSession) {
+      session.sttSession.end();
+      session.sttSession = null;
+    }
     console.log(`[Socket] Client disconnected: ${socket.id}`);
   });
 });
@@ -783,6 +996,14 @@ io.on("connection", (socket) => {
 // --- End Real-Time Agent Logic ---
 
 async function startServer() {
+  try {
+    await ensureDatabaseInitialized();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
