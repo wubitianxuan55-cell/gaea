@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local database
+data/
+
+# Rust / Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/

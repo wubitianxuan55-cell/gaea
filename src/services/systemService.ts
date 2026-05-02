@@ -68,7 +68,7 @@ class SystemService {
     if (this.isTauri) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke('get_system_stats');
+        return await invoke('get_system_info');
       } catch (err) {
         console.error("Failed to get system stats:", err);
         return { cpu: 0, ram: 'N/A' };
