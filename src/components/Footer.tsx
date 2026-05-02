@@ -70,7 +70,7 @@ export function Footer({ t }: FooterProps) {
         <div className="mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="space-y-1">
             <p className="text-xs text-white/20">
-              © {currentYear} LumiAI Neural Systems. All rights reserved.
+              © {currentYear} LumiAI Neural Systems. {t.allRightsReserved}
             </p>
             <p className="text-[9px] text-white/10 uppercase tracking-[0.2em] font-mono">
               {t.ethicalProtocol}
@@ -80,7 +80,7 @@ export function Footer({ t }: FooterProps) {
             <span>v2.0.4-stable</span>
             <span className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              Systems Online
+              {t.systemsOnline}
             </span>
           </div>
         </div>

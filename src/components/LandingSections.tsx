@@ -15,7 +15,7 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-celestial-saturn/20 border border-celestial-saturn/30 text-[10px] font-bold uppercase tracking-widest text-celestial-saturn">
             <Sparkles size={12} />
-            Experimental Protocol
+            {t.experimentalProtocol}
           </div>
           <h2 className="text-5xl font-bold tracking-tighter glow-text">{t.smartHostProgram}</h2>
           <p className="text-white/40 max-w-2xl mx-auto font-mono text-sm italic">
@@ -76,22 +76,22 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
               <FeatureItem 
                 icon={<Layers className="text-celestial-mars" size={20} />}
                 title={t.symbioticIntelligence}
-                desc="Architecture designed to inhabit any physical shell, from industrial machinery to consumer companions."
+                desc={t.symbioticIntelDesc || "Architecture designed to inhabit any physical shell, from industrial machinery to consumer companions."}
               />
               <FeatureItem 
                 icon={<Database className="text-celestial-saturn" size={20} />}
-                title="Rapid Data Genesis"
-                desc="Accelerating AI evolution through high-fidelity emotional and physical interaction data collected across millions of hosts."
+                title={t.rapidDataGenesis || "Rapid Data Genesis"}
+                desc={t.rapidDataGenesisDesc || "Accelerating AI evolution through high-fidelity emotional and physical interaction data collected across millions of hosts."}
               />
               <FeatureItem 
                 icon={<Network className="text-celestial-glow" size={20} />}
-                title="The Host Mesh"
-                desc="Turning the world into a distributed sensor array where intelligence empowers local environments."
+                title={t.hostMesh || "The Host Mesh"}
+                desc={t.hostMeshDesc || "Turning the world into a distributed sensor array where intelligence empowers local environments."}
               />
             </div>
 
             <Button className="px-10 py-8 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-celestial-saturn hover:text-black transition-all flex items-center gap-3">
-              Become a Host Partner
+              {t.becomeHostPartner}
               <ArrowRight size={18} />
             </Button>
           </div>
@@ -107,19 +107,19 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white/40">
               <Building2 size={12} />
-              Enterprise & Industry
+              {t.enterpriseIndustry}
             </div>
             <h2 className="text-5xl font-bold tracking-tighter leading-tight">
-              Scaling Intelligence for <span className="text-celestial-saturn">Organizations</span>
+              {t.scalingIntelligence}
             </h2>
             <p className="text-lg text-white/60 leading-relaxed">
-              LumiAI isn't just for individuals. We provide sovereign AI infrastructure for factories, hospitals, and global enterprises. Deploy Lumi Nexus to architect your collective intelligence.
+              {t.organizationSovereignDesc}
             </p>
             <Button 
               onClick={onNavigateToSolutions}
               className="bg-celestial-saturn text-black rounded-full px-8 py-6 font-bold hover:scale-105 transition-transform flex items-center gap-2"
             >
-              Explore B2B Solutions
+              {t.exploreSolutions}
               <ArrowRight size={18} />
             </Button>
           </div>
@@ -238,12 +238,12 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
       <section className="space-y-12">
         <div className="flex justify-between items-end">
            <div className="space-y-2">
-             <h2 className="text-3xl font-black italic tracking-tighter uppercase">Global <span className="text-celestial-saturn">Neural</span> Mesh</h2>
-             <p className="text-white/30 text-sm italic">Real-time status of the distributed sharding nodes across the planet.</p>
+             <h2 className="text-3xl font-black italic tracking-tighter uppercase">{t.globalNeuralMesh}</h2>
+             <p className="text-white/30 text-sm italic">{t.neuralMeshDesc}</p>
            </div>
            <div className="text-right hidden sm:block">
               <span className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-white/40 uppercase tracking-widest">
-                Nodes Synced: 42,901
+                {t.nodesSynced}: 42,901
               </span>
            </div>
         </div>
@@ -256,13 +256,13 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
         
         <div className="text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-white/40 uppercase tracking-widest">
-            Cross-Interface Continuity
+            {t.crossInterfaceContinuity || 'Cross-Interface Continuity'}
           </div>
-          <h2 className="text-6xl font-black tracking-tighter italic uppercase">
-            ONE NEURAL <span className="text-celestial-saturn text-glow">CORE.</span> ANY INTERFACE.
+          <h2 className="text-6xl font-black tracking-tighter italic uppercase text-glow">
+            {t.anyInterfaceTitle}
           </h2>
           <p className="text-white/40 max-w-2xl mx-auto italic">
-            Lumi adapts its intelligence to the hardware it inhabits. High-performance automation on desktop, high-fidelity sensory perception on mobile.
+            {t.interfaceAdaptDesc}
           </p>
         </div>
 
@@ -285,24 +285,24 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
               <div className="space-y-4">
                 <h3 className="text-4xl font-black tracking-tight italic uppercase">{t.desktopNode}</h3>
                 <p className="text-lg text-white/40 leading-relaxed italic">
-                  Turn your PC into a sovereign neural workstation. No telemetry, pure local silicon power.
+                  {t.desktopDesc}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
                     <div className="text-sm font-black text-white/80">824 TOPs</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">Peak Local Power</div>
+                    <div className="text-[8px] text-white/20 uppercase font-black">{t.peakLocalPower || 'Peak Local Power'}</div>
                  </div>
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
                     <div className="text-sm font-black text-white/80">0 ms</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">Cloud Latency</div>
+                    <div className="text-[8px] text-white/20 uppercase font-black">{t.cloudLatency || 'Cloud Latency'}</div>
                  </div>
               </div>
               <Button 
                 onClick={onSelectDesktop}
                 className="w-full py-8 bg-celestial-saturn text-black font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
               >
-                INITIALIZE DESKTOP HUB
+                {t.initializeDesktopHub}
               </Button>
             </div>
           </motion.div>
@@ -325,24 +325,24 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
               <div className="space-y-4">
                 <h3 className="text-4xl font-black tracking-tight italic uppercase">{t.mobilePerception}</h3>
                 <p className="text-lg text-white/40 leading-relaxed italic">
-                   Take your agent everywhere. Real-time sensory synchronization and encrypted mesh messaging.
+                   {t.mobileDesc}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">Sensory Sync</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">Mesh Active</div>
+                    <div className="text-sm font-black text-white/80">{t.sensorySync || 'Sensory Sync'}</div>
+                    <div className="text-[8px] text-white/20 uppercase font-black">{t.meshActiveLabel || 'Mesh Active'}</div>
                  </div>
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">Biometric</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">Neural ID Encrypted</div>
+                    <div className="text-sm font-black text-white/80">{t.biometric || 'Biometric'}</div>
+                    <div className="text-[8px] text-white/20 uppercase font-black">{t.neuralIDEncrypted || 'Neural ID Encrypted'}</div>
                  </div>
               </div>
               <Button 
                 onClick={onSelectMobile}
                 className="w-full py-8 bg-celestial-nebula text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
               >
-                DEPLOY MOBILE GATEWAY
+                {t.deployMobileGateway}
               </Button>
             </div>
           </motion.div>

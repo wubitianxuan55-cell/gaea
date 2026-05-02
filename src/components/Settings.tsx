@@ -31,28 +31,71 @@ import { toast } from 'sonner';
 import { usePlatform } from '@/hooks/usePlatform';
 import { DeviceSyncCenter } from './DeviceSyncCenter';
 import { useApp } from '@/contexts/AppContext';
+import { VoiceForge } from './VoiceForge';
 
-export function Settings({ t }: { t: any }) {
+export function Settings({ 
+  t, 
+  lang,
+  setLang,
+  activeSection = 'general', 
+  onSectionChange 
+}: { 
+  t: any; 
+  lang: 'en' | 'zh';
+  setLang: (l: 'en' | 'zh') => void;
+  activeSection?: string; 
+  onSectionChange?: (section: string) => void;
+}) {
   const { platform, isElectron, isWeb } = usePlatform();
   const { aiConfig, updateAIConfig } = useApp();
   const [showApiKey, setShowApiKey] = useState(false);
-  const [activeSection, setActiveSection] = useState('neural');
+
+  const handleSectionChange = (section: string) => {
+    if (onSectionChange) onSectionChange(section);
+  };
 
   return (
-    <div className="flex h-full min-h-[600px] bg-black/40 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
+    <div className="flex h-full bg-black/40 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
       {/* Sidebar */}
       <div className="w-64 bg-white/5 border-r border-white/5 p-8 flex flex-col gap-2">
         <h2 className="text-xl font-black uppercase tracking-tighter text-white mb-6">Settings</h2>
-        <SidebarItem active={activeSection === 'neural'} onClick={() => setActiveSection('neural')} icon={<BrainCircuit size={18} />} label="Neural Engine" />
-        <SidebarItem active={activeSection === 'api'} onClick={() => setActiveSection('api')} icon={<Key size={18} />} label="Neural API Matrix" />
-        <SidebarItem active={activeSection === 'music'} onClick={() => setActiveSection('music')} icon={<Music size={18} />} label="Media Services" />
-        <SidebarItem active={activeSection === 'sync'} onClick={() => setActiveSection('sync')} icon={<Radio size={18} />} label="Sync Hub" />
-        <SidebarItem active={activeSection === 'security'} onClick={() => setActiveSection('security')} icon={<Shield size={18} />} label="Security" />
-        <SidebarItem active={activeSection === 'hardware'} onClick={() => setActiveSection('hardware')} icon={<Camera size={18} />} label="Hardware Access" />
+        <SidebarItem active={activeSection === 'general'} onClick={() => handleSectionChange('general')} icon={<Globe size={18} />} label="General" />
+        <SidebarItem active={activeSection === 'neural'} onClick={() => handleSectionChange('neural')} icon={<BrainCircuit size={18} />} label="Neural Engine" />
+        <SidebarItem active={activeSection === 'voice'} onClick={() => handleSectionChange('voice')} icon={<Mic size={18} />} label={t.voiceForge || "Voice Forge"} />
+        <SidebarItem active={activeSection === 'api'} onClick={() => handleSectionChange('api')} icon={<Key size={18} />} label="Neural API Matrix" />
+        <SidebarItem active={activeSection === 'music'} onClick={() => handleSectionChange('music')} icon={<Music size={18} />} label="Media Services" />
+        <SidebarItem active={activeSection === 'sync'} onClick={() => handleSectionChange('sync')} icon={<Radio size={18} />} label="Sync Hub" />
+        <SidebarItem active={activeSection === 'security'} onClick={() => handleSectionChange('security')} icon={<Shield size={18} />} label="Security" />
+        <SidebarItem active={activeSection === 'hardware'} onClick={() => handleSectionChange('hardware')} icon={<Camera size={18} />} label="Hardware Access" />
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+        {activeSection === 'general' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <SettingsSection title={t.language} icon={<Globe className="text-blue-400" />}>
+               <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 space-y-6">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/50 block mb-4">{t.selectLanguage}</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button 
+                        onClick={() => setLang('en')}
+                        className={`p-6 rounded-2xl border text-sm font-bold transition-all flex items-center justify-center gap-3 ${lang === 'en' ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}`}
+                      >
+                        English (US)
+                      </button>
+                      <button 
+                        onClick={() => setLang('zh')}
+                        className={`p-6 rounded-2xl border text-sm font-bold transition-all flex items-center justify-center gap-3 ${lang === 'zh' ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'}`}
+                      >
+                        中文 (简体)
+                      </button>
+                    </div>
+                  </div>
+               </div>
+            </SettingsSection>
+          </div>
+        )}
         {activeSection === 'neural' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <SettingsSection title="Agent Framework (Lumi Protocol)" icon={<BrainCircuit className="text-celestial-saturn" />}>
@@ -123,6 +166,12 @@ export function Settings({ t }: { t: any }) {
                  </div>
                </div>
             </SettingsSection>
+          </div>
+        )}
+
+        {activeSection === 'voice' && (
+          <div className="h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <VoiceForge t={t} />
           </div>
         )}
 

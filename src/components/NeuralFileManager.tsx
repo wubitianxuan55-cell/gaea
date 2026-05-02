@@ -38,7 +38,7 @@ const mockFS: FSItem[] = [
   { id: 'root_2', name: 'System_Logs', type: 'folder', size: '--', status: 'local' }
 ];
 
-export function NeuralFileManager() {
+export function NeuralFileManager({ t }: { t: any }) {
   const [currentPath, setCurrentPath] = useState<FSItem[]>([]);
   const [history, setHistory] = useState<FSItem[][]>([]);
 
@@ -81,7 +81,7 @@ export function NeuralFileManager() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
           <input 
             type="text" 
-            placeholder="Search Shards..." 
+            placeholder={t.searchShards || "Search Shards..."}
             className="bg-black/40 border border-white/5 rounded-full py-1.5 pl-10 pr-4 text-[10px] w-48 focus:border-celestial-saturn/40 outline-none transition-all"
           />
         </div>
@@ -125,7 +125,7 @@ export function NeuralFileManager() {
                  {item.name}
                </div>
                <div className="text-[8px] font-bold text-white/20 uppercase tracking-widest leading-none">
-                 {item.type === 'folder' ? 'Folder' : item.size}
+                 {item.type === 'folder' ? (t.folder || 'Folder') : item.size}
                </div>
             </div>
           </motion.div>
@@ -137,15 +137,15 @@ export function NeuralFileManager() {
         <div className="flex items-center gap-3">
           <HardDrive size={14} className="text-white/20" />
           <div className="space-y-1">
-            <div className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Mesh Storage Utilization</div>
+            <div className="text-[8px] font-bold text-white/40 uppercase tracking-widest">{t.meshStorageUtilization || 'Mesh Storage Utilization'}</div>
             <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
                <div className="h-full bg-celestial-saturn w-[42%]" />
             </div>
           </div>
         </div>
         <div className="text-right">
-           <div className="text-[10px] font-black italic">42.1 GB FREE</div>
-           <div className="text-[8px] text-white/20 uppercase tracking-tighter">Distributed Shard Limit: 100 GB</div>
+           <div className="text-[10px] font-black italic">42.1 GB {t.free || 'FREE'}</div>
+           <div className="text-[8px] text-white/20 uppercase tracking-tighter">{t.distributedShardLimit || 'Distributed Shard Limit'}: 100 GB</div>
         </div>
       </div>
     </div>

@@ -1,0 +1,79 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Mic, Phone, Loader2, Volume2 } from 'lucide-react';
+import { CallState } from '../hooks/useVoiceCall';
+
+interface VoiceCallButtonProps {
+  callState: CallState;
+  audioLevel: number;
+  onStart: () => void;
+  onEnd: () => void;
+  hasVoice?: boolean;
+  className?: string;
+}
+
+export function VoiceCallButton({ callState, audioLevel, onStart, onEnd, hasVoice = false, className = '' }: VoiceCallButtonProps) {
+  const isActive = callState !== 'idle';
+
+  const stateConfig: Record<CallState, { icon: React.ReactNode; color: string; label: string }> = {
+    idle: { icon: <Mic size={20} />, color: 'bg-white/5 text-white/40 border-white/10', label: 'Start' },
+    connecting: { icon: <Loader2 size={20} className="animate-spin" />, color: 'bg-celestial-saturn/10 text-celestial-saturn border-celestial-saturn/30', label: 'Connecting...' },
+    listening: { icon: <Mic size={20} />, color: 'bg-celestial-saturn text-black border-celestial-saturn shadow-[0_0_20px_rgba(255,204,0,0.4)]', label: 'Listening' },
+    thinking: { icon: <Loader2 size={20} className="animate-spin" />, color: 'bg-celestial-mars/10 text-celestial-mars border-celestial-mars/30', label: 'Thinking' },
+    speaking: { icon: <Volume2 size={20} />, color: 'bg-celestial-glow/10 text-celestial-glow border-celestial-glow/30', label: 'Speaking' },
+  };
+
+  const config = stateConfig[callState];
+
+  return (
+    <div className={`relative ${className}`}>
+      {/* Audio level ring */}
+      <AnimatePresence>
+        {isActive && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{
+              scale: 1 + audioLevel * 0.3,
+              opacity: 0.15 + audioLevel * 0.2,
+            }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className={`absolute inset-0 rounded-full ${
+              callState === 'speaking' ? 'bg-celestial-glow' :
+              callState === 'listening' ? 'bg-celestial-saturn' :
+              'bg-celestial-mars'
+            }`}
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={isActive ? onEnd : onStart}
+        className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center transition-all ${config.color} ${
+          !isActive && !hasVoice ? 'opacity-40 cursor-not-allowed' : ''
+        }`}
+        disabled={!isActive && !hasVoice}
+        title={isActive ? 'End call' : hasVoice ? 'Start voice call' : 'No voice configured'}
+      >
+        {config.icon}
+      </motion.button>
+
+      {/* State label */}
+      <AnimatePresence>
+        {isActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap"
+          >
+            <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+              {config.label}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

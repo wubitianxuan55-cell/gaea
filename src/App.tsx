@@ -132,7 +132,7 @@ export default function App() {
       case 'profile':
         return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <Profile t={t} />;
       case 'settings':
-        return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <Settings t={t} />;
+        return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <Settings t={t} lang={lang} setLang={setLang} />;
       default:
         return null;
     }
@@ -151,6 +151,8 @@ export default function App() {
           <MobilePlatform 
             t={t} 
             user={user} 
+            lang={lang}
+            setLang={setLang}
             onLogin={handleLogin} 
             onExit={() => setUiMode('web')}
             renderTabContent={renderTabContent} 
@@ -159,6 +161,8 @@ export default function App() {
           <DesktopPlatform 
             t={t}
             user={user}
+            lang={lang}
+            setLang={setLang}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onLogin={handleLogin}
@@ -190,7 +194,7 @@ export default function App() {
         onGoogleLogin={handleGoogleLogin}
       />
       
-      {uiMode !== 'mobile' && <FloatingAgent t={t} />}
+      {uiMode === 'web' && !isElectron && <FloatingAgent t={t} />}
     </div>
   );
 }

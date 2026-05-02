@@ -20,9 +20,9 @@ export function Solutions({ t }: { t: any }) {
       desc: t.lumiNexusDesc,
       icon: <Building2 size={40} className="text-celestial-saturn" />,
       features: [
-        { title: t.enterpriseGrade, desc: "High availability, redundant architecture." },
-        { title: t.dataSovereignty, desc: "100% on-premise data isolation." },
-        { title: t.collectiveWisdom, desc: "Inter-departmental knowledge graph." }
+        { title: t.enterpriseGrade, desc: t.highAvailability },
+        { title: t.dataSovereignty, desc: t.premiseIsolation },
+        { title: t.collectiveWisdom, desc: t.knowledgeGraph }
       ],
       color: "from-celestial-saturn/20 to-transparent"
     },
@@ -33,9 +33,9 @@ export function Solutions({ t }: { t: any }) {
       desc: t.lumiIndustrialDesc,
       icon: <Factory size={40} className="text-celestial-mars" />,
       features: [
-        { title: t.edgeIntelligence, desc: "Sub-millisecond latency for control loops." },
-        { title: "Predictive Maintenance", desc: "AI-driven failure forecasting." },
-        { title: "Autonomous Logistics", desc: "Self-optimizing supply chain nodes." }
+        { title: t.edgeIntelligence, desc: t.subMillisecond },
+        { title: t.predictiveMaintenance, desc: t.failureForecasting },
+        { title: t.autonomousLogistics, desc: t.supplyChainNodes }
       ],
       color: "from-celestial-mars/20 to-transparent"
     },
@@ -46,9 +46,9 @@ export function Solutions({ t }: { t: any }) {
       desc: t.lumiSanctuaryDesc,
       icon: <Landmark size={40} className="text-celestial-glow" />,
       features: [
-        { title: "Federated Learning", desc: "Collaborative training without data sharing." },
-        { title: "Sovereign AI", desc: "Compliance with strict regulatory standards." },
-        { title: "Privacy-First Research", desc: "Secure multi-party computation." }
+        { title: t.federatedLearning, desc: t.collabTraining },
+        { title: t.sovereignAI, desc: t.regulatoryStandards },
+        { title: t.privacyFirstResearch, desc: t.secureMultiParty }
       ],
       color: "from-celestial-glow/20 to-transparent"
     }
@@ -63,7 +63,7 @@ export function Solutions({ t }: { t: any }) {
           animate={{ opacity: 1, y: 0 }}
           className="inline-block px-4 py-1.5 rounded-full bg-celestial-saturn/10 border border-celestial-saturn/20 text-celestial-saturn text-xs font-bold uppercase tracking-widest"
         >
-          Lumi for Organizations
+          {t.lumiForOrgs}
         </motion.div>
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
@@ -121,11 +121,11 @@ export function Solutions({ t }: { t: any }) {
                 {requested === solution.id ? (
                   <>
                     <CheckCircle2 size={18} />
-                    Request Sent
+                    {t.requestSent}
                   </>
                 ) : (
                   <>
-                    Request Case Study
+                    {t.requestCaseStudy}
                     <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
@@ -169,35 +169,35 @@ export function Solutions({ t }: { t: any }) {
             <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto group-hover:border-celestial-saturn/50 transition-colors">
               <Server className="text-celestial-saturn" />
             </div>
-            <h4 className="text-xl font-bold">Lumi Core Rack</h4>
-            <p className="text-sm text-white/40">Standard 19-inch rack units for seamless data center integration.</p>
+            <h4 className="text-xl font-bold">{t.lumiCoreRack}</h4>
+            <p className="text-sm text-white/40">{t.rackUnits}</p>
           </div>
           <div className="space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto group-hover:border-celestial-mars/50 transition-colors">
               <Network className="text-celestial-mars" />
             </div>
-            <h4 className="text-xl font-bold">Mesh Protocol</h4>
-            <p className="text-sm text-white/40">Proprietary low-latency networking for massive node synchronization.</p>
+            <h4 className="text-xl font-bold">{t.syncProtocol}</h4>
+            <p className="text-sm text-white/40">{t.meshProtocolDescLong}</p>
           </div>
           <div className="space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto group-hover:border-celestial-glow/50 transition-colors">
               <Database className="text-celestial-glow" />
             </div>
-            <h4 className="text-xl font-bold">Neural Vault</h4>
-            <p className="text-sm text-white/40">Hardware-level encryption for organizational memory and IP protection.</p>
+            <h4 className="text-xl font-bold">{t.neuralVault}</h4>
+            <p className="text-sm text-white/40">{t.hardwareEncryption}</p>
           </div>
         </div>
       </GlassCard>
 
       {/* CTA Section */}
       <div className="text-center space-y-8 py-12">
-        <h2 className="text-4xl font-bold tracking-tight">Ready to evolve your organization?</h2>
+        <h2 className="text-4xl font-bold tracking-tight">{t.readyToEvolve}</h2>
         <div className="flex flex-wrap justify-center gap-4">
           <Button className="bg-celestial-saturn text-black rounded-full px-10 py-6 font-bold text-lg hover:scale-105 transition-transform">
-            Contact Sales
+            {t.contactSales}
           </Button>
           <Button className="bg-white/5 border border-white/10 rounded-full px-10 py-6 font-bold text-lg hover:bg-white/10 transition-colors">
-            Download Whitepaper
+            {t.downloadWhitepaper}
           </Button>
         </div>
       </div>

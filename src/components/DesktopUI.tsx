@@ -44,6 +44,7 @@ import {
 import { GlassCard } from './SharedUI';
 import { LocalAgentSphere } from './LocalAgentSphere';
 import { NeuralFileManager } from './NeuralFileManager';
+import { Settings } from './Settings';
 
 // Define the shape of the native API
 interface NativeFile {
@@ -79,10 +80,27 @@ interface WindowProps {
   onFocus: (id: string) => void;
   onMinimize: (id: string) => void;
   isMinimized: boolean;
+  t: any;
   colorClass?: string;
+  width?: string | number;
+  height?: string | number;
 }
 
-function OSWindow({ id, title, icon, children, onClose, isActive, onFocus, onMinimize, isMinimized, colorClass = 'from-celestial-mars to-celestial-saturn' }: WindowProps) {
+function OSWindow({ 
+  id, 
+  title, 
+  icon, 
+  children, 
+  onClose, 
+  isActive, 
+  onFocus, 
+  onMinimize, 
+  isMinimized, 
+  t,
+  colorClass = 'from-celestial-mars to-celestial-saturn',
+  width = 'auto',
+  height = 'auto'
+}: WindowProps) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [snapZone, setSnapZone] = useState<'none' | 'left' | 'right'>('none');
   const constraintsRef = React.useRef(null);
@@ -103,13 +121,12 @@ function OSWindow({ id, title, icon, children, onClose, isActive, onFocus, onMin
       animate={{ 
         opacity: 1, 
         scale: 1, 
-        y: 0,
-        width: isMaximized ? '100%' : snapZone !== 'none' ? '50%' : 'auto',
-        height: isMaximized ? 'calc(100% - 40px)' : snapZone !== 'none' ? 'calc(100% - 40px)' : 'auto',
-        top: isMaximized || snapZone !== 'none' ? '40px' : 'auto',
-        left: isMaximized ? '0' : snapZone === 'left' ? '0' : snapZone === 'right' ? '50%' : 'auto',
-        right: isMaximized ? '0' : snapZone === 'right' ? '0' : 'auto',
-        bottom: isMaximized || snapZone !== 'none' ? '0' : 'auto',
+        width: isMaximized ? '100vw' : snapZone !== 'none' ? '50vw' : width,
+        height: isMaximized ? 'calc(100vh - 40px)' : snapZone !== 'none' ? 'calc(100vh - 40px)' : height,
+        top: isMaximized || snapZone !== 'none' ? '40px' : '50%',
+        left: isMaximized ? '0' : snapZone === 'left' ? '0' : snapZone === 'right' ? '50%' : '50%',
+        x: isMaximized || snapZone !== 'none' ? 0 : '-50%',
+        y: isMaximized || snapZone !== 'none' ? 0 : '-50%',
       }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
       style={{ 
@@ -117,7 +134,7 @@ function OSWindow({ id, title, icon, children, onClose, isActive, onFocus, onMin
         position: isMaximized || snapZone !== 'none' ? 'fixed' : 'absolute' 
       }}
       onClick={() => onFocus(id)}
-      className={`os-window overflow-hidden ${isMaximized ? 'rounded-none' : 'inset-4 md:inset-10 lg:inset-20'}`}
+      className={`os-window overflow-hidden ${isMaximized ? 'rounded-none' : 'rounded-[2.5rem]'}`}
     >
       <div 
         className="os-window-header cursor-default px-6"
@@ -131,7 +148,7 @@ function OSWindow({ id, title, icon, children, onClose, isActive, onFocus, onMin
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white/80 leading-none mb-0.5">{title}</span>
-            <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest leading-none">Status: Operational / Shared Root</span>
+            <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest leading-none">{t.statusOperational || 'Status: Operational / Shared Root'}</span>
           </div>
         </div>
         <div className="flex gap-3">
@@ -160,7 +177,7 @@ function OSWindow({ id, title, icon, children, onClose, isActive, onFocus, onMin
   );
 }
 
-function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, setVolume, theme, setTheme }: { 
+function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, setVolume, theme, setTheme, lang, setLang }: { 
   isOpen: boolean; 
   onClose: () => void; 
   t: any;
@@ -170,13 +187,15 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
   setVolume: (v: number) => void;
   theme: string;
   setTheme: (t: string) => void;
+  lang: 'en' | 'zh';
+  setLang: (l: 'en' | 'zh') => void;
 }) {
   if (!isOpen) return null;
 
   const themes = [
-    { id: 'celestial', label: 'Celestial', color: 'bg-celestial-saturn', icon: <Sparkles size={14} /> },
-    { id: 'nebula', label: 'Nebula', color: 'bg-indigo-500', icon: <Moon size={14} /> },
-    { id: 'cyber', label: 'Cyber', color: 'bg-emerald-500', icon: <Zap size={14} /> },
+    { id: 'celestial', label: t.celestial || 'Celestial', color: 'bg-celestial-saturn', icon: <Sparkles size={14} /> },
+    { id: 'nebula', label: t.nebula || 'Nebula', color: 'bg-indigo-500', icon: <Moon size={14} /> },
+    { id: 'cyber', label: t.cyber || 'Cyber', color: 'bg-emerald-500', icon: <Zap size={14} /> },
   ];
 
   return (
@@ -186,22 +205,38 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       className="fixed top-12 right-6 w-80 glass-dark rounded-[2.5rem] p-6 z-[100] shadow-[0_30px_70px_rgba(0,0,0,0.7)] border border-white/10 backdrop-blur-3xl"
     >
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xs font-black uppercase tracking-widest text-white/40">{t.nexusControl || 'Nexus Control'}</h3>
+        <div className="flex bg-white/5 p-1 rounded-xl">
+           <button 
+            onClick={() => setLang('en')}
+            className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${lang === 'en' ? 'bg-white text-black' : 'text-white/40'}`}
+           >EN</button>
+           <button 
+            onClick={() => setLang('zh')}
+            className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${lang === 'zh' ? 'bg-white text-black' : 'text-white/40'}`}
+           >ZH</button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="col-span-1 bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
           <div className="flex gap-3">
-             <button className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white active:scale-95 transition-transform"><Wifi size={18} /></button>
-             <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/40 active:scale-95 transition-transform"><Bluetooth size={18} /></button>
+             <button className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white active:scale-95 transition-transform" title={t.wifi}><Wifi size={18} /></button>
+             <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/40 active:scale-95 transition-transform" title={t.bluetooth}><Bluetooth size={18} /></button>
           </div>
           <div className="flex gap-3">
              <button 
                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${theme === 'cyber' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/40'}`}
                onClick={() => { setTheme('cyber'); sounds.playPulse(); }}
+               title={t.cyber}
              >
                <Rocket size={18} />
              </button>
              <button 
                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${theme === 'nebula' ? 'bg-indigo-500 text-white' : 'bg-white/10 text-white/40'}`}
                onClick={() => { setTheme('nebula'); sounds.playPulse(); }}
+               title={t.nebula}
              >
                <Moon size={18} />
              </button>
@@ -210,7 +245,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
         <div className="col-span-1 bg-white/5 rounded-[1.5rem] p-5 flex flex-col justify-between">
            <div className="space-y-2">
              <div className="flex justify-between items-center text-[10px] font-bold text-white/40 uppercase">
-               <span>Display</span>
+               <span>{t.display || 'Display'}</span>
                <Sun size={12} />
              </div>
              <div className="h-4 w-full bg-white/5 rounded-full relative group cursor-pointer" onClick={(e) => {
@@ -226,7 +261,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
            </div>
            <div className="space-y-2">
              <div className="flex justify-between items-center text-[10px] font-bold text-white/40 uppercase">
-               <span>Sound</span>
+               <span>{t.sound || 'Sound'}</span>
                <Volume2 size={12} />
              </div>
              <div className="h-4 w-full bg-white/5 rounded-full relative group cursor-pointer" onClick={(e) => {
@@ -245,50 +280,44 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <span className="text-[10px] font-black text-white/20 uppercase tracking-widest px-2">Matrix Synthesis</span>
+          <span className="text-[10px] font-black text-white/20 uppercase tracking-widest px-2">{t.matrixSynthesis || 'Matrix Synthesis'}</span>
           <div className="grid grid-cols-3 gap-2">
-            {themes.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => { setTheme(t.id); sounds.playPulse(); }}
-                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
-                  theme === t.id 
-                    ? 'bg-white/10 border-white/20' 
-                    : 'bg-transparent border-transparent hover:bg-white/5'
-                }`}
+            {themes.map((themeOption) => (
+              <button 
+                key={themeOption.id}
+                onClick={() => { setTheme(themeOption.id); sounds.playPulse(); }}
+                className={`flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${theme === themeOption.id ? 'bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'hover:bg-white/5'}`}
               >
-                <div className={`w-8 h-8 rounded-lg ${t.color} flex items-center justify-center text-white shadow-lg`}>
-                  {t.icon}
+                <div className={`w-8 h-8 rounded-full ${themeOption.color} flex items-center justify-center text-white shadow-lg`}>
+                  {themeOption.icon}
                 </div>
-                <span className={`text-[8px] font-black uppercase tracking-tight ${theme === t.id ? 'text-white' : 'text-white/40'}`}>
-                  {t.label}
-                </span>
+                <span className="text-[8px] font-black uppercase text-white/40">{themeOption.label}</span>
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500"><Sun size={16} /></div>
-               <span className="text-xs font-bold text-white/80">Night Shift</span>
-             </div>
-             <ChevronRight size={14} className="text-white/20" />
+      <div className="space-y-1">
+        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500"><Sun size={16} /></div>
+            <span className="text-xs font-bold text-white/80">{t.nightShift || 'Night Shift'}</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><Maximize2 size={16} /></div>
-               <span className="text-xs font-bold text-white/80">Focus Mode</span>
-             </div>
-             <ChevronRight size={14} className="text-white/20" />
+          <ChevronRight size={14} className="text-white/20" />
+        </div>
+        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><Maximize2 size={16} /></div>
+            <span className="text-xs font-bold text-white/80">{t.focusMode || 'Focus Mode'}</span>
           </div>
+          <ChevronRight size={14} className="text-white/20" />
         </div>
       </div>
       
       <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between font-sans">
         <span className="text-[10px] font-bold text-white/20 tracking-widest uppercase">Lumi OS v2.0.4</span>
-        <button onClick={onClose} className="text-[10px] font-black text-celestial-saturn hover:underline uppercase tracking-widest">Close Nexus</button>
+        <button onClick={onClose} className="text-[10px] font-black text-celestial-saturn hover:underline uppercase tracking-widest">{t.closeNexus || 'Close Nexus'}</button>
       </div>
     </motion.div>
   );
@@ -319,7 +348,7 @@ function DesktopIcon({ label, icon, colorClass, onClick }: DesktopIconProps) {
   );
 }
 
-function KernelMonitorApp() {
+function KernelMonitorApp({ t }: { t: any }) {
   const [data, setData] = useState<number[]>([]);
   
   useEffect(() => {
@@ -340,21 +369,21 @@ function KernelMonitorApp() {
             <Cpu size={24} />
           </div>
           <div>
-            <div className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">Local Intelligence Node</div>
+            <div className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">{t.localIntelNode || 'Local Intelligence Node'}</div>
             <div className="text-lg font-black text-white tracking-tight">SILICON_ADAPTIVE_V2.4</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-black text-celestial-saturn uppercase tracking-widest leading-none mb-1">State: Optimal</div>
-          <div className="text-xs font-mono text-white/40">0.02ms Latency / 824.2 TOPs</div>
+          <div className="text-[10px] font-black text-celestial-saturn uppercase tracking-widest leading-none mb-1">{t.status || 'Status'}: {t.optimal || 'Optimal'}</div>
+          <div className="text-xs font-mono text-white/40">0.02ms {t.meshLatency || 'Latency'} / 824.2 TOPs</div>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Neural Throughput', value: '82.4 GB/s', color: 'bg-celestial-saturn' },
-          { label: 'Synaptic Load', value: '14.2%', color: 'bg-emerald-500' },
-          { label: 'Mesh Latency', value: '0.12 ms', color: 'bg-blue-500' }
+          { label: t.neuralThroughput || 'Neural Throughput', value: '82.4 GB/s', color: 'bg-celestial-saturn' },
+          { label: t.synapticLoad || 'Synaptic Load', value: '14.2%', color: 'bg-emerald-500' },
+          { label: t.meshLatency || 'Mesh Latency', value: '0.12 ms', color: 'bg-blue-500' }
         ].map((stat, i) => (
           <div key={i} className="p-5 bg-white/5 rounded-[2rem] border border-white/5 space-y-3 hover:bg-white/10 transition-colors cursor-default">
             <div className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">{stat.label}</div>
@@ -378,7 +407,7 @@ function KernelMonitorApp() {
            <div className="flex justify-between items-center">
              <div className="flex items-center gap-3">
                <Activity size={14} className="text-celestial-saturn animate-pulse" />
-               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] italic">Memory Allocation Shards</span>
+               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] italic">{t.memoryAllocShards || 'Memory Allocation Shards'}</span>
              </div>
              <span className="text-[10px] font-mono text-celestial-saturn opacity-50 tracking-widest whitespace-nowrap overflow-hidden w-32 border-b border-celestial-saturn/20">0xEF4A92F...01</span>
            </div>
@@ -399,14 +428,14 @@ function KernelMonitorApp() {
            
            <div className="mt-auto pt-8 border-t border-white/5 flex justify-between items-end">
               <div className="space-y-2">
-                 <div className="text-[9px] font-black text-white/20 uppercase tracking-widest">Active Mesh Peers Registered</div>
+                 <div className="text-[9px] font-black text-white/20 uppercase tracking-widest">{t.activeMeshPeers || 'Active Mesh Peers Registered'}</div>
                  <div className="flex gap-2 text-[10px] font-mono text-emerald-500">
                     <span className="animate-pulse">●</span>
                     <span className="font-black">LUMI_GATEWAY_NODE_MOBILE_0x2</span>
                  </div>
               </div>
               <button className="h-10 bg-celestial-saturn/10 border border-celestial-saturn/20 text-celestial-saturn text-[10px] font-black uppercase tracking-widest px-6 rounded-2xl hover:bg-celestial-saturn hover:text-black transition-all active:scale-95 shadow-xl">
-                FORCE CACHE RE-SHARD
+                {t.forceCacheReshard || 'FORCE CACHE RE-SHARD'}
               </button>
            </div>
         </div>
@@ -415,7 +444,7 @@ function KernelMonitorApp() {
   );
 }
 
-function Spotlight({ isOpen, onClose, onSelect, apps }: { isOpen: boolean; onClose: () => void; onSelect: (id: string) => void; apps: any[] }) {
+function Spotlight({ isOpen, onClose, onSelect, apps, t }: { isOpen: boolean; onClose: () => void; onSelect: (id: string) => void; apps: any[]; t: any }) {
   const [query, setQuery] = useState('');
   
   const filteredApps = apps.filter(app => 
@@ -443,14 +472,14 @@ function Spotlight({ isOpen, onClose, onSelect, apps }: { isOpen: boolean; onClo
           <Search size={24} className="text-white/40" />
           <input 
             autoFocus
-            placeholder="Search Lumi Neural Hub..."
+            placeholder={t.searchNeuralHub || "Search Lumi Neural Hub..."}
             className="flex-1 bg-transparent border-none outline-none text-xl font-bold text-white placeholder:text-white/20"
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
           <div className="px-2 py-1 bg-white/5 rounded text-[10px] font-black text-white/40 tracking-widest border border-white/5">ESC</div>
         </div>
-        <div className="max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
           {filteredApps.length > 0 ? (
             filteredApps.map(app => (
               <button
@@ -459,11 +488,11 @@ function Spotlight({ isOpen, onClose, onSelect, apps }: { isOpen: boolean; onClo
                 className="w-full p-4 flex items-center gap-4 hover:bg-white/5 rounded-2xl transition-colors text-left group"
               >
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.color} flex items-center justify-center p-2 shadow-lg`}>
-                  {React.cloneElement(app.icon, { size: 24 })}
+                  {React.isValidElement(app.icon) ? React.cloneElement(app.icon, { size: 24 }) : app.icon}
                 </div>
                 <div className="flex-1">
                   <div className="text-sm font-black text-white tracking-tight">{app.label}</div>
-                  <div className="text-[10px] text-white/30 uppercase tracking-widest">Neural Application</div>
+                  <div className="text-[10px] text-white/30 uppercase tracking-widest">{t.neuralApp || 'Neural Application'}</div>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <ChevronRight size={16} className="text-white/40" />
@@ -473,7 +502,7 @@ function Spotlight({ isOpen, onClose, onSelect, apps }: { isOpen: boolean; onClo
           ) : (
              <div className="p-12 text-center text-white/20">
                 <BrainCircuit size={48} className="mx-auto mb-4 opacity-10" />
-                <p className="text-xs font-black uppercase tracking-widest">No neural nodes found</p>
+                <p className="text-xs font-black uppercase tracking-widest">{t.noNeuralNodes || 'No neural nodes found'}</p>
              </div>
           )}
         </div>
@@ -485,6 +514,8 @@ function Spotlight({ isOpen, onClose, onSelect, apps }: { isOpen: boolean; onClo
 export function DesktopUI({ 
   t, 
   user, 
+  lang,
+  setLang,
   activeTab, 
   setActiveTab, 
   onLogin, 
@@ -493,6 +524,8 @@ export function DesktopUI({
 }: { 
   t: any; 
   user: any; 
+  lang: 'en' | 'zh';
+  setLang: (l: 'en' | 'zh') => void;
   activeTab: string; 
   setActiveTab: (tab: string) => void; 
   onLogin: () => void;
@@ -533,6 +566,7 @@ export function DesktopUI({
   const [terminalOutput, setTerminalOutput] = useState<string[]>(['Lumi Virtual Node OS [Version 2.0.4]', '(c) Lumi Artificial Intelligence. All rights mesh nodes.']);
   const [isControlCenterOpen, setIsControlCenterOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState('general');
   const [brightness, setBrightness] = useState(85);
   const [volume, setVolume] = useState(60);
   const [time, setTime] = useState(new Date());
@@ -641,14 +675,14 @@ export function DesktopUI({
   };
 
   const appIcons = [
-    { id: 'home', label: 'Neural Core', icon: <Sparkles size={24} />, color: 'from-celestial-saturn to-yellow-600' },
-    { id: 'fs', label: 'Neural FS', icon: <Folder size={24} />, color: 'from-blue-400 to-indigo-500' },
-    { id: 'kernel', label: 'Kernel Monitor', icon: <Activity size={24} />, color: 'from-orange-500 to-red-600' },
-    { id: 'protocols', label: 'Lost Protocols', icon: <Disc size={24} />, color: 'from-purple-500 to-indigo-600' },
-    { id: 'terminal', label: 'Neural Terminal', icon: <Rocket size={24} />, color: 'from-blue-600 to-cyan-400' },
-    { id: 'network', label: 'Nexus Stream', icon: <Globe size={24} />, color: 'from-green-500 to-emerald-600' },
-    { id: 'music', label: 'Cosmic Drift', icon: <Music size={24} />, color: 'from-pink-500 to-rose-500' },
-    { id: 'settings', label: 'OS Integrity', icon: <SettingsIcon size={24} />, color: 'from-gray-400 to-slate-600' },
+    { id: 'home', label: t.neuralCore || 'Neural Core', icon: <Sparkles size={24} />, color: 'from-celestial-saturn to-yellow-600' },
+    { id: 'fs', label: t.fileExplorer || 'Neural FS', icon: <Folder size={24} />, color: 'from-blue-400 to-indigo-500' },
+    { id: 'kernel', label: t.kernelMonitor || 'Kernel Monitor', icon: <Activity size={24} />, color: 'from-orange-500 to-red-600' },
+    { id: 'protocols', label: t.lostProtocols || 'Lost Protocols', icon: <Disc size={24} />, color: 'from-purple-500 to-indigo-600' },
+    { id: 'terminal', label: t.terminal || 'Neural Terminal', icon: <Rocket size={24} />, color: 'from-blue-600 to-cyan-400' },
+    { id: 'network', label: t.nexusStream || 'Nexus Stream', icon: <Globe size={24} />, color: 'from-green-500 to-emerald-600' },
+    { id: 'music', label: t.mediaCenter || 'Cosmic Drift', icon: <Music size={24} />, color: 'from-pink-500 to-rose-500' },
+    { id: 'settings', label: t.settings || 'OS Integrity', icon: <SettingsIcon size={24} />, color: 'from-gray-400 to-slate-600' },
   ];
 
   const themeConfig = {
@@ -682,6 +716,17 @@ export function DesktopUI({
     openWindows.includes('terminal') ? 'focused' :
     openWindows.includes('music') ? 'zen' : 'default';
 
+  const settingsSizes: { [key: string]: { w: string, h: string } } = {
+    general: { w: '600px', h: '450px' },
+    neural: { w: '950px', h: '750px' },
+    api: { w: '850px', h: '700px' },
+    music: { w: '900px', h: '650px' },
+    sync: { w: '1100px', h: '800px' },
+    security: { w: '750px', h: '600px' },
+    hardware: { w: '900px', h: '750px' },
+    voice: { w: '1000px', h: '800px' }
+  };
+
   return (
     <div className={`fixed inset-0 h-screen w-screen overflow-hidden cursor-default select-none transition-all duration-1000 ${
       theme === 'celestial' ? 'bg-[#010103]' : 
@@ -689,6 +734,19 @@ export function DesktopUI({
       theme === 'cyber' ? 'bg-[#000808]' : 
       'bg-black'
     }`}>
+      <ControlCenter 
+        isOpen={isControlCenterOpen} 
+        onClose={() => setIsControlCenterOpen(false)} 
+        t={t}
+        brightness={brightness}
+        setBrightness={setBrightness}
+        volume={volume}
+        setVolume={setVolume}
+        theme={theme}
+        setTheme={setTheme}
+        lang={lang}
+        setLang={setLang}
+      />
       {/* CRT Scanline / Noise Overlay */}
       <div className="fixed inset-0 z-[1000] pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] select-none" />
       
@@ -950,7 +1008,7 @@ export function DesktopUI({
                     </button>
                   ))}
                 </div>
-                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">Mesh Sync Rate</span>
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">{t.meshSyncRate || 'Mesh Sync Rate'}</span>
               </div>
 
               <motion.button 
@@ -959,14 +1017,13 @@ export function DesktopUI({
                 onClick={() => setViewMode('personal')}
                 className="group px-10 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black text-white/60 tracking-[0.4em] uppercase transition-all backdrop-blur-2xl hover:text-white hover:border-white/20"
               >
-                Focus Personal Territory
+                {t.focusPersonalTerritory || 'Focus Personal Territory'}
               </motion.button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Fixed System UI (Bars and Dock) - Stays on top, no scaling */}
       <div className="fixed inset-0 z-[100] pointer-events-none">
         {/* Top Status Bar */}
         <div className="absolute top-0 inset-x-0 h-10 glass-dark border-b border-white/5 flex items-center justify-between px-6 pointer-events-auto backdrop-blur-md">
@@ -979,10 +1036,16 @@ export function DesktopUI({
             </button>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex gap-4">
-               {['File', 'Edit', 'Kernel', 'View', 'Matrix'].map(item => (
-                 <button key={item} className="text-[10px] font-bold text-white/30 hover:text-white uppercase tracking-widest transition-colors">{item === 'Matrix' ? (
-                   <span className="flex items-center gap-1">Matrix <Search size={10} className="text-celestial-saturn" onClick={() => setIsSearchOpen(true)} /></span>
-                 ) : item}</button>
+               {[
+                 { key: 'File', label: t.file || 'File' },
+                 { key: 'Edit', label: t.edit || 'Edit' },
+                 { key: 'Kernel', label: t.kernel || 'Kernel' },
+                 { key: 'View', label: t.view || 'View' },
+                 { key: 'Matrix', label: t.matrix || 'Matrix' }
+               ].map(item => (
+                 <button key={item.key} className="text-[10px] font-bold text-white/30 hover:text-white uppercase tracking-widest transition-colors">{item.key === 'Matrix' ? (
+                   <span className="flex items-center gap-1">{item.label} <Search size={10} className="text-celestial-saturn" onClick={() => setIsSearchOpen(true)} /></span>
+                 ) : item.label}</button>
                ))}
             </div>
           </div>
@@ -1000,7 +1063,7 @@ export function DesktopUI({
                 onClick={onExit} 
                 className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1 rounded-lg text-[9px] font-black transition-all border border-red-500/20 uppercase tracking-widest"
               >
-                Term Session
+                {t.termSession || 'Term Session'}
               </button>
             )}
 
@@ -1017,18 +1080,7 @@ export function DesktopUI({
           </div>
         </div>
 
-        {/* Global Control Center */}
-        <ControlCenter 
-          isOpen={isControlCenterOpen} 
-          onClose={() => setIsControlCenterOpen(false)} 
-          t={t}
-          brightness={brightness}
-          setBrightness={setBrightness}
-          volume={volume}
-          setVolume={setVolume}
-          theme={theme}
-          setTheme={setTheme}
-        />
+        {/* Global Control Center handled at top level for proper click detection */}
 
         {/* Global Search */}
         <AnimatePresence>
@@ -1038,6 +1090,7 @@ export function DesktopUI({
               onClose={() => setIsSearchOpen(false)} 
               onSelect={toggleWindow}
               apps={appIcons}
+              t={t}
             />
           )}
         </AnimatePresence>
@@ -1052,7 +1105,7 @@ export function DesktopUI({
           >
             {viewMode === 'world' ? <Cpu size={24} /> : <Globe size={24} />}
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/80 rounded-lg text-[8px] font-black uppercase text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              {viewMode === 'world' ? 'Personal' : 'Nexus'} View
+              {viewMode === 'world' ? (t.personalView || 'Personal View') : (t.nexusView || 'Nexus View')}
             </div>
           </button>
           <div className="h-8 w-px bg-white/10 mx-2" />
@@ -1164,43 +1217,7 @@ export function DesktopUI({
              </div>
           </div>
 
-          {/* Neural Integrity Monitor - Re-positioned to bottom-right HUD area */}
-          <div className="absolute right-6 bottom-32 z-[-1] flex flex-col gap-3 pointer-events-none opacity-60 hover:opacity-100 transition-opacity">
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="p-3 bg-black/20 backdrop-blur-md border border-white/5 rounded-xl w-36 space-y-2 pointer-events-auto"
-            >
-              <div className="flex items-center justify-between border-b border-white/5 pb-1">
-                <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">System HUD</span>
-                <div className="w-1 h-1 rounded-full bg-celestial-saturn animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                {[
-                  { label: 'Neural', val: '98%', color: 'bg-celestial-saturn' },
-                  { label: 'Mesh', val: 'Syncing', color: 'bg-purple-500' }
-                ].map((stat, i) => (
-                  <div key={i} className="space-y-0.5">
-                    <div className="flex justify-between text-[6px] font-bold text-white/40 uppercase">
-                      <span>{stat.label}</span>
-                      <span>{stat.val}</span>
-                    </div>
-                    <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-                       <motion.div 
-                        animate={{ width: ['80%', '100%', '85%'] }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className={`h-full ${stat.color}`}
-                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="pt-1 font-mono text-[5px] text-white/20 uppercase tracking-tighter leading-none">
-                &gt; P-44_STRM_ACTIVE<br/>
-                &gt; NODES_ONLINE:4092
-              </div>
-            </motion.div>
-          </div>
+          {/* Removed Neural Integrity Monitor as requested for manual removal */}
 
           {/* Central Interactive Entity */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1365,12 +1382,17 @@ export function DesktopUI({
                 onMinimize={(id) => setMinimizedWindows(prev => [...prev, id])}
                 onClose={() => closeWindow(windowId)}
                 colorClass={appIcons.find(a => a.id === windowId)?.color}
+                width={windowId === 'settings' ? (settingsSizes[settingsSection]?.w || '800px') : windowId === 'music' ? '800px' : windowId === 'claude' ? '800px' : windowId === 'fs' ? '1000px' : windowId === 'kernel' ? '900px' : '900px'}
+                height={windowId === 'settings' ? (settingsSizes[settingsSection]?.h || '600px') : windowId === 'music' ? '600px' : windowId === 'claude' ? '600px' : windowId === 'fs' ? '700px' : windowId === 'kernel' ? '700px' : '700px'}
+                t={t}
               >
                 <div className="p-8 h-full">
                   {windowId === 'fs' ? (
-                    <NeuralFileManager />
+                    <NeuralFileManager t={t} />
                   ) : windowId === 'kernel' ? (
-                    <KernelMonitorApp />
+                    <KernelMonitorApp t={t} />
+                  ) : windowId === 'settings' ? (
+                    <Settings t={t} lang={lang} setLang={setLang} activeSection={settingsSection} onSectionChange={setSettingsSection} />
                   ) : windowId === 'music' ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-12 animate-in zoom-in-95 duration-500">
                        <div className="relative">

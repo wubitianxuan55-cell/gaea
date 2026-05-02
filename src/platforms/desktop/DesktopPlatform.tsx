@@ -5,6 +5,8 @@ import { DesktopUI } from '../../components/DesktopUI';
 interface DesktopPlatformProps {
   t: any;
   user: any;
+  lang: 'en' | 'zh';
+  setLang: (lang: 'en' | 'zh') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogin: () => void;
@@ -15,6 +17,8 @@ interface DesktopPlatformProps {
 export function DesktopPlatform({ 
   t, 
   user, 
+  lang,
+  setLang,
   activeTab, 
   setActiveTab, 
   onLogin, 
@@ -32,6 +36,8 @@ export function DesktopPlatform({
       <DesktopUI 
         t={t}
         user={user}
+        lang={lang}
+        setLang={setLang}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogin={onLogin}

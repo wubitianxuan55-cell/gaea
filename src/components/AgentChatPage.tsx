@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, MessageSquare, Loader2, ArrowLeft, Ghost, Zap, Cpu, Sparkles, Upload, FileText, Mic, Video, CheckCircle2, Pause, Play, Square } from 'lucide-react';
+import { Send, MessageSquare, Loader2, ArrowLeft, Ghost, Zap, Cpu, Sparkles, Upload, FileText, Mic, Video, CheckCircle2, Pause, Play, Square, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { socketService } from '@/services/socketService';
@@ -11,12 +11,55 @@ import { FoundersSanctuary } from './FoundersSanctuary';
 import { usePlatform } from '@/hooks/usePlatform';
 import { runAgentLogic, AgentResponse } from '@/services/agentService';
 import { useApp } from '@/contexts/AppContext';
+import { VoiceCallButton } from './VoiceCallButton';
+import { useSocket } from '@/hooks/useSocket';
+import { useVoiceCall } from '@/hooks/useVoiceCall';
+import { useVoiceCloning } from '@/hooks/useVoiceCloning';
+import { listVoices } from '@/services/voiceService';
 
 export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; agent?: any; onBack: () => void }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [agentMetadata, setAgentMetadata] = useState<Partial<AgentResponse>>({});
   const { platform, isElectron } = usePlatform();
   const { aiConfig } = useApp();
+  const socket = useSocket();
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>();
+  const [voices, setVoices] = useState<any[]>([]);
+  const [showVoicePicker, setShowVoicePicker] = useState(false);
+
+  const { callState, audioLevel, startCall, endCall, error: callError } = useVoiceCall({
+    socket,
+    onTranscript: (text, isFinal) => {
+      if (isFinal) {
+         // Optionally add to transcript view if separate from chat
+      }
+    },
+    onResponse: (text) => {
+      const agentMsg = {
+        id: Date.now().toString(),
+        text: text,
+        userName: agentName,
+        timestamp: new Date().toISOString(),
+        type: 'agent'
+      };
+      setMessages(prev => [...prev, agentMsg]);
+    }
+  });
+
+  useEffect(() => {
+    listVoices().then(data => {
+      const all = [...data.cloned, ...data.premade];
+      setVoices(all);
+      if (all.length > 0 && !selectedVoiceId) {
+        setSelectedVoiceId(all[0].voiceId);
+      }
+    }).catch(() => {});
+  }, [selectedVoiceId]);
+
+  useEffect(() => {
+    if (callError) toast.error(callError);
+  }, [callError]);
+
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -25,7 +68,6 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
   const { speak, stop, pause, resume, isSpeaking, isPaused } = useTTS();
   const recognition = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const socket = useRef<any>(null);
 
   const agentName = agent?.name || 'Lumi Essence';
   const agentCategory = agent?.category || 'friend';
@@ -81,11 +123,9 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
   }, [agentId, agentName, user, isFounder]);
 
   useEffect(() => {
-    if (isFounder) return; // Sanctuary handles its own socket logic for now or we could share it
+    if (isFounder || !socket) return; 
 
-    socket.current = socketService.connect();
-
-    socket.current.on("agent:response", (data: { text: string; agentName: string }) => {
+    socket.on("agent:response", (data: { text: string; agentName: string }) => {
       const agentMsg = {
         id: Date.now().toString(),
         text: data.text,
@@ -97,16 +137,16 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
       speak(data.text);
     });
 
-    socket.current.on("agent:status", (data: { status: string }) => {
+    socket.on("agent:status", (data: { status: string }) => {
       setIsTyping(data.status === "thinking");
     });
 
     return () => {
-      socket.current.off("agent:response");
-      socket.current.off("agent:status");
+      socket.off("agent:response");
+      socket.off("agent:status");
       stop();
     };
-  }, [speak, stop, isFounder]);
+  }, [speak, stop, isFounder, socket]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -201,6 +241,51 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
           <span className="text-xs font-bold uppercase tracking-widest">{t.back || 'Back'}</span>
         </Button>
         <div className="flex items-center gap-3">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowVoicePicker(!showVoicePicker)}
+              className="text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2 hover:text-celestial-saturn transition-colors"
+            >
+              {voices.find(v => v.voiceId === selectedVoiceId)?.name || 'Select Voice'}
+              <ChevronDown size={12} />
+            </Button>
+            
+            <AnimatePresence>
+              {showVoicePicker && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full left-0 mt-2 w-48 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-2 z-50 shadow-2xl max-h-64 overflow-y-auto custom-scrollbar"
+                >
+                  {voices.map(v => (
+                    <button
+                      key={v.voiceId}
+                      onClick={() => {
+                        setSelectedVoiceId(v.voiceId);
+                        setShowVoicePicker(false);
+                      }}
+                      className={`w-full text-left p-2 rounded-xl text-[10px] font-bold uppercase transition-all ${
+                        selectedVoiceId === v.voiceId ? 'bg-celestial-saturn text-black' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      {v.name}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <VoiceCallButton 
+            callState={callState}
+            audioLevel={audioLevel}
+            onStart={() => startCall(selectedVoiceId, agentId)}
+            onEnd={endCall}
+            hasVoice={voices.length > 0}
+          />
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-celestial-saturn/20 flex items-center justify-center text-celestial-saturn border border-celestial-saturn/20">
             <Ghost className="w-4 h-4 md:w-5 md:h-5" />
           </div>

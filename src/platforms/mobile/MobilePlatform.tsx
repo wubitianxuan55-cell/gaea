@@ -32,12 +32,14 @@ import { sounds } from '../../services/soundService';
 interface MobilePlatformProps {
   t: any;
   user: any;
+  lang: 'en' | 'zh';
+  setLang: (lang: 'en' | 'zh') => void;
   onLogin: () => void;
   onExit?: () => void;
   renderTabContent: (tab: string) => React.ReactNode;
 }
 
-export function MobilePlatform({ t, user, onLogin, onExit, renderTabContent }: MobilePlatformProps) {
+export function MobilePlatform({ t, user, lang, setLang, onLogin, onExit, renderTabContent }: MobilePlatformProps) {
   const [activeScreen, setActiveScreen] = useState<'home' | 'core' | 'factory' | 'agents' | 'profile'>('home');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isControlCenterOpen, setIsControlCenterOpen] = useState(false);
@@ -247,6 +249,29 @@ export function MobilePlatform({ t, user, onLogin, onExit, renderTabContent }: M
             className="h-full pt-4 space-y-6"
           >
             {renderTabContent('profile')}
+
+            <div className="px-2 space-y-4 pt-4">
+              <div className="glass-dark p-6 rounded-[2.5rem] border border-white/5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Globe size={18} className="text-celestial-saturn" />
+                  <span className="text-xs font-black uppercase tracking-widest">{t.language}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setLang('en')}
+                    className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'en' ? 'bg-celestial-saturn text-black border-celestial-saturn shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}`}
+                  >
+                    English
+                  </button>
+                  <button 
+                    onClick={() => setLang('zh')}
+                    className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'zh' ? 'bg-celestial-saturn text-black border-celestial-saturn shadow-lg' : 'bg-white/5 border-white/5 text-white/40'}`}
+                  >
+                    中文
+                  </button>
+                </div>
+              </div>
+            </div>
             
             {onExit && (
               <div className="px-2 pt-8">

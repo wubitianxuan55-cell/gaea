@@ -164,7 +164,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
           </div>
 
           <NavItem active={activeTab === 'docs'} onClick={() => setActiveTab('docs')} icon={<BookOpen size={18} />} label={t.docs} />
-          <NavItem active={activeTab === 'solutions'} onClick={() => setActiveTab('solutions')} icon={<Building2 size={18} />} label="Core Vision" />
+          <NavItem active={activeTab === 'solutions'} onClick={() => setActiveTab('solutions')} icon={<Building2 size={18} />} label={t.coreVision || "Core Vision"} />
           <NavItem active={activeTab === 'join'} onClick={() => setActiveTab('join')} icon={<Users size={18} />} label={t.join} />
         </div>
 
@@ -229,7 +229,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
             
             <option value="docs" className="bg-celestial-deep">{t.docs}</option>
             <option value="join" className="bg-celestial-deep">{t.join}</option>
-            <option value="settings" className="bg-celestial-deep">Settings</option>
+            <option value="settings" className="bg-celestial-deep">{t.settings}</option>
           </select>
         </div>
 
@@ -247,7 +247,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
             <button 
               onClick={() => setActiveTab('settings')}
               className={`p-2 rounded-full transition-all ${activeTab === 'settings' ? 'text-celestial-saturn bg-celestial-saturn/10' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}
-              title="Settings"
+              title={t.settings}
             >
               <SettingsIcon size={20} />
             </button>
