@@ -179,7 +179,7 @@ export function WebPlatform({
               t={t} 
               onNavigateToSolutions={() => setActiveTab('solutions')} 
               onSelectDesktop={() => setIntroView('desktop')}
-              onSelectMobile={() => setIntroView('mobile')}
+              onSelectMobile={() => setUiMode('mobile')}
             />
           </div>
         ) : (

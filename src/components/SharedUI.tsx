@@ -55,10 +55,10 @@ export function GlassCard({ children, className, hoverEffect = true, ...props }:
 export function PulseCounter({ label, value, colorClass = "text-celestial-saturn" }: { label: string; value: string; colorClass?: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className={cn("text-3xl font-black tracking-tighter tabular-nums", colorClass)}>
+      <div className={cn("text-xl md:text-3xl font-black tracking-tighter tabular-nums", colorClass)}>
         {value}
       </div>
-      <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 font-bold">
+      <div className="text-[7px] md:text-[9px] uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/20 font-bold text-center">
         {label}
       </div>
       <motion.div 

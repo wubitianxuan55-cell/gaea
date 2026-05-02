@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { 
   Smartphone, 
   Orbit, 
@@ -13,31 +13,67 @@ import {
   Battery,
   Wifi,
   Signal,
-  LayoutGrid
+  LayoutGrid,
+  ChevronDown,
+  Volume2,
+  VolumeX,
+  Moon,
+  Sun,
+  Bluetooth,
+  Maximize2,
+  LogOut,
+  Cpu,
+  Radio,
+  Mic,
+  Shield
 } from 'lucide-react';
+import { sounds } from '../../services/soundService';
 
 interface MobilePlatformProps {
   t: any;
   user: any;
   onLogin: () => void;
+  onExit?: () => void;
   renderTabContent: (tab: string) => React.ReactNode;
 }
 
-export function MobilePlatform({ t, user, onLogin, renderTabContent }: MobilePlatformProps) {
-  const [activeScreen, setActiveScreen] = useState<'home' | 'neural' | 'chat' | 'network' | 'profile'>('home');
+export function MobilePlatform({ t, user, onLogin, onExit, renderTabContent }: MobilePlatformProps) {
+  const [activeScreen, setActiveScreen] = useState<'home' | 'core' | 'factory' | 'agents' | 'profile'>('home');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isControlCenterOpen, setIsControlCenterOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const triggerHaptic = (pattern: number | number[] = 10) => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
+
+  const handleNavClick = (screen: any) => {
+    if (activeScreen === screen) return;
+    triggerHaptic(5);
+    if (!isMuted) sounds.playClick();
+    setActiveScreen(screen);
+  };
+
+  const toggleControlCenter = () => {
+    triggerHaptic(15);
+    if (!isMuted) sounds.playClick();
+    setIsControlCenterOpen(!isControlCenterOpen);
+  };
+
   const navItems = [
-    { id: 'home', icon: LayoutGrid, label: 'Core' },
-    { id: 'neural', icon: Orbit, label: 'Neural' },
-    { id: 'chat', icon: MessageSquare, label: 'Lumi' },
-    { id: 'network', icon: Globe, label: 'Mesh' },
-    { id: 'profile', icon: User, label: 'Node' },
+    { id: 'home', icon: LayoutGrid, label: 'Home' },
+    { id: 'factory', icon: Cpu, label: 'Factory' },
+    { id: 'core', icon: Orbit, label: 'Core' },
+    { id: 'agents', icon: MessageSquare, label: 'Agents' },
+    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   const renderScreen = () => {
@@ -45,136 +81,190 @@ export function MobilePlatform({ t, user, onLogin, renderTabContent }: MobilePla
       case 'home':
         return (
           <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            key="home"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
             className="space-y-6 pt-4"
           >
-            {/* Quick Status Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="glass-dark p-5 rounded-[2rem] border border-white/5 space-y-2">
+            <div className="flex justify-between items-end">
+              <div className="space-y-1">
+                <h2 className="text-3xl font-black italic tracking-tighter uppercase">Device <span className="text-celestial-saturn text-glow-sm">Status</span></h2>
+                <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest">Active Node Monitoring</p>
+              </div>
+            </div>
+
+            {/* Device Monitoring Grid */}
+            <div className="grid gap-4">
+              <div className="glass-dark p-6 rounded-[2.5rem] border border-white/5 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Integrity</span>
-                  <ShieldCheck size={14} className="text-celestial-saturn" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-celestial-saturn">
+                      <Smartphone size={20} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase">Local Host</div>
+                      <div className="text-[8px] text-white/40 uppercase font-mono">NODE_IP: 192.168.1.44</div>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1 bg-celestial-saturn/10 border border-celestial-saturn/20 rounded-full text-[8px] font-black text-celestial-saturn uppercase">Linked</div>
                 </div>
-                <div className="text-2xl font-black text-white tracking-tighter">99.2%</div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full w-[99.2%] bg-celestial-saturn shadow-[0_0_8px_rgba(255,204,0,0.5)]" />
+                <div className="space-y-1.5">
+                   <div className="flex justify-between text-[8px] font-bold text-white/20 uppercase tracking-widest">
+                     <span>Sharding Sync</span>
+                     <span>98.2%</span>
+                   </div>
+                   <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: '98.2%' }} className="h-full bg-celestial-saturn" />
+                   </div>
                 </div>
               </div>
-              <div className="glass-dark p-5 rounded-[2rem] border border-white/5 space-y-2">
+
+              <div className="glass-dark p-6 rounded-[2.5rem] border border-white/5 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Mesh Sync</span>
-                  <Activity size={14} className="text-purple-500" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-purple-400">
+                      <Radio size={20} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase">Mesh Bridge</div>
+                      <div className="text-[8px] text-white/40 uppercase font-mono">LATENCY: 12ms</div>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[8px] font-black text-purple-500 uppercase">Active</div>
                 </div>
-                <div className="text-2xl font-black text-white tracking-tighter">4.8 GB/s</div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                  <motion.div 
-                    animate={{ x: ['-100%', '0%'] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="h-full w-full bg-purple-500/50" 
-                  />
+                <div className="space-y-1.5">
+                   <div className="flex justify-between text-[8px] font-bold text-white/20 uppercase tracking-widest">
+                     <span>Global Traffic</span>
+                     <span>4.2 PB/S</span>
+                   </div>
+                   <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: '42%' }} className="h-full bg-purple-500" />
+                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Neural Surface Visualization */}
-            <div className="glass-dark aspect-square rounded-[3.5rem] border border-white/10 relative overflow-hidden flex items-center justify-center p-8 shadow-2xl">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,200,80,0.08)_0%,transparent_75%)]" />
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] mix-blend-overlay" />
-              
-              <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                className="w-full h-full border-2 border-white/5 rounded-full relative"
-              >
-                {[...Array(6)].map((_, i) => (
-                  <motion.div 
-                    key={i} 
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }}
-                    transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
-                    className="absolute w-2.5 h-2.5 bg-celestial-saturn rounded-full blur-[2px] shadow-[0_0_10px_#ffcc00]" 
-                    style={{ 
-                      top: '50%', 
-                      left: '50%', 
-                      transform: `rotate(${i * 60}deg) translateY(-140px) translateX(-50%) translateY(-50%)` 
-                    }} 
-                  />
-                ))}
-              </motion.div>
-              
-              <div className="absolute z-10 text-center">
-                <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] mb-2 font-mono">Neural Interface</div>
-                <div className="text-5xl font-black text-white tracking-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">CORE</div>
-                <div className="mt-4 flex items-center justify-center gap-2">
-                   <div className="w-1.5 h-1.5 rounded-full bg-celestial-saturn animate-pulse" />
-                   <span className="text-[9px] font-bold text-celestial-saturn uppercase tracking-widest">Protocol Verified</span>
-                </div>
+            {/* Hardware Quick Permissions */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="glass-dark p-5 rounded-[2rem] border border-white/5 flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-xl bg-celestial-saturn/20 flex items-center justify-center text-celestial-saturn">
+                   <ShieldCheck size={14} />
+                 </div>
+                 <div className="text-[10px] font-black uppercase tracking-tight">Biometrics</div>
+              </div>
+              <div className="glass-dark p-5 rounded-[2rem] border border-white/5 flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-400">
+                   <Activity size={14} />
+                 </div>
+                 <div className="text-[10px] font-black uppercase tracking-tight">Telemetry</div>
               </div>
             </div>
+          </motion.div>
+        );
+      case 'core':
+        return (
+          <motion.div 
+            key="core"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="h-full flex flex-col items-center justify-center space-y-12 pb-24"
+          >
+            <div className="text-center space-y-2">
+               <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Central <span className="text-celestial-saturn text-glow">Persona</span></h2>
+               <p className="text-[10px] text-white/30 uppercase tracking-[0.4em] font-mono leading-none">Local Shard Integrity Verified</p>
+            </div>
 
-            {/* Quick Access Grid */}
-            <div className="grid grid-cols-2 gap-4">
-               <button className="glass-dark p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center gap-3 active:scale-95 transition-transform">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/60">
-                    <Zap size={24} />
+            <motion.div 
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                triggerHaptic(20);
+                if (!isMuted) sounds.playPulse();
+              }}
+              className="relative"
+            >
+               <div className="absolute inset-0 bg-celestial-saturn/20 blur-[60px] rounded-full animate-pulse" />
+               <div className="w-64 h-64 glass-dark rounded-full border-4 border-white/5 flex items-center justify-center relative overflow-hidden group active:border-celestial-saturn/40 transition-colors">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,200,80,0.1)_0%,transparent_75%)]" />
+                  <div className="text-center z-10 pointer-events-none">
+                     <Orbit size={100} className="text-celestial-saturn opacity-20 animate-spin-slow mb-4" />
+                     <div className="text-xs font-black text-white/40 uppercase tracking-widest">Shard_K_001</div>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Boost P-2P</span>
-               </button>
-               <button className="glass-dark p-6 rounded-[2.5rem] border border-white/5 flex flex-col items-center gap-3 active:scale-95 transition-transform">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/60">
-                    <ShieldCheck size={24} />
+               </div>
+            </motion.div>
+
+            <div className="w-full space-y-4">
+               <button className="w-full p-6 glass-dark rounded-[2.5rem] border border-white/5 flex items-center justify-between group active:bg-white/5 transition-all">
+                  <div className="flex items-center gap-4">
+                     <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white/40">
+                       <Mic size={20} />
+                     </div>
+                     <span className="text-xs font-black uppercase tracking-widest">Initialize Sync</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Encrypt Link</span>
+                  <ChevronDown className="text-white/20 -rotate-90" size={16} />
                </button>
             </div>
           </motion.div>
         );
-      case 'neural':
+      case 'factory':
         return (
-           <motion.div 
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             className="pt-4 space-y-6"
-           >
-             <div className="flex justify-between items-end">
-                <h2 className="text-3xl font-black tracking-tighter">Neural Stream</h2>
-                <span className="text-[10px] font-black text-celestial-saturn uppercase tracking-widest mb-1">Live Telemetry</span>
-             </div>
-             <div className="space-y-4">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="glass-dark p-6 rounded-[2rem] border border-white/5 flex items-center gap-6">
-                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${i === 1 ? 'bg-celestial-saturn text-black' : 'bg-white/5 text-white/40'}`}>
-                        <Orbit size={20} className={i === 1 ? 'animate-spin-slow' : ''} />
-                     </div>
-                     <div className="flex-1">
-                        <div className="text-sm font-bold text-white mb-1">Node Stream #{1024 + i}</div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                           <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: `${30 + Math.random() * 60}%` }}
-                             className="h-full bg-white/20"
-                           />
-                        </div>
-                     </div>
-                  </div>
-                ))}
-             </div>
-           </motion.div>
+          <motion.div 
+            key="factory"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="h-full pt-4"
+          >
+            {renderTabContent('agent-gen')}
+          </motion.div>
         );
-      case 'chat':
-        return <div className="h-full pt-4">{renderTabContent('agent-chat')}</div>;
-      case 'network':
+      case 'agents':
         return (
-          <div className="h-full pt-4 hide-scrollbar">
-            <div className="mb-8">
-               <h2 className="text-3xl font-black tracking-tighter">Global Mesh</h2>
-               <p className="text-xs text-white/30 font-medium">Distributed node architecture visualization</p>
+          <motion.div 
+            key="agents"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="h-full pt-4 space-y-8"
+          >
+            <div className="flex justify-between items-end px-2">
+              <h2 className="text-3xl font-black italic tracking-tighter uppercase whitespace-pre-line leading-none">Neural <br/> <span className="text-purple-500">Entities</span></h2>
+              <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white/40">
+                 <Shield size={18} />
+              </div>
             </div>
-            {renderTabContent('ecosystem')}
-          </div>
+            {renderTabContent('marketplace')}
+          </motion.div>
         );
       case 'profile':
-        return <div className="h-full pt-4">{renderTabContent('profile')}</div>;
+        return (
+          <motion.div 
+            key="profile"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="h-full pt-4 space-y-6"
+          >
+            {renderTabContent('profile')}
+            
+            {onExit && (
+              <div className="px-2 pt-8">
+                <button 
+                  onClick={() => {
+                    triggerHaptic(5);
+                    if (!isMuted) sounds.playClick();
+                    onExit();
+                  }}
+                  className="w-full p-6 glass-dark rounded-[2.5rem] border border-white/5 flex items-center justify-center gap-3 text-white/40 hover:text-white transition-colors"
+                >
+                  <LogOut size={20} />
+                  <span className="text-xs font-black uppercase tracking-widest text-glow-sm">Exit Mobile Interface</span>
+                </button>
+              </div>
+            )}
+          </motion.div>
+        );
       default:
         return null;
     }
@@ -189,63 +279,55 @@ export function MobilePlatform({ t, user, onLogin, renderTabContent }: MobilePla
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] brightness-50" />
       </div>
 
-      {/* Top Status Header */}
-      <div className="pt-14 px-8 pb-6 flex justify-between items-end z-20 relative">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-celestial-saturn animate-pulse shadow-[0_0_10px_#ffcc00]" />
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">System Link OK</span>
-          </div>
-          <div className="text-3xl font-black tracking-tighter tabular-nums drop-shadow-md">
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-          </div>
-        </div>
-        <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-2xl border border-white/5 backdrop-blur-md">
-          <Signal size={16} className="text-white/60" />
-          <Wifi size={16} className="text-celestial-saturn" />
-          <div className="flex items-center gap-1">
-             <span className="text-[10px] font-black text-white/60">88%</span>
-             <Battery size={16} className="text-green-500" />
-          </div>
-        </div>
-      </div>
-
       {/* Main Viewport Container */}
-      <div className="flex-1 overflow-y-auto px-8 pb-40 z-10 custom-scrollbar relative">
+      <div className="flex-1 overflow-y-auto px-6 pb-36 pt-4 z-10 custom-scrollbar relative">
         <AnimatePresence mode="wait">
           {renderScreen()}
         </AnimatePresence>
       </div>
 
-      {/* Fixed Bottom OS Controls */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 z-50 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
+      {/* Floating Dynamic Dock */}
+      <div className="fixed bottom-8 left-0 right-0 z-50 px-6 pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
-          <div className="glass-dark border border-white/10 rounded-[3rem] p-2 flex items-center justify-between shadow-2xl backdrop-blur-3xl">
+          <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-1.5 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            {/* Sliding Active Indicator */}
+            <motion.div 
+              className="absolute bg-white rounded-[2rem] z-0 shadow-[0_10px_20px_rgba(255,255,255,0.2)]"
+              initial={false}
+              animate={{ 
+                x: `${navItems.findIndex(i => i.id === activeScreen) * 100}%`,
+              }}
+              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              style={{
+                width: `calc((100% - 12px) / ${navItems.length})`,
+                height: 'calc(100% - 12px)',
+                top: '6px',
+                left: '6px',
+              }}
+            />
+
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeScreen === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveScreen(item.id as any)}
-                  className={`relative flex flex-col items-center justify-center h-16 w-16 rounded-[2.2rem] transition-all duration-500 ${
-                    isActive 
-                      ? 'bg-white text-black scale-110 shadow-[0_10px_30px_rgba(255,255,255,0.3)]' 
-                      : 'text-white/30 hover:text-white/60'
-                  }`}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`relative z-10 flex-1 flex flex-col items-center justify-center h-14 transition-all duration-500`}
                 >
-                  <Icon size={isActive ? 24 : 22} strokeWidth={isActive ? 3 : 2} />
+                  <Icon 
+                    size={20} 
+                    strokeWidth={isActive ? 3 : 2} 
+                    className={`transition-colors duration-300 ${isActive ? 'text-black' : 'text-white/40 group-hover:text-white/60'}`}
+                  />
                   {isActive && (
-                    <motion.div 
-                      layoutId="active-nav-bg"
-                      className="absolute inset-0 bg-white rounded-[2.2rem] -z-10"
-                      transition={{ type: "spring", bounce: 0.25, duration: 0.6 }}
-                    />
-                  )}
-                  {!isActive && (
-                    <span className="text-[7px] font-black uppercase tracking-tighter mt-1">
+                    <motion.span 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[8px] font-black uppercase text-black mt-0.5"
+                    >
                       {item.label}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
               );

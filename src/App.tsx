@@ -152,6 +152,7 @@ export default function App() {
             t={t} 
             user={user} 
             onLogin={handleLogin} 
+            onExit={() => setUiMode('web')}
             renderTabContent={renderTabContent} 
           />
         ) : uiMode === 'desktop' ? (
@@ -189,7 +190,7 @@ export default function App() {
         onGoogleLogin={handleGoogleLogin}
       />
       
-      <FloatingAgent t={t} />
+      {uiMode !== 'mobile' && <FloatingAgent t={t} />}
     </div>
   );
 }

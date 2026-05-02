@@ -181,25 +181,6 @@ export function MobileIntro({ t, onBack, onPreview }: MobileIntroProps) {
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="grid md:grid-cols-3 gap-8">
-        <IntroFeature 
-          icon={<Globe />} 
-          title="Edge Mesh Network" 
-          desc="Low-latency communication even in areas with limited connectivity through peer-to-peer sharding." 
-        />
-        <IntroFeature 
-          icon={<Shield />} 
-          title="Biometric Security" 
-          desc="Access your neural vault using hardware-level biometric authentication (FaceID/Fingerprint)." 
-        />
-        <IntroFeature 
-          icon={<Zap />} 
-          title="Live Perception" 
-          desc="Stream camera and sensor data to your core agent for real-world contextual awareness." 
-        />
-      </div>
-
       {/* Downloads Section */}
       <section className="pt-8 space-y-8">
         <div className="text-center">

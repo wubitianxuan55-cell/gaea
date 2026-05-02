@@ -190,35 +190,35 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 pb-32 md:pb-0">
+      <div className="flex items-center justify-between px-4 md:px-0">
         <Button 
           onClick={onBack}
           variant="ghost"
-          className="text-white/40 hover:text-white flex items-center gap-2"
+          className="text-white/40 hover:text-white flex items-center gap-2 p-0 h-auto"
         >
           <ArrowLeft size={18} />
-          {t.back || 'Back'}
+          <span className="text-xs font-bold uppercase tracking-widest">{t.back || 'Back'}</span>
         </Button>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-celestial-saturn/20 flex items-center justify-center text-celestial-saturn border border-celestial-saturn/20">
-            <Ghost size={20} />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-celestial-saturn/20 flex items-center justify-center text-celestial-saturn border border-celestial-saturn/20">
+            <Ghost className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">{agentName}</h2>
-            <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{agentCategory} Agent</p>
+          <div className="text-right sm:text-left">
+            <h2 className="text-base md:text-xl font-bold tracking-tight truncate max-w-[120px] sm:max-w-none">{agentName}</h2>
+            <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-white/40 font-bold">{agentCategory}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 flex flex-col h-[600px] glass rounded-[3rem] border-white/10 overflow-hidden">
-          <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+      <div className="grid lg:grid-cols-3 gap-6 md:gap-8 lg:h-[700px]">
+        <div className="lg:col-span-2 flex flex-col h-[500px] md:h-full glass rounded-[2.5rem] md:rounded-[3rem] border-white/10 overflow-hidden shadow-2xl">
+          <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
             <div className="flex items-center gap-3">
               <div className={`w-2 h-2 rounded-full ${isSpeaking ? 'bg-celestial-nebula animate-ping' : 'bg-celestial-saturn animate-pulse'}`} />
-              <span className="text-xs font-bold uppercase tracking-widest text-white/60">Neural Link Active</span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-white/60">Neural Link</span>
               {isSpeaking && (
-                <div className="flex items-center gap-4 ml-4">
+                <div className="flex items-center gap-3 ml-2 md:ml-4 scale-75 md:scale-100 origin-left">
                   <div className="flex items-end gap-1 h-4">
                     {[...Array(5)].map((_, i) => (
                       <motion.div
@@ -239,14 +239,12 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
                       className="h-6 px-2 text-[8px] bg-white/10 text-white hover:bg-white/20 rounded-full border border-white/10 flex items-center gap-1"
                     >
                       {isPaused ? <Play size={10} /> : <Pause size={10} />}
-                      {isPaused ? 'RESUME' : 'PAUSE'}
                     </Button>
                     <Button 
                       onClick={stop}
                       className="h-6 px-2 text-[8px] bg-red-500/20 text-red-500 hover:bg-red-500/40 rounded-full border border-red-500/20 flex items-center gap-1"
                     >
                       <Square size={10} />
-                      STOP
                     </Button>
                   </div>
                 </div>
@@ -256,7 +254,7 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
 
           <div 
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide"
+            className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 scrollbar-hide"
           >
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-20">

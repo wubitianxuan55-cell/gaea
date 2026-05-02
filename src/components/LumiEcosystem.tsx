@@ -56,17 +56,17 @@ export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent
 
   return (
     <div className="max-w-6xl mx-auto space-y-24">
-      <div className="text-center space-y-6 pt-12">
-        <h1 className="text-6xl font-bold tracking-tighter glow-text">{t.digitalUniverse}</h1>
-        <p className="text-xl text-white/60 max-w-2xl mx-auto italic">
+      <div className="text-center space-y-6 pt-12 px-4">
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter glow-text">{t.digitalUniverse}</h1>
+        <p className="text-sm md:text-xl text-white/60 max-w-2xl mx-auto italic">
           "{t.digitalUniverseDesc}"
         </p>
       </div>
       {/* Global Pulse Section */}
-      <section className="pt-12">
-        <GlassCard className="p-12 rounded-[4rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl relative overflow-hidden">
+      <section className="pt-4 md:pt-12 px-4 md:px-0">
+        <GlassCard className="p-8 md:p-12 rounded-[3rem] md:rounded-[4rem] border-white/5 bg-white/[0.02] backdrop-blur-3xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-celestial-saturn/5 via-transparent to-celestial-nebula/5" />
-          <div className="relative z-10 grid md:grid-cols-4 gap-12">
+          <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             <PulseCounter label={t.activeNodes} value="1,284" />
             <PulseCounter label={t.syncRate} value="98.2%" colorClass="text-celestial-glow" />
             <PulseCounter label={t.meshThroughput} value="4.2 PB/s" colorClass="text-celestial-nebula" />
@@ -76,13 +76,13 @@ export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent
       </section>
 
       {/* Legacy Protocol Section */}
-      <section className="space-y-12">
+      <section className="space-y-12 px-4 md:px-0">
         <div className="text-center space-y-4">
-          <h2 className="text-5xl font-bold tracking-tighter glow-text flex items-center justify-center gap-4">
-            <Ghost className="text-celestial-nebula" size={48} />
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tighter glow-text flex items-center justify-center gap-4">
+            <Ghost className="text-celestial-nebula w-8 h-8 md:w-12 md:h-12" />
             {t.legacyProtocolTitle}
           </h2>
-          <p className="text-white/60 max-w-2xl mx-auto">{t.legacyProtocolDesc}</p>
+          <p className="text-sm md:text-white/60 max-w-2xl mx-auto">{t.legacyProtocolDesc}</p>
         </div>
 
         <GlassCard className="p-10 rounded-[3rem] border-white/10 relative overflow-hidden">
