@@ -2,104 +2,40 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Sparkles, Volume2, Box, User as UserIcon } from 'lucide-react';
 import { Button } from './ui/button';
-import { sounds } from '../services/soundService';
 
-export function LocalAgentSphere({ 
-  t, 
-  onMessage, 
+export function LocalAgentSphere({
+  t,
+  onMessage,
   sentiment = 'default',
   callState = 'idle',
   audioLevel = 0,
   highPerformance = false,
-  isWallpaperMode = false
-}: { 
-  t: any; 
-  onMessage?: (text: string) => void; 
+  isWallpaperMode = false,
+  onStartCall,
+  onEndCall
+}: {
+  t: any;
+  onMessage?: (text: string) => void;
   sentiment?: 'default' | 'excited' | 'focused' | 'zen';
   callState?: 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
   audioLevel?: number;
   highPerformance?: boolean;
   isWallpaperMode?: boolean;
+  onStartCall?: () => void;
+  onEndCall?: () => void;
 }) {
   const [interactionPulse, setInteractionPulse] = useState(0);
   const [spatialMode, setSpatialMode] = useState<'geometric' | 'humanoid'>('geometric');
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: 0, y: 0, isDown: false });
   const rotationRef = useRef({ x: 0, y: 0 });
   const particleCount = highPerformance ? 2200 : 800;
 
-  const toggleListen = async () => {
-    if (isListening) {
-      setIsListening(false);
-      return;
-    }
-
-    // Explicitly request microphone permission first to ensure the browser prompt appears
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      console.error('Microphone access denied:', err);
-      alert("无法访问麦克风。请确保已授予权限并在 HTTPS 环境下运行。");
-      return;
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("您的浏览器不支持语音识别。建议使用 Chrome 或 Edge。");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'zh-CN';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      sounds.playNeural();
-    };
-
-    recognition.onresult = (event: any) => {
-      const speechToText = event.results[0][0].transcript;
-      setIsListening(false);
-      setIsProcessing(true);
-      
-      // Simulate processing delay
-      setTimeout(() => {
-        setIsProcessing(false);
-        if (onMessage) onMessage(speechToText);
-      }, 1000);
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'not-allowed') {
-        alert("语音识别被拒绝。请在浏览器地址栏检查麦克风权限设置。");
-      } else if (event.error === 'no-speech') {
-        // Silently handle no-speech to avoid annoying alerts
-        console.warn("Speech recognition timed out: No speech detected.");
-      } else if (event.error === 'audio-capture') {
-        console.error("No microphone was found or microphone is busy.");
-      } else {
-        console.error('Speech recognition error:', event.error);
-        // Only alert for non-trivial errors
-        if (event.error !== 'aborted') {
-          alert(`语音识别错误: ${event.error}`);
-        }
-      }
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error('Recognition start error:', e);
-      setIsListening(false);
+  const toggleListen = () => {
+    if (callState === 'idle') {
+      onStartCall?.();
+    } else {
+      onEndCall?.();
     }
   };
 
@@ -345,9 +281,8 @@ export function LocalAgentSphere({
         />
       </div>
 
-      {/* Controls - Only show if not in an external call session */}
-      {callState === 'idle' && (
-        <div className="mt-12 flex flex-col items-center gap-6 z-10">
+      {/* Controls */}
+      <div className="mt-12 flex flex-col items-center gap-6 z-10">
           <div className="flex items-center gap-4 p-1 bg-white/5 rounded-2xl border border-white/10">
             <button
               onClick={() => setSpatialMode('geometric')}
@@ -373,26 +308,33 @@ export function LocalAgentSphere({
             <Button
               onClick={toggleListen}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
-                isListening 
-                  ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-110' 
+                callState !== 'idle'
+                  ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-110'
                   : 'bg-white/5 text-white/60 hover:bg-white/10'
               }`}
             >
-              {isListening ? <Mic size={24} className="animate-pulse" /> : <MicOff size={24} />}
+              {callState === 'listening' ? <Mic size={24} className="animate-pulse" /> :
+               callState === 'thinking' ? <Sparkles size={24} className="animate-spin" /> :
+               callState === 'speaking' ? <Volume2 size={24} className="animate-pulse" /> :
+               <MicOff size={24} />}
             </Button>
-            
+
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-widest text-white/40">
-                {isListening ? t.listening : isProcessing ? t.processing : t.voiceInteract}
+                {callState === 'listening' ? (t.listening || 'Listening') :
+                 callState === 'thinking' ? (t.thinking || 'Thinking') :
+                 callState === 'speaking' ? (t.speaking || 'Speaking') :
+                 callState === 'connecting' ? (t.connecting || 'Connecting') :
+                 t.voiceInteract || 'Voice Interact'}
               </span>
               <span className="text-sm font-medium text-white/80">
-                {isListening ? "I'm listening to your request..." : "Click to start voice command"}
+                {callState !== 'idle' ? "AI voice pipeline active..." : "Click to start voice command"}
               </span>
             </div>
           </div>
 
           <AnimatePresence>
-            {(isListening || isProcessing) && (
+            {(callState !== 'idle') && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -404,7 +346,7 @@ export function LocalAgentSphere({
                     key={i}
                     className="w-1 bg-red-500 rounded-full"
                     animate={{
-                      height: isListening ? [10, 30, 10] : [10, 15, 10],
+                      height: callState === 'listening' ? [10, 30, 10] : [10, 15, 10],
                     }}
                     transition={{
                       duration: 0.5,
@@ -416,8 +358,7 @@ export function LocalAgentSphere({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

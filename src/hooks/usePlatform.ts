@@ -15,7 +15,7 @@ export function usePlatform() {
       if ((window as any).lumiElectron || navigator.userAgent.toLowerCase().includes('electron')) {
         return 'electron';
       }
-      if ((window as any).__TAURI_IPC__ || (window as any).__TAURI__) {
+      if ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI_IPC__ || (window as any).__TAURI__) {
         return 'tauri';
       }
     }
@@ -32,7 +32,7 @@ export function usePlatform() {
     }
 
     // Check for Tauri
-    if (window && ((window as any).__TAURI_IPC__ || (window as any).__TAURI__)) {
+    if (window && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI_IPC__ || (window as any).__TAURI__)) {
       setPlatform('tauri');
       return;
     }

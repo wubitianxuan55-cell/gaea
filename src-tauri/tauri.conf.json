@@ -27,6 +27,21 @@
       "csp": null
     }
   },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.ico"],
+    "resources": [
+      "../dist-server/**/*",
+      "../gpt-sovits-src/**/*",
+      "../data/voice_training/**/*"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
   "plugins": {
     "shell": {
       "open": true

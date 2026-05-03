@@ -1,4 +1,5 @@
-const BASE = '/api/voice';
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const BASE = isTauri ? 'http://127.0.0.1:3000/api/voice' : '/api/voice';
 
 export async function uploadSamples(files: File[]): Promise<{ urls: string[]; filenames: string[]; count: number }> {
   const form = new FormData();

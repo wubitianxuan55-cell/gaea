@@ -1209,13 +1209,15 @@ export function DesktopUI({
           className="relative pointer-events-auto scale-75 opacity-90 transition-all"
         >
           <div className="relative flex flex-col items-center">
-            <LocalAgentSphere 
-              t={t} 
+            <LocalAgentSphere
+              t={t}
               sentiment={sphereSentiment}
               callState={callState}
               audioLevel={audioLevel}
               highPerformance={isTauri}
               isWallpaperMode={isWallpaperMode}
+              onStartCall={() => startCall(selectedVoiceId)}
+              onEndCall={endCall}
               onMessage={(text) => {
                 setTerminalOutput(prev => [...prev, `[Voice Input]: ${text}`]);
                 systemService.runCommand(text).then(res => {

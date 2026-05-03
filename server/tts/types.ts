@@ -1,4 +1,4 @@
-export type TTSProvider = 'elevenlabs' | 'fishaudio';
+export type TTSProvider = 'elevenlabs' | 'fishaudio' | 'gptsovits';
 
 export interface TTSConfig {
   provider: TTSProvider;

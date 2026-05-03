@@ -301,7 +301,7 @@ export function MobilePlatform({ t, user, lang, setLang, onLogin, onExit, render
       <div className="absolute inset-0 z-0 bg-[#020205]">
         <div className="absolute top-[-15%] left-[-10%] w-[80%] h-[50%] bg-celestial-saturn/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[40%] bg-purple-900/10 blur-[100px] rounded-full" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] brightness-50" />
+        <div className="absolute inset-0 opacity-[0.15] brightness-50 bg-neutral-900/50" />
       </div>
 
       {/* Main Viewport Container */}

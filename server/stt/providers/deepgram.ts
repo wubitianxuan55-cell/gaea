@@ -41,13 +41,14 @@ export function createStream(
   const resultCallbacks: Array<(result: STTResult) => void> = [];
   const errorCallbacks: Array<(err: Error) => void> = [];
 
-  ws.on('open', () => {
+  ws.onopen = () => {
     logger.info('[Deepgram] Streaming session started');
-  });
+  };
 
-  ws.on('message', (raw: Buffer | string) => {
+  ws.onmessage = (event: MessageEvent) => {
+    const raw = event.data as string;
     try {
-      const msg = JSON.parse(raw.toString());
+      const msg = JSON.parse(raw);
       const { type, channel } = msg;
 
       if (type === 'Results') {
@@ -61,15 +62,15 @@ export function createStream(
     } catch {
       // Binary data, ignore
     }
-  });
+  };
 
-  ws.on('error', (err: Error) => {
-    errorCallbacks.forEach(cb => cb(err));
-  });
+  ws.onerror = () => {
+    errorCallbacks.forEach(cb => cb(new Error('Deepgram WebSocket error')));
+  };
 
-  ws.on('close', () => {
+  ws.onclose = () => {
     logger.info('[Deepgram] Streaming session closed');
-  });
+  };
 
   return {
     sendAudio(chunk: Buffer) {

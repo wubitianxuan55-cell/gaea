@@ -261,7 +261,7 @@ export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent
                     {/* The Egg Body - Crystalline Shell */}
                     <div className="relative w-full h-full bg-gradient-to-b from-white/20 via-white/5 to-black/60 border border-white/20 rounded-[100%_100%_100%_100%_/_140%_140%_60%_60%] flex items-center justify-center overflow-hidden shadow-[inset_0_0_60px_rgba(255,255,255,0.1)] backdrop-blur-sm">
                       {/* Crystalline Texture Overlay */}
-                      <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                      <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')" }} />
                       
                       {/* Energy Cracks - SVG Paths */}
                       <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40" viewBox="0 0 100 150">

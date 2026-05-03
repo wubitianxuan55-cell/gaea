@@ -110,7 +110,7 @@
     content: "";
     position: fixed;
     inset: 0;
-    background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
+    background-image: none;
     opacity: 0.05;
     pointer-events: none;
     z-index: -1;

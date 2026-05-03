@@ -31,10 +31,15 @@ import { MobilePlatform } from './platforms/mobile/MobilePlatform';
 
 export default function App() {
   const { user, loading: appLoading, logout: appLogout, login: appLogin, refreshUser } = useApp();
-  const { isElectron } = usePlatform();
+  const { isDesktop } = usePlatform();
   const [uiMode, setUiMode] = useState<'web' | 'desktop' | 'mobile'>(() => {
-    return isElectron ? 'desktop' : 'web';
+    return isDesktop ? 'desktop' : 'web';
   });
+
+  // When platform detection resolves after mount, sync uiMode
+  useEffect(() => {
+    if (isDesktop) setUiMode('desktop');
+  }, [isDesktop]);
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -140,10 +145,10 @@ export default function App() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden transition-all duration-1000 ${
-      isElectron && uiMode === 'desktop' 
-        ? 'bg-transparent' 
-        : isElectron 
-          ? 'bg-celestial-deep/90 backdrop-blur-3xl' 
+      isDesktop && uiMode === 'desktop'
+        ? 'bg-transparent'
+        : isDesktop
+          ? 'bg-celestial-deep/90 backdrop-blur-3xl'
           : 'bg-celestial-deep'
     }`}>
       <AnimatePresence mode="wait">
@@ -180,7 +185,7 @@ export default function App() {
             onLogin={handleLogin}
             onLogout={handleLogout}
             renderTabContent={renderTabContent}
-            isElectron={isElectron}
+            isElectron={isDesktop}
             setUiMode={setUiMode}
           />
         )}
@@ -194,7 +199,7 @@ export default function App() {
         onGoogleLogin={handleGoogleLogin}
       />
       
-      {uiMode === 'web' && !isElectron && <FloatingAgent t={t} />}
+      {uiMode === 'web' && !isDesktop && <FloatingAgent t={t} />}
     </div>
   );
 }

@@ -5,7 +5,9 @@ export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const s = io(window.location.origin);
+    const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+    const origin = isTauri ? 'http://127.0.0.1:3000' : window.location.origin;
+    const s = io(origin);
     
     s.on('connect', () => {
       console.log('[Socket] Connected');
