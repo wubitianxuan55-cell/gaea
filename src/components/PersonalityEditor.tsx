@@ -60,7 +60,7 @@ const DEFAULT_CONFIG: PersonalityConfig = {
     includeTypes: ['preference', 'fact'],
     autoExtract: true,
   },
-  defaultModel: 'qwen-turbo',
+  defaultModel: 'qwen-plus',
   fallbackModel: 'gemini-1.5-flash',
 };
 
@@ -68,7 +68,7 @@ const TONES = ['neutral', 'warm', 'professional', 'technical', 'playful', 'inspi
 const VERBOSITIES = ['concise', 'balanced', 'detailed'] as const;
 const MEMORY_TYPES = ['preference', 'fact', 'habit', 'knowledge'] as const;
 
-export function PersonalityEditor() {
+export function PersonalityEditor({ t }: { t?: any }) {
   const [personalities, setPersonalities] = useState<PersonalityConfig[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<PersonalityConfig>(DEFAULT_CONFIG);
@@ -394,7 +394,7 @@ export function PersonalityEditor() {
             {/* Models */}
             <Section title="Models" section="models" expanded={expandedSections} onToggle={toggleSection}>
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Default Model" value={editing.defaultModel} onChange={v => update(['defaultModel'], v)} placeholder="qwen-turbo" />
+                <Field label="Default Model" value={editing.defaultModel} onChange={v => update(['defaultModel'], v)} placeholder="qwen-plus" />
                 <Field label="Fallback Model" value={editing.fallbackModel} onChange={v => update(['fallbackModel'], v)} placeholder="gemini-1.5-flash" />
               </div>
             </Section>

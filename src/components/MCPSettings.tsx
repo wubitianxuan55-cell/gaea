@@ -11,7 +11,7 @@ interface MCPServer {
   connected: boolean;
 }
 
-export function MCPSettings() {
+export function MCPSettings({ t }: { t?: any }) {
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +45,10 @@ export function MCPSettings() {
         body: JSON.stringify({ servers: payload }),
       });
       const data = await res.json();
-      toast.success(`${data.count} tools registered`);
+      toast.success(`${data.count} ${t?.mcpToolsRegistered || 'tools registered'}`);
       fetchServers();
     } catch (err: any) {
-      toast.error(`MCP update failed: ${err.message}`);
+      toast.error(`${t?.mcpUpdateFailed || 'MCP update failed'}: ${err.message}`);
       fetchServers();
     }
   };
@@ -57,10 +57,10 @@ export function MCPSettings() {
     try {
       const res = await fetch(`/api/mcp/restart/${name}`, { method: 'POST' });
       const data = await res.json();
-      toast.success(`${data.tools?.length || 0} tools reconnected`);
+      toast.success(`${data.tools?.length || 0} ${t?.mcpToolsReconnected || 'tools reconnected'}`);
       fetchServers();
     } catch (err: any) {
-      toast.error(`Restart failed: ${err.message}`);
+      toast.error(`${t?.mcpRestartFailed || 'Restart failed'}: ${err.message}`);
     }
   };
 
@@ -69,9 +69,9 @@ export function MCPSettings() {
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex items-center gap-3">
           <Cpu className="text-celestial-saturn" />
-          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">MCP Servers</h3>
+          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.mcpServers || 'MCP Servers'}</h3>
         </div>
-        <p className="text-white/40 text-sm">Scanning for MCP protocol servers...</p>
+        <p className="text-white/40 text-sm">{t?.mcpScanning || 'Scanning for MCP protocol servers...'}</p>
       </div>
     );
   }
@@ -80,19 +80,18 @@ export function MCPSettings() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-3">
         <Cpu className="text-celestial-saturn" />
-        <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">MCP Servers</h3>
+        <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.mcpServers || 'MCP Servers'}</h3>
       </div>
 
       <p className="text-sm text-white/40 max-w-xl">
-        Model Context Protocol servers extend agent capabilities with community-maintained tools.
-        Enable a server to give your agent access to filesystem, database, git, and more.
+        {t?.mcpDescription || "Model Context Protocol servers extend agent capabilities with community-maintained tools. Enable a server to give your agent access to filesystem, database, git, and more."}
       </p>
 
       {servers.length === 0 ? (
         <div className="p-10 bg-white/5 rounded-[2rem] border border-white/5 text-center">
           <Wrench size={32} className="text-white/20 mx-auto mb-4" />
-          <p className="text-white/40 font-bold uppercase tracking-widest text-sm">No MCP servers configured</p>
-          <p className="text-white/20 text-xs mt-2">Add servers to server/mcp/config.json</p>
+          <p className="text-white/40 font-bold uppercase tracking-widest text-sm">{t?.mcpNoServers || 'No MCP servers configured'}</p>
+          <p className="text-white/20 text-xs mt-2">{t?.mcpAddHint || 'Add servers to server/mcp/config.json'}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -121,7 +120,7 @@ export function MCPSettings() {
                       className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest px-3 h-9 rounded-xl"
                     >
                       <RefreshCw size={14} className="mr-1" />
-                      Restart
+                      {t?.mcpRestart || 'Restart'}
                     </Button>
                   )}
                   <button
@@ -140,7 +139,7 @@ export function MCPSettings() {
               {server.connected && (
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-green-500">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Connected
+                  {t?.mcpConnected || 'Connected'}
                 </div>
               )}
             </div>
@@ -151,13 +150,10 @@ export function MCPSettings() {
       <div className="p-6 glass-dark rounded-[2rem] border border-white/5 space-y-4">
         <div className="flex items-center gap-3">
           <Wrench className="text-celestial-saturn" size={18} />
-          <h4 className="text-sm font-bold uppercase tracking-tight text-white">Available MCP Servers</h4>
+          <h4 className="text-sm font-bold uppercase tracking-tight text-white">{t?.mcpAvailableServers || 'Available MCP Servers'}</h4>
         </div>
         <p className="text-[11px] text-white/30 leading-relaxed">
-          Install MCP servers via npm: <code className="text-white/50">@modelcontextprotocol/server-filesystem</code>,
-          <code className="text-white/50">@modelcontextprotocol/server-sqlite</code>,
-          <code className="text-white/50">@modelcontextprotocol/server-git</code>, and more.
-          Edit <code className="text-white/50">server/mcp/config.json</code> to add new servers.
+          {t?.mcpInstallHint || 'Install MCP servers via npm or edit server/mcp/config.json to add new servers.'}
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { toast } from 'sonner';
 import * as authService from '../services/authService';
 
@@ -30,12 +30,41 @@ interface AIConfig {
   apiKey: string;
 }
 
+interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
+interface ToolOverride {
+  enabled: boolean;
+  securityLevel?: string;
+}
+
 interface AppContextType {
   user: UserProfile | null;
   loading: boolean;
   agents: Agent[];
   aiConfig: AIConfig;
   personalityId: string;
+  // Voice
+  selectedVoiceId: string | undefined;
+  setSelectedVoiceId: (id: string) => void;
+  favoriteVoices: string[];
+  toggleFavoriteVoice: (id: string) => void;
+  // Notifications
+  notifications: NotificationItem[];
+  unreadCount: number;
+  addNotification: (item: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => void;
+  markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
+  // Tools
+  toolOverrides: Record<string, ToolOverride>;
+  setToolOverride: (name: string, override: ToolOverride) => void;
+  // Core
   login: () => Promise<void>;
   logout: () => Promise<void>;
   createAgent: (name: string, category: string, data: any) => Promise<void>;
@@ -54,10 +83,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
     const saved = localStorage.getItem('lumi_ai_config');
-    return saved ? JSON.parse(saved) : { provider: 'gemini', model: 'gemini-1.5-flash', apiKey: '' };
+    return saved ? JSON.parse(saved) : { provider: 'deepseek', model: 'deepseek-chat', apiKey: '' };
   });
   const [personalityId, setPersonalityIdState] = useState<string>(() => {
     return localStorage.getItem('lumi_personality_id') || 'lumi';
+  });
+
+  // Voice state
+  const [selectedVoiceId, setSelectedVoiceIdState] = useState<string | undefined>(() => {
+    return localStorage.getItem('lumi_selected_voice_id') || undefined;
+  });
+  const [favoriteVoices, setFavoriteVoices] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lumi_favorite_voices') || '[]'); } catch { return []; }
+  });
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Tool overrides state
+  const [toolOverrides, setToolOverrides] = useState<Record<string, ToolOverride>>(() => {
+    try { return JSON.parse(localStorage.getItem('lumi_tool_overrides') || '{}'); } catch { return {}; }
   });
 
   const updateAIConfig = (newConfig: Partial<AIConfig>) => {
@@ -70,12 +116,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    setLoading(true);
     try {
       const customAuth = await authService.getMe();
       if (customAuth) {
         setUser({ ...customAuth.user, provider: 'custom' } as any);
-        // Fetch agents
         const agentsRes = await fetch('/api/agents');
         if (agentsRes.ok) {
           const agentsData = await agentsRes.json();
@@ -87,19 +131,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshUser();
+    const init = async () => {
+      setLoading(true);
+      try {
+        await refreshUser();
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
   const login = async () => {
-    // This could be a trigger for a login modal if needed, 
-    // but for now we'll just keep it as a placeholder for the custom auth flow
-    toast.info('Please use the login form to authenticate.');
+    window.dispatchEvent(new CustomEvent('lumi:open-login'));
   };
 
   const logout = async () => {
@@ -163,6 +211,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('lumi_personality_id', id);
   };
 
+  const setSelectedVoiceId = (id: string) => {
+    setSelectedVoiceIdState(id);
+    localStorage.setItem('lumi_selected_voice_id', id);
+  };
+
+  const toggleFavoriteVoice = (id: string) => {
+    setFavoriteVoices(prev => {
+      const next = prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id];
+      localStorage.setItem('lumi_favorite_voices', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const addNotification = (item: Omit<NotificationItem, 'id' | 'timestamp' | 'read'>) => {
+    const notification: NotificationItem = {
+      ...item,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: Date.now(),
+      read: false,
+    };
+    setNotifications(prev => [notification, ...prev].slice(0, 50));
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const setToolOverride = (name: string, override: ToolOverride) => {
+    setToolOverrides(prev => {
+      const next = { ...prev, [name]: override };
+      localStorage.setItem('lumi_tool_overrides', JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
     <AppContext.Provider value={{
       user,
@@ -170,6 +257,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agents,
       aiConfig,
       personalityId,
+      selectedVoiceId,
+      setSelectedVoiceId,
+      favoriteVoices,
+      toggleFavoriteVoice,
+      notifications,
+      unreadCount,
+      addNotification,
+      markAllNotificationsRead,
+      clearNotifications,
+      toolOverrides,
+      setToolOverride,
       login,
       logout,
       createAgent,

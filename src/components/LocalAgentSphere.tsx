@@ -1,28 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mic, MicOff, Sparkles, Volume2, Box, User as UserIcon } from 'lucide-react';
+import { Mic, MicOff, Sparkles, Volume2, Box, User as UserIcon, Pause, Wifi, WifiOff, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 
-export function LocalAgentSphere({ 
-  t, 
-  onMessage, 
+export function LocalAgentSphere({
+  t,
+  onMessage,
   sentiment = 'default',
   callState = 'idle',
   audioLevel = 0,
+  isMuted = false,
+  elapsedSeconds = 0,
+  connectionQuality = 'good',
   highPerformance = false,
   isWallpaperMode = false,
   onStartCall,
-  onEndCall
-}: { 
-  t: any; 
-  onMessage?: (text: string) => void; 
+  onEndCall,
+  onInterrupt,
+  onToggleMute
+}: {
+  t: any;
+  onMessage?: (text: string) => void;
   sentiment?: 'default' | 'excited' | 'focused' | 'zen';
   callState?: 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
   audioLevel?: number;
+  isMuted?: boolean;
+  elapsedSeconds?: number;
+  connectionQuality?: 'good' | 'fair' | 'poor';
   highPerformance?: boolean;
   isWallpaperMode?: boolean;
   onStartCall?: () => void;
   onEndCall?: () => void;
+  onInterrupt?: () => void;
+  onToggleMute?: () => void;
 }) {
   const [interactionPulse, setInteractionPulse] = useState(0);
   const [spatialMode, setSpatialMode] = useState<'geometric' | 'humanoid'>('geometric');
@@ -238,8 +248,8 @@ export function LocalAgentSphere({
       >
         {/* Glow Layers */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <motion.div 
-            className="absolute w-64 h-64 md:w-96 md:h-96 rounded-full bg-red-500 blur-[80px] opacity-10"
+          <motion.div
+            className="absolute w-64 h-64 md:w-96 md:h-96 rounded-full bg-red-500 blur-[80px] opacity-10 will-change-transform"
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 5, repeat: Infinity }}
           />
@@ -249,7 +259,7 @@ export function LocalAgentSphere({
           ref={canvasRef}
           width={600}
           height={600}
-          className="w-full h-full relative z-10"
+          className="w-full h-full relative z-10 pointer-events-none"
         />
         
         {/* Interaction Pulse Rings */}
@@ -257,7 +267,7 @@ export function LocalAgentSphere({
           {[...Array(2)].map((_, i) => (
             <motion.div
               key={`${interactionPulse}-${i}`}
-              className="absolute inset-0 rounded-full border border-red-500/20 pointer-events-none"
+              className="absolute inset-0 rounded-full border border-red-500/20 pointer-events-none will-change-transform"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1.5, opacity: 0 }}
               transition={{ duration: 1.5, delay: i * 0.3 }}
@@ -267,7 +277,7 @@ export function LocalAgentSphere({
 
         {/* Celestial Orbital Rings */}
         <motion.div
-          className="absolute inset-[-40px] rounded-full border border-white/5 border-dashed pointer-events-none"
+          className="absolute inset-[-40px] rounded-full border border-white/5 border-dashed pointer-events-none will-change-transform"
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
         />
@@ -296,25 +306,62 @@ export function LocalAgentSphere({
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Mute toggle (only during active call) */}
+          {callState !== 'idle' && onToggleMute && (
+            <Button
+              onClick={onToggleMute}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                isMuted ? 'bg-amber-500 text-black' : 'bg-white/10 text-white/60 hover:bg-white/20'
+              }`}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            </Button>
+          )}
+
+          {/* Main call button */}
           <Button
             onClick={callState === 'idle' ? onStartCall : onEndCall}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
-              callState !== 'idle' 
-                ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-110' 
+              callState !== 'idle'
+                ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-110'
                 : 'bg-white/5 text-white/60 hover:bg-white/10'
             }`}
           >
             {callState !== 'idle' ? <Mic size={24} className="animate-pulse" /> : <MicOff size={24} />}
           </Button>
-          
+
+          {/* Interrupt button (only when speaking/thinking) */}
+          {(callState === 'speaking' || callState === 'thinking') && onInterrupt && (
+            <Button
+              onClick={onInterrupt}
+              className="w-10 h-10 rounded-full bg-white/10 text-white/60 hover:bg-white/20 flex items-center justify-center transition-all duration-300"
+              title="Interrupt"
+            >
+              <Pause size={18} />
+            </Button>
+          )}
+
           <div className="flex flex-col">
             <span className="text-xs font-bold uppercase tracking-widest text-white/40">
-              {callState === 'listening' ? t.listening : callState === 'thinking' ? t.processing : callState === 'idle' ? t.voiceInteract : 'ACTIVE'}
+              {callState === 'listening' ? t.listening : callState === 'thinking' ? t.processing : callState === 'speaking' ? t.speaking : callState === 'idle' ? t.voiceInteract : callState.toUpperCase()}
             </span>
             <span className="text-sm font-medium text-white/80">
               {callState === 'idle' ? "Click to start voice session" : "Session active - Click to end"}
             </span>
+            {/* Call timer & connection quality */}
+            {callState !== 'idle' && (
+              <div className="flex items-center gap-2 mt-1">
+                <Clock size={10} className="text-white/40" />
+                <span className="text-[10px] text-white/40 tabular-nums">
+                  {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}
+                </span>
+                {connectionQuality === 'good' && <Wifi size={10} className="text-emerald-400" />}
+                {connectionQuality === 'fair' && <Wifi size={10} className="text-amber-400" />}
+                {connectionQuality === 'poor' && <WifiOff size={10} className="text-red-400" />}
+              </div>
+            )}
           </div>
         </div>
 
@@ -330,8 +377,9 @@ export function LocalAgentSphere({
                 <motion.div
                   key={i}
                   className="w-1 bg-red-500 rounded-full"
+                  style={{ height: 30 }}
                   animate={{
-                    height: callState === 'listening' ? [10, 30, 10] : [10, 15, 10],
+                    scaleY: callState === 'listening' ? [0.33, 1, 0.33] : [0.33, 0.5, 0.33],
                   }}
                   transition={{
                     duration: 0.5,

@@ -74,9 +74,14 @@ export default function App() {
   };
 
   const handleGoogleLogin = async () => {
-    await appLogin();
-    setIsLoginModalOpen(false);
+    setIsLoginModalOpen(true);
   };
+
+  useEffect(() => {
+    const handler = () => setIsLoginModalOpen(true);
+    window.addEventListener('lumi:open-login', handler);
+    return () => window.removeEventListener('lumi:open-login', handler);
+  }, []);
 
   if (appLoading) {
     return (

@@ -1,5 +1,3 @@
-const LOCAL_BACKEND_ORIGIN = 'http://127.0.0.1:3000';
-
 declare global {
   interface Window {
     __LUMI_API_BRIDGE_INSTALLED__?: boolean;
@@ -13,53 +11,12 @@ export function isTauriRuntime(): boolean {
 }
 
 export function getBackendOrigin(): string {
-  if (typeof window === 'undefined') return LOCAL_BACKEND_ORIGIN;
-  return isTauriRuntime() ? LOCAL_BACKEND_ORIGIN : window.location.origin;
+  if (typeof window === 'undefined') return 'http://127.0.0.1:3000';
+  return window.location.origin;
 }
 
 export function getSocketOrigin(): string {
   return getBackendOrigin();
-}
-
-function shouldProxy(pathname: string): boolean {
-  return pathname.startsWith('/api/') || pathname === '/api' || pathname.startsWith('/mcp/');
-}
-
-export function resolveBackendUrl(input: string | URL): string {
-  const raw = String(input);
-  if (!isTauriRuntime()) return raw;
-
-  if (raw.startsWith('/')) {
-    return shouldProxy(raw) ? `${LOCAL_BACKEND_ORIGIN}${raw}` : raw;
-  }
-
-  try {
-    const url = new URL(raw);
-    if (typeof window !== 'undefined' && url.origin === window.location.origin && shouldProxy(url.pathname)) {
-      url.protocol = 'http:';
-      url.host = '127.0.0.1:3000';
-      return url.toString();
-    }
-  } catch {
-    return raw;
-  }
-
-  return raw;
-}
-
-function resolveFetchInput(input: RequestInfo | URL): RequestInfo | URL {
-  if (!isTauriRuntime()) return input;
-
-  if (typeof input === 'string' || input instanceof URL) {
-    return resolveBackendUrl(input);
-  }
-
-  const proxiedUrl = resolveBackendUrl(input.url);
-  if (proxiedUrl !== input.url) {
-    return new Request(proxiedUrl, input);
-  }
-
-  return input;
 }
 
 export function installApiBridge(): void {
@@ -67,12 +24,23 @@ export function installApiBridge(): void {
 
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    const resolved = resolveFetchInput(input);
-    // When proxying to backend cross-origin, include credentials so
-    // cookies (JWT token) are sent. In web mode this is same-origin
-    // and credentials are included by default.
-    const patched: RequestInit = { ...init, credentials: 'include' };
-    return nativeFetch(resolved, patched);
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+    // Never intercept Tauri IPC calls
+    if (url.includes('ipc.localhost') || url.includes('tauri://')) {
+      return nativeFetch(input, init);
+    }
+
+    // In Tauri, API paths need credentials for cross-origin (localhost vs 127.0.0.1)
+    // But if same-origin, pass through untouched
+    if (url.startsWith('/')) {
+      const needsCredentials = isTauriRuntime() && (url.startsWith('/api/') || url === '/api' || url.startsWith('/mcp/'));
+      if (!needsCredentials) return nativeFetch(input, init);
+      const patched: RequestInit = { ...init, credentials: 'include' };
+      return nativeFetch(input, patched);
+    }
+
+    return nativeFetch(input, init);
   };
 
   window.__LUMI_API_BRIDGE_INSTALLED__ = true;

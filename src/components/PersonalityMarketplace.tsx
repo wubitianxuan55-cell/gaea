@@ -16,7 +16,7 @@ interface CommunityPersonality {
   tags: string[];
 }
 
-export function PersonalityMarketplace() {
+export function PersonalityMarketplace({ t }: { t?: any }) {
   const [personalities, setPersonalities] = useState<CommunityPersonality[]>([]);
   const [installed, setInstalled] = useState<Set<string>>(new Set());
   const [installing, setInstalling] = useState<Set<string>>(new Set());

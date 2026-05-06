@@ -39,6 +39,12 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
     { id: 'market', label: t.marketplace, desc: t.marketplaceNavDesc, icon: <ShoppingBag size={16} /> }
   ];
 
+  const dispatchAfterTabChange = (eventName: string, detail: string) => {
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    }, 120);
+  };
+
   const Dropdown = ({ items, isOpen, onSelect, active }: { items: any[], isOpen: boolean, onSelect: (id: string, label: string) => void, active: boolean }) => (
     <AnimatePresence>
       {isOpen && (
@@ -107,7 +113,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
               active={activeTab === 'generate'}
               onSelect={(id, label) => {
                 setActiveTab('generate');
-                window.dispatchEvent(new CustomEvent('scroll-to-gen', { detail: label }));
+                dispatchAfterTabChange('scroll-to-gen', label);
                 setIsGenOpen(false);
               }}
             />
@@ -132,7 +138,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
               active={activeTab === 'ecosystem'}
               onSelect={(id, label) => {
                 setActiveTab('ecosystem');
-                window.dispatchEvent(new CustomEvent('scroll-to-eco', { detail: label }));
+                dispatchAfterTabChange('scroll-to-eco', label);
                 setIsEcoOpen(false);
               }}
             />
@@ -157,7 +163,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
               active={activeTab === 'multimodal'}
               onSelect={(id, label) => {
                 setActiveTab('multimodal');
-                window.dispatchEvent(new CustomEvent('scroll-to-category', { detail: label }));
+                dispatchAfterTabChange('scroll-to-category', label);
                 setIsProductsOpen(false);
               }}
             />
@@ -177,21 +183,15 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
               if (val.startsWith('multimodal:')) {
                 const catLabel = val.split(':')[1];
                 setActiveTab('multimodal');
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('scroll-to-category', { detail: catLabel }));
-                }, 100);
+                dispatchAfterTabChange('scroll-to-category', catLabel);
               } else if (val.startsWith('generate:')) {
                 const catLabel = val.split(':')[1];
                 setActiveTab('generate');
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('scroll-to-gen', { detail: catLabel }));
-                }, 100);
+                dispatchAfterTabChange('scroll-to-gen', catLabel);
               } else if (val.startsWith('ecosystem:')) {
                 const catLabel = val.split(':')[1];
                 setActiveTab('ecosystem');
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('scroll-to-eco', { detail: catLabel }));
-                }, 100);
+                dispatchAfterTabChange('scroll-to-eco', catLabel);
               } else {
                 setActiveTab(val);
               }

@@ -26,7 +26,7 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   knowledge: { label: 'Knowledge', color: 'text-orange-400' },
 };
 
-export function MemoryExplorer() {
+export function MemoryExplorer({ t }: { t?: any }) {
   const socket = useSocket();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);

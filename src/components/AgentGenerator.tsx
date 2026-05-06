@@ -19,6 +19,30 @@ export function AgentGenerator({ t, onChatAgent }: { t: any; onChatAgent?: (agen
   const generationTimeoutRef = React.useRef<any>(null);
   const sectionRefs = React.useRef<{ [key: string]: HTMLElement | null }>({});
 
+  React.useEffect(() => {
+    const scrollToSection = (element: HTMLElement | null) => {
+      if (!element) return;
+      const offset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+    };
+
+    const handleScroll = (e: any) => {
+      const category = e.detail;
+      if (category === t.identityData || category === t.neuralTemplates) {
+        setCurrentStep(1);
+      }
+
+      window.setTimeout(() => {
+        scrollToSection(sectionRefs.current[category]);
+      }, 0);
+    };
+
+    window.addEventListener('scroll-to-gen', handleScroll);
+    return () => window.removeEventListener('scroll-to-gen', handleScroll);
+  }, [t.identityData, t.neuralTemplates]);
+
   const steps = [
     { id: 1, title: t.identityData || 'Identity', icon: <User size={20} /> },
     { id: 2, title: t.uploadFiles || 'Data Infusion', icon: <Database size={20} /> },
@@ -228,7 +252,7 @@ export function AgentGenerator({ t, onChatAgent }: { t: any; onChatAgent?: (agen
         )}
       </AnimatePresence>
 
-      <div className="text-center space-y-6">
+      <div className="text-center space-y-6" ref={el => { sectionRefs.current[t.identityData] = el; }}>
         <h1 className="text-6xl font-bold tracking-tighter glow-text">{t.lifeLab}</h1>
         <p className="text-xl text-white/60 max-w-2xl mx-auto italic">
           "{t.lifeLabDesc}"
@@ -281,7 +305,7 @@ export function AgentGenerator({ t, onChatAgent }: { t: any; onChatAgent?: (agen
                   />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6" ref={el => { sectionRefs.current[t.neuralTemplates] = el; }}>
                   <label className="text-sm font-bold uppercase tracking-widest text-white/40">2. Select Neural Template</label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <CategoryButton 
@@ -589,4 +613,3 @@ function CategoryButton({ active, onClick, icon, label }: { active: boolean; onC
     </button>
   );
 }
-

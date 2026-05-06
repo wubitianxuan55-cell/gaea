@@ -42,18 +42,28 @@ import {
   Headphones,
   BrainCircuit,
   Sparkles,
-  Box
+  Box,
+  Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassCard } from './SharedUI';
 import { LocalAgentSphere } from './LocalAgentSphere';
 import { VoiceTrainingDialog } from './VoiceTrainingDialog';
+import { VoicePicker } from './VoicePicker';
+import { PersonalityQuickSwitch } from './PersonalityQuickSwitch';
+import { LLMConfigPanel } from './LLMConfigPanel';
+import { ToolPanel } from './ToolPanel';
+import { GitHubMCPBrowser } from './GitHubMCPBrowser';
+import { PersonalityDashboard } from './PersonalityDashboard';
+import { NotificationCenter } from './NotificationCenter';
 import { DesktopOnboarding } from './DesktopOnboarding';
 import { useSocket } from '@/hooks/useSocket';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useApp } from '@/contexts/AppContext';
-import { listVoices } from '@/services/voiceService';
+
 import { NeuralFileManager } from './NeuralFileManager';
+import { MemoryExplorer } from './MemoryExplorer';
+import { PersonalityEditor } from './PersonalityEditor';
 import { Settings } from './Settings';
 import { systemService } from '@/services/systemService';
 import { usePlatform } from '@/hooks/usePlatform';
@@ -146,7 +156,7 @@ function OSWindow({
         position: isMaximized || snapZone !== 'none' ? 'fixed' : 'absolute' 
       }}
       onClick={() => onFocus(id)}
-      className={`os-window overflow-hidden ${isMaximized ? 'rounded-none' : 'rounded-[2.5rem]'}`}
+      className={`os-window pointer-events-auto overflow-hidden ${isMaximized ? 'rounded-none' : 'rounded-[2.5rem]'}`}
     >
       <div 
         className="os-window-header cursor-default px-6"
@@ -189,9 +199,9 @@ function OSWindow({
   );
 }
 
-function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, setVolume, theme, setTheme, lang, setLang }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, setVolume, theme, setTheme, lang, setLang, toggleWindow }: {
+  isOpen: boolean;
+  onClose: () => void;
   t: any;
   brightness: number;
   setBrightness: (v: number) => void;
@@ -201,9 +211,17 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
   setTheme: (t: string) => void;
   lang: 'en' | 'zh';
   setLang: (l: 'en' | 'zh') => void;
+  toggleWindow: (id: string) => void;
 }) {
   const [nightShift, setNightShift] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const { personalityId, setPersonalityId, aiConfig, selectedVoiceId, setSelectedVoiceId, unreadCount } = useApp();
+  const [personalities, setPersonalities] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/personalities')
+      .then(r => r.json()).then(d => setPersonalities(d || [])).catch(() => {});
+  }, []);
 
   if (!isOpen) return null;
 
@@ -239,14 +257,14 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
           <div className="flex gap-3">
              <button
                onClick={async () => {
-                 try { const r = await fetch('/api/health'); if (r.ok) toast.info('Server connection: OK'); else toast.info('Server: Degraded'); }
-                 catch { toast.error('Server: Offline'); }
+                 try { const r = await fetch('/api/health'); if (r.ok) toast.info(t.serverOnline); else toast.info(t.serverDegraded); }
+                 catch { toast.error(t.serverOffline); }
                }}
                className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white active:scale-95 transition-transform"
                title={t.wifi}
              ><Wifi size={18} /></button>
              <button
-               onClick={() => toast.info('Bluetooth device discovery requires the desktop app (Tauri/Electron).')}
+               onClick={() => toast.info(t.bluetoothRequiresDesktop)}
                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/40 active:scale-95 transition-transform"
                title={t.bluetooth}
              ><Bluetooth size={18} /></button>
@@ -307,6 +325,60 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
         </div>
       </div>
 
+      {/* Quick Access: Personality / Voice / LLM */}
+      <div className="space-y-2 mb-6">
+        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest px-2">{t.aiCore || 'AI Core'}</span>
+        <div className="space-y-1">
+          {/* Personality switcher */}
+          <button
+            onClick={() => { toggleWindow('personality'); onClose(); }}
+            className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <UserIcon size={14} className="text-violet-400" />
+              <span className="text-xs font-bold text-white/70">{t.personaLabel || 'Persona'}</span>
+            </div>
+            <span className="text-[10px] font-black text-violet-400 uppercase">{personalityId}</span>
+          </button>
+
+          {/* Voice selector */}
+          <button
+            onClick={() => { toggleWindow('voice'); onClose(); }}
+            className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Volume2 size={14} className="text-pink-400" />
+              <span className="text-xs font-bold text-white/70">{t.voiceLabel || 'Voice'}</span>
+            </div>
+            <span className="text-[10px] font-black text-pink-400 uppercase truncate max-w-[100px]">{selectedVoiceId || (t.defaultLabel || 'Default')}</span>
+          </button>
+
+          {/* LLM Provider */}
+          <button
+            onClick={() => { toggleWindow('llm'); onClose(); }}
+            className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <BrainCircuit size={14} className="text-blue-400" />
+              <span className="text-xs font-bold text-white/70">{t.llmLabel || 'LLM'}</span>
+            </div>
+            <span className="text-[10px] font-black text-blue-400 uppercase">{aiConfig.provider}</span>
+          </button>
+
+          {/* Notifications shortcut */}
+          <button
+            onClick={() => { toggleWindow('notifications'); onClose(); }}
+            className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Bell size={14} className="text-amber-400" />
+              <span className="text-xs font-bold text-white/70">{t.notificationsLabel || 'Notifications'}</span>
+            </div>
+            <span className="text-[10px] font-black text-amber-400">{unreadCount} {t.unread || 'unread'}</span>
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <div className="space-y-2">
           <span className="text-[10px] font-black text-white/20 uppercase tracking-widest px-2">{t.matrixSynthesis || 'Matrix Synthesis'}</span>
@@ -333,7 +405,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
             const next = !nightShift;
             setNightShift(next);
             document.documentElement.style.filter = next ? 'sepia(0.3) hue-rotate(-10deg)' : '';
-            toast.info(next ? 'Night Shift: ON' : 'Night Shift: OFF');
+            toast.info(next ? t.nightShiftOn : t.nightShiftOff);
           }}
           className="flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors"
         >
@@ -349,7 +421,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
           onClick={() => {
             const next = !focusMode;
             setFocusMode(next);
-            toast.info(next ? 'Focus Mode: ON' : 'Focus Mode: OFF');
+            toast.info(next ? t.focusModeOn : t.focusModeOff);
           }}
           className="flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors"
         >
@@ -380,11 +452,12 @@ interface DesktopIconProps {
 
 function DesktopIcon({ label, icon, colorClass, onClick }: DesktopIconProps) {
   return (
-    <motion.div 
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+    <div
       onClick={onClick}
-      className="desktop-icon group"
+      className="desktop-icon group cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); }}}
     >
       <div className={`desktop-icon-img bg-gradient-to-br ${colorClass} shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)]`}>
         <div className="text-white group-hover:rotate-12 transition-transform">
@@ -392,7 +465,7 @@ function DesktopIcon({ label, icon, colorClass, onClick }: DesktopIconProps) {
         </div>
       </div>
       <span className="desktop-icon-label">{label}</span>
-    </motion.div>
+    </div>
   );
 }
 
@@ -626,7 +699,7 @@ export function DesktopUI({
   const worldOpacity = useTransform(cameraZ, [0, -1000], [0.1, 1]);
   const worldScale = useTransform(cameraZ, [0, -1000], [2, 1]);
   const { isTauri } = usePlatform();
-  const { personalityId } = useApp();
+  const { personalityId, selectedVoiceId, setSelectedVoiceId, unreadCount, notifications, addNotification } = useApp();
 
   const [openWindows, setOpenWindows] = useState<string[]>(activeTab !== 'home' ? [activeTab] : []);
   const [minimizedWindows, setMinimizedWindows] = useState<string[]>([]);
@@ -647,13 +720,17 @@ export function DesktopUI({
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return localStorage.getItem('lumi_onboarding_seen') !== 'true';
   });
+  const [personaStats, setPersonaStats] = useState<{ totalMemories: number; totalInteractions: number; avgConfidence: number } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/personality/stats?personalityId=${personalityId}`)
+      .then(r => r.json())
+      .then(d => setPersonaStats(d))
+      .catch(() => {});
+  }, [personalityId]);
 
   const socket = useSocket();
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>();
-  const [voices, setVoices] = useState<any[]>([]);
-  const [showVoicePicker, setShowVoicePicker] = useState(false);
-
-  const { callState, audioLevel, startCall, endCall, error: callError, transcript } = useVoiceCall({
+  const { callState, audioLevel, startCall, endCall, error: callError, transcript, isMuted, elapsedSeconds, connectionQuality, interrupt, toggleMute } = useVoiceCall({
     socket,
     onTranscript: (text, isFinal) => {
       if (isFinal) {
@@ -665,28 +742,27 @@ export function DesktopUI({
     }
   });
 
-  const refreshVoices = () => {
-    listVoices().then(data => {
-      const all = [...data.cloned, ...data.premade];
-      setVoices(all);
-      if (all.length > 0 && !selectedVoiceId) {
-        setSelectedVoiceId(all[0].voiceId);
-      }
-    }).catch(() => {});
-  };
-
-  useEffect(() => {
-    refreshVoices();
-  }, [selectedVoiceId]);
-
   useEffect(() => {
     if (callError) toast.error(callError);
   }, [callError]);
 
-  const toggleWallpaperMode = async () => {
+  // Listen for mid-call personality switch events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.personalityId && socket) {
+        socket.emit('audio:switch-personality', { personalityId: detail.personalityId });
+      }
+    };
+    window.addEventListener('lumi:switch-personality', handler);
+    return () => window.removeEventListener('lumi:switch-personality', handler);
+  }, [socket]);
+
+
+  const toggleWallpaperMode = () => {
     const nextMode = !isWallpaperMode;
     setIsWallpaperMode(nextMode);
-    await systemService.setClickThrough(nextMode);
+    systemService.setWallpaperMode(nextMode);
     toast(nextMode ? (t.wallpaperFusionActive || 'Wallpaper Fusion Active') : (t.standardFocusMode || 'Standard Focus Mode'), {
       icon: nextMode ? <Sparkles className="text-celestial-saturn" /> : <Box className="text-white/40" />
     });
@@ -701,11 +777,13 @@ export function DesktopUI({
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
         setIsControlCenterOpen(false);
+        if (isWallpaperMode) toggleWallpaperMode();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isWallpaperMode, toggleWallpaperMode]);
+
   const [showBootScreen, setShowBootScreen] = useState(true);
   const [bootVisible, setBootVisible] = useState(true);
 
@@ -774,7 +852,7 @@ export function DesktopUI({
   }, []);
 
   const toggleWindow = (tab: string) => {
-    sounds.playClick();
+    try { sounds.playClick(); } catch {}
     if (tab === 'home') {
       setOpenWindows([]);
       setFocusedWindow(null);
@@ -795,7 +873,7 @@ export function DesktopUI({
   };
 
   const closeWindow = (tab: string) => {
-    sounds.playClick();
+    try { sounds.playClick(); } catch {}
     const nextWindows = openWindows.filter(w => w !== tab);
     setOpenWindows(nextWindows);
     if (focusedWindow === tab) {
@@ -808,11 +886,8 @@ export function DesktopUI({
     { id: 'home', label: t.neuralCore || 'Neural Core', icon: <Sparkles size={24} />, color: 'from-celestial-saturn to-yellow-600' },
     { id: 'generate', label: t.incubationModule || 'Agent Factory', icon: <BrainCircuit size={24} />, color: 'from-celestial-saturn to-orange-500' },
     { id: 'fs', label: t.fileExplorer || 'Neural FS', icon: <Folder size={24} />, color: 'from-blue-400 to-indigo-500' },
-    { id: 'voice', label: t.voiceForge || 'Voice Forge', icon: <Headphones size={24} />, color: 'from-pink-500 to-rose-500' },
     { id: 'memory', label: t.memory || 'Memory Core', icon: <FileText size={24} />, color: 'from-emerald-400 to-teal-600' },
     { id: 'personality', label: t.personality || 'Personality Lab', icon: <UserIcon size={24} />, color: 'from-violet-500 to-fuchsia-600' },
-    { id: 'mcp', label: 'MCP Hub', icon: <Box size={24} />, color: 'from-cyan-500 to-blue-600' },
-    { id: 'sync', label: t.syncHub || 'Sync Hub', icon: <Wifi size={24} />, color: 'from-green-500 to-emerald-600' },
     { id: 'kernel', label: t.kernelMonitor || 'Kernel Monitor', icon: <Activity size={24} />, color: 'from-orange-500 to-red-600' },
     { id: 'protocols', label: t.lostProtocols || 'Lost Protocols', icon: <Disc size={24} />, color: 'from-purple-500 to-indigo-600' },
     { id: 'terminal', label: t.terminal || 'Neural Terminal', icon: <Rocket size={24} />, color: 'from-blue-600 to-cyan-400' },
@@ -852,53 +927,33 @@ export function DesktopUI({
     openWindows.includes('terminal') ? 'focused' :
     openWindows.includes('music') ? 'zen' : 'default';
 
-  const settingsSizes: { [key: string]: { w: string, h: string } } = {
-    general: { w: '600px', h: '450px' },
-    neural: { w: '950px', h: '750px' },
-    api: { w: '850px', h: '700px' },
-    music: { w: '900px', h: '650px' },
-    sync: { w: '1100px', h: '800px' },
-    security: { w: '750px', h: '600px' },
-    hardware: { w: '900px', h: '750px' },
-    voice: { w: '1000px', h: '800px' },
-    memory: { w: '1050px', h: '760px' },
-    personality: { w: '1050px', h: '780px' },
-    market: { w: '980px', h: '720px' },
-    mcp: { w: '900px', h: '680px' }
-  };
-
-  const settingsWindowSections: Record<string, string> = {
-    voice: 'voice',
-    memory: 'memory',
-    personality: 'personality',
-    mcp: 'mcp',
-    sync: 'sync',
-  };
-
   const getWindowSize = (windowId: string) => {
-    const settingsSectionForWindow = settingsWindowSections[windowId];
-    if (settingsSectionForWindow) {
-      return settingsSizes[settingsSectionForWindow] || { w: '900px', h: '700px' };
-    }
-    if (windowId === 'settings') return settingsSizes[settingsSection] || { w: '800px', h: '600px' };
-    if (windowId === 'music') return { w: '800px', h: '600px' };
-    if (windowId === 'claude') return { w: '800px', h: '600px' };
-    if (windowId === 'fs') return { w: '1000px', h: '700px' };
-    if (windowId === 'kernel') return { w: '900px', h: '700px' };
-    if (windowId === 'generate') return { w: '1050px', h: '760px' };
+    if (windowId === 'settings') return { w: '1050px', h: '720px' };
+    if (windowId === 'fs') return { w: '1050px', h: '720px' };
+    if (windowId === 'kernel') return { w: '1050px', h: '720px' };
+    if (windowId === 'memory') return { w: '1050px', h: '720px' };
+    if (windowId === 'personality') return { w: '1050px', h: '720px' };
+    if (windowId === 'persona-stats') return { w: '1050px', h: '720px' };
+    if (windowId === 'generate') return { w: '1050px', h: '720px' };
+    if (windowId === 'music') return { w: '850px', h: '620px' };
+    if (windowId === 'tools') return { w: '850px', h: '620px' };
+    if (windowId === 'github-mcp') return { w: '850px', h: '620px' };
+    if (windowId === 'llm') return { w: '700px', h: '550px' };
+    if (windowId === 'notifications') return { w: '700px', h: '550px' };
     return { w: '900px', h: '700px' };
   };
 
   return (
     <div className={`fixed inset-0 h-screen w-screen overflow-hidden cursor-default select-none transition-all duration-1000 ${
-      theme === 'celestial' ? 'bg-[#010103]' : 
-      theme === 'nebula' ? 'bg-[#050010]' : 
-      theme === 'cyber' ? 'bg-[#000808]' : 
+      isWallpaperMode ? 'bg-transparent pointer-events-none' :
+      theme === 'celestial' ? 'bg-[#010103]' :
+      theme === 'nebula' ? 'bg-[#050010]' :
+      theme === 'cyber' ? 'bg-[#000808]' :
       'bg-black'
     }`}>
-      <ControlCenter 
-        isOpen={isControlCenterOpen} 
-        onClose={() => setIsControlCenterOpen(false)} 
+      <ControlCenter
+        isOpen={isControlCenterOpen}
+        onClose={() => setIsControlCenterOpen(false)}
         t={t}
         brightness={brightness}
         setBrightness={setBrightness}
@@ -908,6 +963,7 @@ export function DesktopUI({
         setTheme={setTheme}
         lang={lang}
         setLang={setLang}
+        toggleWindow={toggleWindow}
       />
       {/* CRT Scanline / Noise Overlay */}
       <div className="fixed inset-0 z-[1000] pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] select-none" />
@@ -921,7 +977,7 @@ export function DesktopUI({
 
       {/* Immersive Environment Layer (Wallpaper OS Foundation) */}
       <div 
-        className="fixed inset-0 z-0 overflow-hidden bg-[#010103] perspective-[1000px]"
+        className={`fixed inset-0 z-0 overflow-hidden perspective-[1000px] transition-all duration-1000 ${isWallpaperMode ? 'bg-transparent' : 'bg-[#010103]'}`}
         onMouseMove={handleMouseMove}
       >
         <motion.div 
@@ -1188,13 +1244,13 @@ export function DesktopUI({
 
       <div className="fixed inset-0 z-[100] pointer-events-none">
         {/* Top Status Bar */}
-        <div className="absolute top-0 inset-x-0 h-10 glass-dark border-b border-white/5 flex items-center justify-between px-6 pointer-events-auto backdrop-blur-md">
+        <div className={`absolute top-0 inset-x-0 h-10 glass-dark border-b border-white/5 flex items-center justify-between px-6 pointer-events-auto backdrop-blur-md transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex items-center gap-6">
             <button onClick={onExit} className="flex items-center gap-2 group transition-all">
                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-celestial-mars to-celestial-saturn flex items-center justify-center p-1 group-hover:rotate-12 transition-transform shadow-lg shadow-celestial-saturn/20">
                  <Rocket size={14} className="text-white" />
                </div>
-               <span className="text-[10px] font-black tracking-widest uppercase text-white/60">Lumi OS</span>
+               <span className="text-[10px] font-black tracking-widest uppercase text-white/60">{t.lumiOS || 'Lumi OS'}</span>
             </button>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex gap-4">
@@ -1215,9 +1271,18 @@ export function DesktopUI({
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4 text-white/30">
                <div className="flex items-center gap-1" onClick={() => setIsSearchOpen(true)}><Search size={14} className="hover:text-white transition-colors cursor-pointer" /></div>
+               <button onClick={() => toggleWindow('notifications')} className="flex items-center gap-1 relative hover:text-white transition-colors">
+                 <Bell size={14} />
+                 {unreadCount > 0 && (
+                   <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-red-500 text-[7px] font-black flex items-center justify-center text-white">
+                     {unreadCount > 9 ? '9+' : unreadCount}
+                   </span>
+                 )}
+               </button>
                <div className="flex items-center gap-1"><Wifi size={14} /></div>
                <div className="flex items-center gap-1"><Volume2 size={14} /></div>
                <div className="flex items-center gap-1"><Battery size={14} /> <span className="text-[10px] font-bold">98%</span></div>
+               <span className="text-[8px] font-black text-white/20 uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/5">{personalityId}</span>
             </div>
 
             {!navigator.userAgent.toLowerCase().includes('electron') && (
@@ -1258,7 +1323,7 @@ export function DesktopUI({
         </AnimatePresence>
 
         {/* Bottom Taskbar / Dock */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto h-16 px-4 glass-dark rounded-[2.5rem] border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-2xl">
+        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 h-16 px-4 glass-dark rounded-[2.5rem] border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-2xl transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
           <button 
             onClick={() => setViewMode(viewMode === 'personal' ? 'world' : 'personal')}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all group relative ${
@@ -1306,6 +1371,26 @@ export function DesktopUI({
               </motion.button>
             ))}
           </AnimatePresence>
+          <div className="h-8 w-px bg-white/10 mx-2" />
+          {user ? (
+            <button
+              onClick={() => toggleWindow('profile')}
+              className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white/10 hover:border-celestial-saturn/50 bg-white/5 flex items-center justify-center transition-all group"
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <UserIcon size={20} className="text-white/40 group-hover:text-white/80 transition-colors" />
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={onLogin}
+              className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 hover:border-celestial-saturn/30 transition-all flex items-center justify-center group"
+            >
+              <UserIcon size={20} className="group-hover:text-celestial-saturn transition-colors" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1315,11 +1400,11 @@ export function DesktopUI({
           scale: personalScale,
           opacity: personalOpacity,
         }}
-        className="absolute inset-0 z-10 flex flex-col pointer-events-none"
+        className={`absolute inset-0 z-[15] flex flex-col ${viewMode === 'world' ? 'pointer-events-none' : ''}`}
       >
         <div className="relative w-full h-full pointer-events-auto">
           {/* Central Interactive Entity */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center z-[15] pointer-events-none">
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -1336,6 +1421,8 @@ export function DesktopUI({
               isWallpaperMode={isWallpaperMode}
               onStartCall={() => startCall(selectedVoiceId, personalityId)}
               onEndCall={endCall}
+              onInterrupt={interrupt}
+              onToggleMute={toggleMute}
               onMessage={(text) => {
                 setTerminalOutput(prev => [...prev, `[Voice Input]: ${text}`]);
                 systemService.runCommand(text).then(res => {
@@ -1344,43 +1431,10 @@ export function DesktopUI({
               }} 
             />
 
-            <div className="flex flex-col items-center gap-4 mt-8">
+            <div className={`flex flex-col items-center gap-4 mt-8 transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 blur-sm pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowVoicePicker(!showVoicePicker)}
-                    className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2 hover:bg-white/10 hover:text-white transition-all shadow-xl"
-                  >
-                    {voices.find(v => v.voiceId === selectedVoiceId)?.name || 'Nexus Voice'}
-                    <ChevronDown size={12} />
-                  </button>
-                  
-                  <AnimatePresence>
-                    {showVoicePicker && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-full left-0 mb-2 w-48 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-2 z-50 shadow-2xl max-h-64 overflow-y-auto custom-scrollbar"
-                      >
-                        {voices.map(v => (
-                          <button
-                            key={v.voiceId}
-                            onClick={() => {
-                              setSelectedVoiceId(v.voiceId);
-                              setShowVoicePicker(false);
-                            }}
-                            className={`w-full text-left p-2 rounded-xl text-[10px] font-bold uppercase transition-all ${
-                              selectedVoiceId === v.voiceId ? 'bg-celestial-saturn text-black' : 'text-white/60 hover:bg-white/5 hover:text-white'
-                            }`}
-                          >
-                            {v.name}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <VoicePicker t={t} />
+                <PersonalityQuickSwitch t={t} callActive={callState !== 'idle'} />
 
                 <div className="flex gap-2">
                   <button
@@ -1395,15 +1449,6 @@ export function DesktopUI({
                     {isWallpaperMode ? (t.fusionActive || 'Fusion Active') : (t.wallpaperMode || 'Wallpaper Mode')}
                   </button>
                   
-                  {isTauri && (
-                    <button
-                      onClick={() => setIsTrainingOpen(true)}
-                      className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2 hover:bg-white/10 hover:text-white transition-all shadow-xl"
-                    >
-                      <Plus size={14} />
-                      Train Voice
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1414,7 +1459,7 @@ export function DesktopUI({
               >
                  <div className="flex flex-col items-center gap-1 group">
                    <span className="text-[10px] font-black tracking-[0.4em] text-white/40 uppercase group-hover:text-celestial-saturn transition-colors">
-                     {callState === 'idle' ? 'Lumi Neural Core' : `${callState.toUpperCase()} SESSION`}
+                     {callState === 'idle' ? (t.lumiNeuralCore || 'Lumi Neural Core') : `${callState.toUpperCase()} ${t.sessionActive || 'SESSION'}`}
                    </span>
                    <div className="flex gap-1">
                      {callState !== 'idle' ? (
@@ -1458,20 +1503,44 @@ export function DesktopUI({
       </div>
 
       {/* Desktop Grid & Widgets */}
-      <div className="relative z-10 w-full h-full p-8 md:p-12 lg:p-16 overflow-y-auto custom-scrollbar pt-20">
+      <div className={`relative z-10 w-full h-full p-8 md:p-12 lg:p-16 overflow-y-auto custom-scrollbar pt-20 transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 blur-sm pointer-events-none' : 'opacity-100'}`}>
         <div className="flex flex-col xl:flex-row justify-between items-start gap-12">
             <div className="desktop-grid !h-auto !p-0 !grid-cols-[repeat(auto-fill,minmax(110px,1fr))] max-w-2xl flex-1 w-full">
-              <DesktopIcon 
-                label="Neural Vault" 
-                icon={<Shield size={24} />} 
-                colorClass="from-indigo-600 to-blue-500" 
+              <DesktopIcon
+                label={t.neuralVault || "Neural Vault"}
+                icon={<Shield size={24} />}
+                colorClass="from-indigo-600 to-blue-500"
                 onClick={() => toggleWindow('fs')}
               />
-              <DesktopIcon 
-                label="OS Kernel" 
-                icon={<Cpu size={24} />} 
-                colorClass="from-orange-600 to-red-500" 
-                onClick={() => toggleWindow('kernel')} 
+              <DesktopIcon
+                label={t.osKernel || "OS Kernel"}
+                icon={<Cpu size={24} />}
+                colorClass="from-orange-600 to-red-500"
+                onClick={() => toggleWindow('kernel')}
+              />
+              <DesktopIcon
+                label={t.llmConfig || "LLM Config"}
+                icon={<BrainCircuit size={24} />}
+                colorClass="from-blue-500 to-indigo-600"
+                onClick={() => toggleWindow('llm')}
+              />
+              <DesktopIcon
+                label={t.tools || "Tools"}
+                icon={<Wrench size={24} />}
+                colorClass="from-amber-500 to-orange-600"
+                onClick={() => toggleWindow('tools')}
+              />
+              <DesktopIcon
+                label={t.githubMCP || "GitHub MCP"}
+                icon={<Globe size={24} />}
+                colorClass="from-purple-500 to-violet-600"
+                onClick={() => toggleWindow('github-mcp')}
+              />
+              <DesktopIcon
+                label={t.personaStats || "Persona Stats"}
+                icon={<Activity size={24} />}
+                colorClass="from-violet-500 to-fuchsia-600"
+                onClick={() => toggleWindow('persona-stats')}
               />
             </div>
 
@@ -1487,22 +1556,22 @@ export function DesktopUI({
                  </GlassCard>
                  <GlassCard className="p-4 rounded-[2rem] border-white/5 bg-black/20 flex flex-col items-center justify-center text-center gap-2">
                     <div className="text-celestial-glow"><Battery size={20} /></div>
-                    <BatteryWidget />
+                    <BatteryWidget t={t} />
                  </GlassCard>
               </div>
 
               <GlassCard className="p-6 rounded-[2.5rem] space-y-4 border-white/5 bg-black/30 backdrop-blur-3xl">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
-                    <Activity size={12} /> Neural Synthesis
+                    <Activity size={12} /> {t.neuralSynthesis || 'Neural Synthesis'}
                   </h4>
                   <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]" />
                 </div>
                 <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center text-[10px] font-bold">
-                        <span className="text-white/40">Compute Cores</span>
-                        <span className="text-celestial-saturn">{navigator.hardwareConcurrency || 1} Threads</span>
+                        <span className="text-white/40">{t.computeCores || 'Compute Cores'}</span>
+                        <span className="text-celestial-saturn">{navigator.hardwareConcurrency || 1} {t.threads || 'Threads'}</span>
                       </div>
                       <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                         <motion.div
@@ -1515,21 +1584,64 @@ export function DesktopUI({
                     {systemInfo && (
                       <>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-white/40">Node Host</span>
+                          <span className="text-white/40">{t.nodeHost || 'Node Host'}</span>
                           <span className="text-white/80 font-mono text-[10px]">{systemInfo.hostname}</span>
                         </div>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-white/40">MEM Index</span>
-                          <span className="text-white/80 font-mono text-[10px]">{(systemInfo.freeMemory / 1024 / 1024 / 1024).toFixed(1)} GB Free</span>
+                          <span className="text-white/40">{t.memIndex || 'MEM Index'}</span>
+                          <span className="text-white/80 font-mono text-[10px]">{(systemInfo.freeMemory / 1024 / 1024 / 1024).toFixed(1)} {t.gbFree || 'GB Free'}</span>
                         </div>
                       </>
                     )}
                 </div>
               </GlassCard>
 
+              {/* Personality Mini Stats */}
+              <GlassCard className="p-5 rounded-[2rem] space-y-3 border-white/5 bg-black/30 backdrop-blur-3xl cursor-pointer hover:bg-white/[0.06] transition-all" onClick={() => toggleWindow('persona-stats')}>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
+                    <BrainCircuit size={12} className="text-violet-400" /> {t.personaPrefix || 'Persona:'} {personalityId}
+                  </h4>
+                  <ChevronRight size={12} className="text-white/20" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="text-lg font-black text-violet-400">{personaStats?.totalMemories ?? '-'}</div>
+                    <div className="text-[7px] font-bold text-white/20 uppercase">{t.memories || 'Memories'}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-black text-emerald-400">{personaStats?.totalInteractions ?? '-'}</div>
+                    <div className="text-[7px] font-bold text-white/20 uppercase">{t.interactions || 'Interactions'}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-black text-amber-400">{personaStats ? `${Math.round(personaStats.avgConfidence)}%` : '-'}</div>
+                    <div className="text-[7px] font-bold text-white/20 uppercase">{t.confidence || 'Confidence'}</div>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Notification Preview */}
+              {notifications.filter(n => !n.read).length > 0 && (
+                <GlassCard className="p-5 rounded-[2rem] space-y-2 border-white/5 bg-black/30 backdrop-blur-3xl cursor-pointer hover:bg-white/[0.06] transition-all" onClick={() => toggleWindow('notifications')}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
+                      <Bell size={12} className="text-amber-400" /> {t.recent || 'Recent'} ({unreadCount} {t.unread || 'unread'})
+                    </h4>
+                    <ChevronRight size={12} className="text-white/20" />
+                  </div>
+                  <div className="space-y-1">
+                    {notifications.filter(n => !n.read).slice(0, 3).map(n => (
+                      <div key={n.id} className="text-[9px] text-white/50 truncate">
+                        <span className="text-white/70 font-bold">{n.title}</span> — {n.message}
+                      </div>
+                    ))}
+                  </div>
+                </GlassCard>
+              )}
+
               {nativeFiles.length > 0 && (
                 <GlassCard className="p-6 w-full md:w-80 rounded-3xl space-y-4 border-white/5 bg-black/10">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/20">Native Vault Entry</h4>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/20">{t.nativeVaultEntry || 'Native Vault Entry'}</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                     {nativeFiles.map((file, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all cursor-pointer group">
@@ -1544,9 +1656,9 @@ export function DesktopUI({
               <GlassCard className="p-6 rounded-[2.5rem] space-y-4 border-white/5 bg-black/40">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
-                    <Cpu size={12} /> Root Terminal
+                    <Cpu size={12} /> {t.rootTerminal || 'Root Terminal'}
                   </h4>
-                  <button className="text-[10px] text-celestial-saturn hover:underline" onClick={() => setTerminalOutput(['Session Reset...'])}>Clear</button>
+                  <button className="text-[10px] text-celestial-saturn hover:underline" onClick={() => setTerminalOutput(['Session Reset...'])}>{t.clear || 'Clear'}</button>
                 </div>
                 <div className="bg-black/60 rounded-2xl p-4 font-mono text-[10px] h-48 overflow-y-auto custom-scrollbar space-y-1.5 border border-white/5 shadow-inner">
                   {terminalOutput.map((line, i) => (
@@ -1560,7 +1672,7 @@ export function DesktopUI({
                     type="text"
                     value={terminalInput}
                     onChange={(e) => setTerminalInput(e.target.value)}
-                    placeholder="Type a command..."
+                    placeholder={t.typeCommand || "Type a command..."}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-celestial-saturn focus:outline-none focus:border-celestial-saturn/50 transition-all placeholder:text-white/10"
                   />
                 </form>
@@ -1581,16 +1693,14 @@ export function DesktopUI({
         <VoiceTrainingDialog 
           isOpen={isTrainingOpen} 
           onClose={() => setIsTrainingOpen(false)} 
-          onSuccess={refreshVoices}
+          onSuccess={() => window.dispatchEvent(new CustomEvent('lumi:voice-updated'))}
         />
         <AnimatePresence>
-          {openWindows.map(windowId => (
-            <div key={windowId} className="pointer-events-auto h-full w-full absolute inset-0">
-              {(() => {
-                const size = getWindowSize(windowId);
-                const settingsSectionForWindow = settingsWindowSections[windowId];
-                return (
+          {openWindows.map(windowId => {
+            const size = getWindowSize(windowId);
+            return (
               <OSWindow
+                key={windowId}
                 id={windowId}
                 title={appIcons.find(a => a.id === windowId)?.label || windowId}
                 icon={appIcons.find(a => a.id === windowId)?.icon}
@@ -1611,8 +1721,6 @@ export function DesktopUI({
                     <KernelMonitorApp t={t} />
                   ) : windowId === 'settings' ? (
                     <Settings t={t} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} activeSection={settingsSection} onSectionChange={setSettingsSection} />
-                  ) : settingsSectionForWindow ? (
-                    <Settings t={t} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} activeSection={settingsSectionForWindow} onSectionChange={setSettingsSection} />
                   ) : windowId === 'music' ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-in zoom-in-95 duration-500">
                        <div className="relative">
@@ -1620,36 +1728,37 @@ export function DesktopUI({
                           <Headphones size={40} className="absolute -bottom-4 -right-4 text-white p-2 bg-black rounded-full" />
                        </div>
                        <div className="space-y-2">
-                          <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Media Center</h2>
-                          <p className="text-white/40 max-w-md text-sm">Voice synthesis, media playback, and audio settings.</p>
+                          <h2 className="text-3xl font-black uppercase tracking-tighter text-white">{t.mediaCenter || 'Media Center'}</h2>
+                          <p className="text-white/40 max-w-md text-sm">{t.mediaCenterDesc || 'Voice synthesis, media playback, and audio settings.'}</p>
                        </div>
                        <div className="flex gap-4">
                           <button onClick={() => { toggleWindow('settings'); setSettingsSection('voice'); }} className="px-6 py-3 bg-celestial-saturn/10 border border-celestial-saturn/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-celestial-saturn hover:bg-celestial-saturn/20 transition-all">
-                             Voice Forge
+                             {t.voiceForge || 'Voice Forge'}
                           </button>
                           <button onClick={() => { toggleWindow('settings'); setSettingsSection('music'); }} className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:bg-white/10 transition-all">
-                             Media Services
+                             {t.mediaServices || 'Media Services'}
                           </button>
                        </div>
                     </div>
-                  ) : windowId === 'claude' ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-in zoom-in-95 duration-500">
-                       <MessagesSquare size={80} className="text-orange-500" />
-                       <div className="space-y-2">
-                          <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Claude API</h2>
-                          <p className="text-white/40 max-w-md text-sm">Configure your Anthropic Claude API key for advanced reasoning.</p>
-                       </div>
-                       <button onClick={() => { toggleWindow('settings'); setSettingsSection('api'); }} className="bg-orange-500 text-white font-black px-10 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(249,115,22,0.3)]">
-                          Configure API Key
-                       </button>
-                    </div>
+                  ) : windowId === 'memory' ? (
+                    <MemoryExplorer t={t} />
+                  ) : windowId === 'personality' ? (
+                    <PersonalityEditor t={t} />
+                  ) : windowId === 'llm' ? (
+                    <LLMConfigPanel />
+                  ) : windowId === 'tools' ? (
+                    <ToolPanel />
+                  ) : windowId === 'github-mcp' ? (
+                    <GitHubMCPBrowser />
+                  ) : windowId === 'persona-stats' ? (
+                    <PersonalityDashboard />
+                  ) : windowId === 'notifications' ? (
+                    <NotificationCenter />
                   ) : renderTabContent(windowId)}
                 </div>
               </OSWindow>
-                );
-              })()}
-            </div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </div>
 
@@ -1660,7 +1769,7 @@ export function DesktopUI({
   );
 }
 
-function BatteryWidget() {
+function BatteryWidget({ t }: { t?: any }) {
   const [level, setLevel] = useState<number | null>(null);
   const [charging, setCharging] = useState(false);
 
@@ -1676,12 +1785,12 @@ function BatteryWidget() {
     }
   }, []);
 
-  if (level === null) return <><div className="text-xl font-black text-white/80">--%</div><span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Web Mode</span></>;
+  if (level === null) return <><div className="text-xl font-black text-white/80">--%</div><span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">{t?.webMode || 'Web Mode'}</span></>;
 
   return (
     <>
       <div className="text-xl font-black text-white/80">{level}%</div>
-      <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">{charging ? 'Charging' : 'Battery'}</span>
+      <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">{charging ? (t?.charging || 'Charging') : (t?.battery || 'Battery')}</span>
     </>
   );
 }

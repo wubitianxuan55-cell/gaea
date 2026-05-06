@@ -8,7 +8,13 @@ class SoundService {
 
   private init() {
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      try {
+        const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+        if (!Ctor) return;
+        this.ctx = new Ctor();
+      } catch {
+        // Audio not available in this environment
+      }
     }
   }
 

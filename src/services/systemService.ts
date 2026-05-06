@@ -15,7 +15,7 @@ class SystemService {
   private isElectron: boolean;
 
   constructor() {
-    this.isTauri = typeof window !== 'undefined' && (!!(window as any).__TAURI_IPC__ || !!(window as any).__TAURI__);
+    this.isTauri = typeof window !== 'undefined' && (!!(window as any).__TAURI_INTERNALS__ || !!(window as any).__TAURI_IPC__ || !!(window as any).__TAURI__);
     this.isElectron = typeof window !== 'undefined' && (!!(window as any).lumiElectron || navigator.userAgent.toLowerCase().includes('electron'));
   }
 
@@ -46,23 +46,22 @@ class SystemService {
   }
 
   /**
-   * Set window click-through (for transparent wallpaper mode)
+   * Toggle wallpaper visual mode + OS-level click-through (Win32 WS_EX_TRANSPARENT)
    */
-  async setClickThrough(enabled: boolean): Promise<void> {
-    if (this.isTauri) {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        await invoke('set_ignore_cursor_events', { ignore: enabled });
-      } catch (err) {
-        console.error("Failed to set click-through:", err);
-      }
-      return;
-    }
-    // Web: toggle document-level class for wallpaper/overlay mode
+  async setWallpaperMode(enabled: boolean): Promise<void> {
     if (enabled) {
       document.documentElement.classList.add('lumi-wallpaper-mode');
     } else {
       document.documentElement.classList.remove('lumi-wallpaper-mode');
+    }
+
+    if (this.isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('set_wallpaper_mode', { enabled });
+      } catch (err) {
+        console.error('Failed to set wallpaper mode:', err);
+      }
     }
   }
 
