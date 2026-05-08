@@ -1,6 +1,6 @@
 # LumiOS
 
-A sustainable evolving AI personality operating system — an AI companion with persistent memory, multi-model intelligence, and voice interaction across devices.
+可持续演进型人工智能人格操作系统——一款集持久内存、多模型智能和语音交互于一体的跨终端AI伙伴
 
 ## Features
 
