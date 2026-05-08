@@ -31,6 +31,12 @@ jobs:
       - run: npm ci
       - name: Build frontend dist
         run: npx vite build
+      - name: Create stub resource dirs for CI
+        run: |
+          mkdir -p desktop-resources/dist-server
+          mkdir -p desktop-resources/gpt-sovits-src
+          mkdir -p desktop-resources/data/voice_training
+          touch desktop-resources/WebView2Loader.dll
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Tauri system deps
         run: |
