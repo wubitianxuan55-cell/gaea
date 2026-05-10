@@ -37,6 +37,18 @@ export function installApiBridge(): void {
       const needsCredentials = isTauriRuntime() && (url.startsWith('/api/') || url === '/api' || url.startsWith('/mcp/'));
       if (!needsCredentials) return nativeFetch(input, init);
       const patched: RequestInit = { ...init, credentials: 'include' };
+
+      // WebView2 may not send httpOnly cookies — inject stored auth token as fallback
+      try {
+        const storedToken = localStorage.getItem('lumi_auth_token');
+        if (storedToken) {
+          patched.headers = {
+            ...(patched.headers as Record<string, string> || {}),
+            'Authorization': `Bearer ${storedToken}`,
+          };
+        }
+      } catch {}
+
       return nativeFetch(input, patched);
     }
 

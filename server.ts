@@ -512,7 +512,11 @@ apiRouter.get("/scheduler/tasks", (_req, res) => {
 
 // 0.45 Token usage aggregation
 apiRouter.get("/llm/usage", (req, res) => {
-  const token = req.cookies.token;
+  let token = req.cookies.token;
+  // Fallback: WebView2 may not send httpOnly cookies, check Authorization header
+  if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    token = req.headers.authorization.slice(7);
+  }
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const decoded: any = jwt.verify(token, JWT_SECRET);
