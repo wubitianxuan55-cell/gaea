@@ -3,8 +3,10 @@
  */
 import { Socket } from "socket.io";
 import { readDB, writeDB } from "../../db_layer";
-import { NormalizedMessage, makeLLMCall } from "../llm/providers";
+import { NormalizedMessage, makeLLMCall, StreamCallback } from "../llm/providers";
 import { LLMUsage } from "../tools/types";
+import { toolRegistry } from "../tools/registry";
+import { runWithTools } from "../llm/adapter";
 import { queryMemories, addMemory, addReminder, extractMemories } from "../memory";
 import { loadEmotionalState, saveEmotionalState, updateEmotionalState } from "../personality/state";
 import { personalityRegistry } from "../personality";
@@ -12,6 +14,7 @@ import { getOrCreateActiveConversation, addMessage, getMessages } from "../conve
 import { retrieveChunks } from "../agents/rag";
 import { getSensory } from "./shared";
 import { processInput, handleLLMFailure, CognitiveContext } from "../cognition";
+import { checkLLMAccess, recordUsage, estimateTokens } from "../subscription/proxy";
 
 const immortalitySkills: Record<string, string> = {
   colleague: "【同事技能包】：你现在是一个专业且高效的同事。你拥有深厚的行业背景，熟悉办公流程，擅长团队协作。你说话直接、专业，注重结果。",
@@ -77,6 +80,17 @@ export function registerChatHandler(
         : personality.defaultModel.startsWith('qwen') ? 'qwen' as const
         : 'gemini' as const;
 
+      // ── Subscription enforcement ──
+      const access = checkLLMAccess({ userId: uid, provider, model: personality.defaultModel });
+      if (!access.allowed) {
+        socket.emit("agent:error", {
+          message: access.reason,
+          code: access.tokenLimitReached ? 'TOKEN_LIMIT' : 'PROVIDER_RESTRICTED',
+        });
+        socket.emit("agent:status", { status: "error" });
+        return;
+      }
+
       // ── Lumi Cognitive Engine: classify intent BEFORE calling any LLM ──
       const cognitiveCtx: CognitiveContext = {
         userId: uid,
@@ -125,25 +139,48 @@ export function registerChatHandler(
         ];
 
         try {
-          const result = await makeLLMCall(
-            messages, [], { provider, model: personality.defaultModel },
+          const streamChunks: string[] = [];
+          const onChunk: StreamCallback = (chunk) => {
+            streamChunks.push(chunk);
+            socket.emit("agent:chunk", { text: chunk, agentName: personality.name });
+          };
+
+          const result = await runWithTools(
+            messages,
+            toolRegistry,
+            { provider, model: personality.defaultModel, userId: uid },
+            (record) => {
+              socket.emit("agent:tool", { name: record.name, args: record.arguments, result: record.result?.slice(0, 200), error: record.error });
+            },
+            3, // max 3 tool iterations for chat
             llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
+            onChunk,
           );
+
           responseText = result.text || '';
           llmWasCalled = true;
-          recordTokenUsage(uid, provider, personality.defaultModel, result.usage, interactionId);
+          // Record analytics + subscription
+          for (const u of result.usageRecords) {
+            recordTokenUsage(uid, u.provider, u.model, { promptTokens: u.promptTokens, completionTokens: u.completionTokens, totalTokens: u.totalTokens }, interactionId);
+          }
+          const tokens = estimateTokens(text + ' ' + responseText);
+          recordUsage(uid, tokens);
         } catch (llmErr: any) {
           console.error(`[Cognition] LLM '${provider}/${personality.defaultModel}' failed: ${llmErr.message}`);
           // Try fallback provider
           if (llmErr.message?.includes('not configured') && provider !== 'gemini') {
             try {
-              const fallback = await makeLLMCall(
-                messages, [], { provider: 'gemini', model: personality.fallbackModel || 'gemini-pro' },
+              const fallback = await runWithTools(
+                messages, toolRegistry,
+                { provider: 'gemini', model: personality.fallbackModel || 'gemini-pro', userId: uid },
+                undefined, 1,
                 llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
               );
               responseText = fallback.text || '';
               llmWasCalled = true;
-              recordTokenUsage(uid, 'gemini', personality.fallbackModel || 'gemini-pro', fallback.usage, interactionId);
+              for (const u of fallback.usageRecords) {
+                recordTokenUsage(uid, u.provider, u.model, { promptTokens: u.promptTokens, completionTokens: u.completionTokens, totalTokens: u.totalTokens }, interactionId);
+              }
             } catch (fallbackErr: any) {
               // Both primary and fallback LLMs failed — use cognitive fallback
               const cf = handleLLMFailure(cognition.intent, fallbackErr);

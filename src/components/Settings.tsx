@@ -36,6 +36,7 @@ import { MemoryExplorer } from './MemoryExplorer';
 import { PersonalityEditor } from './PersonalityEditor';
 import { PersonalityMarketplace } from './PersonalityMarketplace';
 
+
 function buildSidebarGroups(t: any) {
   return [
     {

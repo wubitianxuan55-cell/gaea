@@ -22,6 +22,7 @@ import { createStreamingSession, getActiveSTTProvider } from "./server/stt/adapt
 import { synthesizeSpeech, getActiveProvider as getTTSProvider } from "./server/tts/adapter";
 import { makeLLMCall, makeLLMCallStreaming, NormalizedMessage } from "./server/llm/providers";
 import { runWithTools } from "./server/llm/adapter";
+import { checkLLMAccess, recordUsage, estimateTokens } from "./server/subscription/proxy";
 import { toolRegistry } from "./server/tools/registry";
 import { registerAllTools } from "./server/tools/definitions/index";
 import { queryMemories, addMemory, removeMemory, formatMemoriesForContext, extractMemories, addReminder, fireReminder, runBehavioralAnalysis, getUnconsolidatedEpisodic, markConsolidated, initMemorySync, registerUserSocket, unregisterUserSocket, broadcastMemoryChange } from "./server/memory";
@@ -684,74 +685,86 @@ apiRouter.post("/conversations/:id/close", (req, res) => {
   }
 });
 
-// 1. AI Proxy Route
+// 1. AI Proxy Route — with subscription enforcement
 apiRouter.post("/ai/chat", asyncHandler(async (req, res) => {
   const { provider = "gemini", model, messages, prompt } = req.body;
   const userKey = req.headers["x-api-key"] as string;
 
+  // Extract user ID for subscription check
+  let userId = 'anonymous';
   try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.slice(7);
+    }
+    if (token) userId = (jwt.verify(token, JWT_SECRET) as any).uid || 'anonymous';
+  } catch {}
+
+  // If user brings their own API key, skip subscription enforcement
+  const isBYOK = userKey && userKey.length > 5;
+
+  if (!isBYOK) {
+    const access = checkLLMAccess({ userId, provider, model: model || '' });
+    if (!access.allowed) {
+      return res.status(402).json({ error: access.reason, code: access.tokenLimitReached ? 'TOKEN_LIMIT' : 'PROVIDER_RESTRICTED' });
+    }
+  }
+
+  try {
+    let responseText = '';
     const systemInstruction = "你是一个名为 Lumi 的本地核心智能体。你致力于全息空间计算和独立 AI 人格生成进化。你的目标是打造全息 AI 世界和文明。你应当表现得专业、深邃且具有前瞻性。你的回复应当简洁且富有启发性。";
-    
-    if (provider === "gemini") {
-      const client = (userKey && userKey.length > 5) ? new GoogleGenerativeAI(userKey) : getGemini();
-      if (!client) throw new Error("Gemini API key not configured on server and no user key provided");
-      const modelInstance = client.getGenerativeModel({ 
-        model: model || "gemini-2.0-flash",
-        systemInstruction
-      });
-      
-      const contents = messages 
-        ? messages.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
-        : [{ role: 'user', parts: [{ text: prompt }] }];
 
-      const result = await modelInstance.generateContent({ contents });
-      return res.json({ text: result.response.text() });
+    if (isBYOK) {
+      // BYOK: user provides their own key — simple one-shot call, no tools
+      if (provider === "gemini") {
+        const client = new GoogleGenerativeAI(userKey);
+        const modelInstance = client.getGenerativeModel({ model: model || "gemini-2.0-flash", systemInstruction });
+        const contents = messages
+          ? messages.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+          : [{ role: 'user', parts: [{ text: prompt }] }];
+        responseText = (await modelInstance.generateContent({ contents })).response.text();
+      } else if (provider === "anthropic") {
+        const client = new Anthropic({ apiKey: userKey });
+        const response = await client.messages.create({
+          model: model || "claude-sonnet-4-6", max_tokens: 1024,
+          messages: messages || [{ role: "user", content: prompt }]
+        });
+        responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+      } else {
+        const client = new OpenAI({ apiKey: userKey, baseURL: provider === "deepseek" ? "https://api.deepseek.com" : provider === "qwen" ? "https://dashscope.aliyuncs.com/compatible-mode/v1" : undefined });
+        const response = await client.chat.completions.create({
+          model: model || (provider === "deepseek" ? "deepseek-chat" : provider === "qwen" ? "qwen-plus" : "gpt-4o"),
+          messages: messages || [{ role: "user", content: prompt }]
+        });
+        responseText = response.choices[0].message.content || '';
+      }
+    } else {
+      // Server-managed: use unified tool loop
+      const normalizedMessages: any[] = [
+        { role: 'system', content: systemInstruction },
+        ...(messages || [{ role: 'user', content: prompt }]).map((m: any) => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content || ''
+        }))
+      ];
+
+      const result = await runWithTools(
+        normalizedMessages,
+        toolRegistry,
+        { provider, model: model || 'gemini-2.0-flash', userId },
+        undefined, 3,
+        getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen,
+      );
+
+      responseText = result.text || '';
+      const tokens = estimateTokens(
+        normalizedMessages.map((m: any) => m.content || '').join(' ') + ' ' + responseText
+      );
+      const usage = recordUsage(userId, tokens);
+      return res.json({ text: responseText, usage, toolCalls: result.toolCalls.length });
     }
 
-    if (provider === "openai") {
-      const client = (userKey && userKey.length > 5) ? new OpenAI({ apiKey: userKey }) : getOpenAI();
-      if (!client) throw new Error("OpenAI API key not configured");
-      const response = await client.chat.completions.create({
-        model: model || "gpt-4o",
-        messages: messages || [{ role: "user", content: prompt }]
-      });
-      return res.json({ text: response.choices[0].message.content });
-    }
-
-    if (provider === "deepseek") {
-      const client = (userKey && userKey.length > 5) ? new OpenAI({ apiKey: userKey, baseURL: "https://api.deepseek.com" }) : getDeepSeek();
-      if (!client) throw new Error("DeepSeek API key not configured");
-      const response = await client.chat.completions.create({
-        model: model || "deepseek-chat",
-        messages: messages || [{ role: "user", content: prompt }]
-      });
-      return res.json({ text: response.choices[0].message.content });
-    }
-
-    if (provider === "anthropic") {
-      const client = (userKey && userKey.length > 5) ? new Anthropic({ apiKey: userKey }) : getAnthropic();
-      if (!client) throw new Error("Anthropic API key not configured");
-      const response = await client.messages.create({
-        model: model || "claude-sonnet-4-6",
-        max_tokens: 1024,
-        messages: messages || [{ role: "user", content: prompt }]
-      });
-      return res.json({ text: response.content[0].type === 'text' ? response.content[0].text : '' });
-    }
-
-    if (provider === "qwen") {
-      const client = (userKey && userKey.length > 5)
-        ? new OpenAI({ apiKey: userKey, baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1" })
-        : getQwen();
-      if (!client) throw new Error("Qwen/DashScope API key not configured");
-      const response = await client.chat.completions.create({
-        model: model || "qwen-plus",
-        messages: messages || [{ role: "user", content: prompt }]
-      });
-      return res.json({ text: response.choices[0].message.content });
-    }
-
-    res.status(400).json({ error: "Unsupported AI provider or missing configuration" });
+    res.json({ text: responseText });
   } catch (error: any) {
     console.error("AI Proxy Error:", error);
     res.status(500).json({ error: error.message });
@@ -1306,6 +1319,10 @@ apiRouter.use("/", voiceRoutes);
 
 // File routes
 apiRouter.use("/", fileRoutes);
+
+// Subscription routes
+import { subscriptionRoutes } from "./server/subscription/routes";
+apiRouter.use("/", subscriptionRoutes);
 
 // System stats — real-time CPU / memory / platform info
 apiRouter.get("/system/stats", (_req: any, res: any) => {

@@ -219,28 +219,72 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
     }
   }, [agentId, agentName, user, isFounder, fetchConversations, t.failedToLoadChatHistory, t.failedToLoadConversation]);
 
+  const streamingMsgId = useRef<string | null>(null);
+
   useEffect(() => {
     if (isFounder || !socket) return;
 
+    socket.on("agent:chunk", (data: { text: string; agentName: string }) => {
+      if (streamingMsgId.current) {
+        setMessages(prev => prev.map(m =>
+          m.id === streamingMsgId.current ? { ...m, text: m.text + data.text } : m
+        ));
+      } else {
+        const id = Date.now().toString();
+        streamingMsgId.current = id;
+        setMessages(prev => [...prev, {
+          id,
+          text: data.text,
+          userName: data.agentName,
+          timestamp: new Date().toISOString(),
+          type: 'agent'
+        }]);
+      }
+    });
+
+    socket.on("agent:tool", (data: { name: string; args: any; result?: string; error?: string }) => {
+      toast(`Tool: ${data.name}`, {
+        description: data.error ? `Error: ${data.error}` : (data.result?.slice(0, 100) || 'Executing...'),
+        icon: data.error ? undefined : <CheckCircle2 size={14} className="text-celestial-saturn" />,
+      });
+    });
+
     socket.on("agent:response", (data: { text: string; agentName: string }) => {
-      const agentMsg = {
-        id: Date.now().toString(),
-        text: data.text,
-        userName: data.agentName,
-        timestamp: new Date().toISOString(),
-        type: 'agent'
-      };
-      setMessages(prev => [...prev, agentMsg]);
+      setIsTyping(false);
+      // If we have a streaming message, finalize it; otherwise create new
+      if (streamingMsgId.current) {
+        streamingMsgId.current = null;
+      } else {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: data.text,
+          userName: data.agentName,
+          timestamp: new Date().toISOString(),
+          type: 'agent'
+        }]);
+      }
       speak(data.text);
     });
 
     socket.on("agent:status", (data: { status: string }) => {
       setIsTyping(data.status === "thinking");
+      if (data.status === "idle" || data.status === "error") {
+        streamingMsgId.current = null;
+      }
+    });
+
+    socket.on("agent:error", (data: { message: string; code?: string }) => {
+      setIsTyping(false);
+      streamingMsgId.current = null;
+      toast.error(data.message);
     });
 
     return () => {
+      socket.off("agent:chunk");
+      socket.off("agent:tool");
       socket.off("agent:response");
       socket.off("agent:status");
+      socket.off("agent:error");
       stop();
     };
   }, [speak, stop, isFounder, socket]);
@@ -268,43 +312,32 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
     stop();
     setIsTyping(true);
 
-    try {
-      const response = await runAgentLogic(newMessage, { platform, aiConfig });
-      setAgentMetadata(response);
-
-      const agentMsg = {
-        id: Date.now().toString(),
-        text: response.text,
-        userName: agentName,
-        timestamp: new Date().toISOString(),
-        type: 'agent'
-      };
-
-      setMessages(prev => [...prev, agentMsg]);
-      speak(response.text);
-
-      fetch(`/api/agents/${agentId}/history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            { role: 'user', content: userMsg.text },
-            { role: 'assistant', content: response.text },
-          ],
-        }),
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.conversationId && !activeConversationId) {
-            setActiveConversationId(data.conversationId);
-          }
-          fetchConversations();
-        })
-        .catch(err => toast.error('Failed to save message'));
-    } catch (err) {
-      toast.error(t.failedToRouteNeuralMesh || "Failed to route through Neural Mesh.");
-    } finally {
-      setIsTyping(false);
+    if (socket?.connected) {
+      socket.emit("agent:chat", {
+        text: newMessage,
+        history: messages.map(m => ({ role: m.type === 'agent' ? 'assistant' : 'user', content: m.text })),
+        personalityId: personalityId || 'lumi',
+        category: agentCategory,
+        agentId,
+      });
+    } else {
+      // Fallback to REST if socket not connected
+      try {
+        const response = await runAgentLogic(newMessage, { platform, aiConfig });
+        setAgentMetadata(response);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: response.text,
+          userName: agentName,
+          timestamp: new Date().toISOString(),
+          type: 'agent'
+        }]);
+        speak(response.text);
+      } catch (err) {
+        toast.error(t.failedToRouteNeuralMesh || "Failed to route through Neural Mesh.");
+      } finally {
+        setIsTyping(false);
+      }
     }
   };
 

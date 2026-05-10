@@ -32,7 +32,8 @@ import {
   Sparkles,
   Box,
   Wrench,
-  MessageSquare
+  MessageSquare,
+  Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassCard } from './SharedUI';
@@ -47,6 +48,7 @@ import { SkillCenter } from './SkillCenter';
 import { PersonalityDashboard } from './PersonalityDashboard';
 import { NotificationCenter } from './NotificationCenter';
 import { TokenDashboard } from './TokenDashboard';
+import { SubscriptionPanel } from './SubscriptionPanel';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { ContextMenu } from './ContextMenu';
 import { DesktopOnboarding } from './DesktopOnboarding';
@@ -879,6 +881,7 @@ export function DesktopUI({
     if (windowId === 'devices') return { w: '900px', h: '700px' };
     if (windowId === 'tokens') return { w: '800px', h: '620px' };
     if (windowId === 'skills') return { w: '900px', h: '700px' };
+    if (windowId === 'subscription') return { w: '850px', h: '640px' };
     return { w: '900px', h: '700px' };
   };
 
@@ -1376,6 +1379,12 @@ export function DesktopUI({
                 colorClass="from-emerald-500 to-teal-600"
                 onClick={() => toggleWindow('skills')}
               />
+              <DesktopIcon
+                label={t.subscription || "Subscription"}
+                icon={<Crown size={24} />}
+                colorClass="from-amber-400 to-yellow-600"
+                onClick={() => toggleWindow('subscription')}
+              />
             </div>
 
             <div className="flex flex-col gap-6 w-full lg:w-96">
@@ -1581,6 +1590,8 @@ export function DesktopUI({
                     <TokenDashboard />
                   ) : windowId === 'skills' ? (
                     <SkillCenter t={t} />
+                  ) : windowId === 'subscription' ? (
+                    <SubscriptionPanel t={t} />
                   ) : windowId === 'chat' ? (
                     <AgentChatPage t={t} user={user} onBack={() => closeWindow('chat')} />
                   ) : renderTabContent(windowId)}
