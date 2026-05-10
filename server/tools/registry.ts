@@ -36,11 +36,13 @@ function normalizeJsonSchema(params: Record<string, any>): Record<string, any> {
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
 
-  register(tool: ToolDefinition): void {
+  register(tool: ToolDefinition): boolean {
     if (this.tools.has(tool.name)) {
-      throw new Error(`Tool "${tool.name}" is already registered`);
+      console.warn(`[ToolRegistry] "${tool.name}" already registered — skipping duplicate`);
+      return false;
     }
     this.tools.set(tool.name, tool);
+    return true;
   }
 
   get(name: string): ToolDefinition | undefined {
