@@ -34,6 +34,7 @@ interface FSItem {
 export function NeuralFileManager({ t }: { t: any }) {
   const [items, setItems] = useState<FSItem[]>([]);
   const [currentPath, setCurrentPath] = useState<FSItem[]>([]);
+  const [homePath, setHomePath] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,28 +61,17 @@ export function NeuralFileManager({ t }: { t: any }) {
   const fetchFiles = async () => {
     setIsLoading(true);
     try {
-      const path = currentPath.map(p => p.name).join('/');
-      const res = await fetch(`/api/files/list?path=${encodeURIComponent(path)}`);
-      const contentType = res.headers.get("content-type");
-
-      if (res.ok && contentType && contentType.includes("application/json")) {
+      const relPath = currentPath.map(p => p.name).join('/');
+      const res = await fetch(`/api/files/list?path=${encodeURIComponent(relPath)}`);
+      if (res.ok) {
         const data = await res.json();
         setItems(data.files || []);
+        if (data.home) setHomePath(data.home);
       } else {
-        // Fallback to mock data if API not ready or returns HTML (SPA fallback)
-        setItems([
-          { id: 'f1', name: 'sharding_protocol.bin', type: 'file', size: '1.2 MB', status: 'sharded' },
-          { id: 'f2', name: 'mesh_identity.priv', type: 'file', size: '4 KB', status: 'encrypted' },
-          { id: 'f3', name: 'Personal_Log_01.md', type: 'file', size: '12 KB', status: 'local' },
-        ]);
+        setItems([]);
       }
-    } catch (err) {
-      console.error("Failed to fetch files:", err);
-      // Ensure mock data on error too
-      setItems([
-        { id: 'f1', name: 'sharding_protocol.bin', type: 'file', size: '1.2 MB', status: 'sharded' },
-        { id: 'f2', name: 'mesh_identity.priv', type: 'file', size: '4 KB', status: 'encrypted' },
-      ]);
+    } catch {
+      setItems([]);
     } finally {
       setIsLoading(false);
     }
@@ -89,21 +79,24 @@ export function NeuralFileManager({ t }: { t: any }) {
 
   const handeUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
+
     setIsLoading(true);
     const formData = new FormData();
     Array.from(files).forEach(file => formData.append('files', file));
-    
+
     try {
-      const res = await fetch('/api/files/upload', {
+      const relPath = currentPath.map(p => p.name).join('/');
+      const res = await fetch(`/api/files/upload?path=${encodeURIComponent(relPath)}`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        credentials: 'include',
       });
       if (res.ok) {
-        toast.success(`Successfully uploaded ${files.length} files`);
+        toast.success(`Uploaded ${files.length} file(s)`);
         fetchFiles();
       } else {
-        toast.error('Upload failed');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Upload failed');
       }
     } catch (err) {
       toast.error('Connection error during upload');
@@ -132,13 +125,17 @@ export function NeuralFileManager({ t }: { t: any }) {
   };
 
   const deleteItem = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this fragment?')) return;
+    const name = id.split(/[\\/]/).pop() || id;
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
 
     try {
-      const res = await fetch(`/api/files/delete/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/files/delete/${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('Shard deleted');
+        toast.success(`Deleted: ${name}`);
         fetchFiles();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Deletion failed');
       }
     } catch (err) {
       toast.error('Deletion failed');
@@ -148,13 +145,13 @@ export function NeuralFileManager({ t }: { t: any }) {
 
   const downloadItem = async (id: string) => {
     try {
-      const res = await fetch(`/api/files/download/${id}`);
+      const res = await fetch(`/api/files/download/${encodeURIComponent(id)}`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = id;
+      a.download = id.split(/[\\/]/).pop() || id;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -167,8 +164,9 @@ export function NeuralFileManager({ t }: { t: any }) {
   };
 
   const renameItem = async (id: string) => {
-    const newName = prompt('Enter new name:', id);
-    if (!newName || newName === id) return;
+    const currentName = id.split(/[\\/]/).pop() || id;
+    const newName = prompt('Enter new name:', currentName);
+    if (!newName || newName === currentName) return;
     try {
       const res = await fetch('/api/files/rename', {
         method: 'POST',
@@ -190,7 +188,7 @@ export function NeuralFileManager({ t }: { t: any }) {
 
   const showFileInfo = async (id: string) => {
     try {
-      const res = await fetch(`/api/files/info/${id}`);
+      const res = await fetch(`/api/files/info/${encodeURIComponent(id)}`);
       if (res.ok) {
         const info = await res.json();
         toast.info(`${info.name}\n${info.formattedSize} · ${info.type}\nModified: ${new Date(info.updatedAt).toLocaleString()}`);
@@ -230,12 +228,11 @@ export function NeuralFileManager({ t }: { t: any }) {
 
   const previewItem = async (item: FSItem) => {
     if (item.type === 'folder') return;
-    // For text files, try to fetch and display content
     const textExts = ['.txt', '.md', '.json', '.csv', '.ts', '.tsx', '.js', '.jsx', '.py', '.html', '.css', '.yaml', '.yml', '.toml', '.xml', '.log', '.env', '.sh', '.bat'];
     const ext = '.' + item.name.split('.').pop()?.toLowerCase();
     if (textExts.includes(ext) && item.size !== '--') {
       try {
-        const res = await fetch(`/api/files/download/${item.id}`);
+        const res = await fetch(`/api/files/download/${encodeURIComponent(item.id)}`);
         if (res.ok) {
           const text = await res.text();
           const w = window.open('', '_blank', 'width=800,height=600');
@@ -292,7 +289,9 @@ export function NeuralFileManager({ t }: { t: any }) {
         </div>
 
         <div className="flex-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/40">
-          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPath([])}>ROOT</span>
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => setCurrentPath([])}>
+            {homePath ? homePath.split(/[\\/]/).pop() || 'HOME' : 'HOME'}
+          </span>
           {currentPath.map((p, i) => (
             <React.Fragment key={p.id}>
               <span className="opacity-20">/</span>
@@ -445,29 +444,18 @@ export function NeuralFileManager({ t }: { t: any }) {
         )}
       </AnimatePresence>
 
-      {/* Storage Footer */}
-      <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-between items-center px-12">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/20">
-            <HardDrive size={20} />
-          </div>
-          <div className="space-y-2">
-            <div className="text-[8px] font-black text-white/40 uppercase tracking-[0.4em]">{t.shardedMemoryStatus || 'Sharded Memory Status'}</div>
-            <div className="w-48 h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
-               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '42%' }}
-                className="h-full bg-gradient-to-r from-celestial-saturn/40 to-celestial-saturn" 
-               />
-            </div>
-          </div>
+      {/* Footer */}
+      <div className="p-4 border-t border-white/5 bg-white/[0.02] flex justify-between items-center px-8">
+        <div className="flex items-center gap-3">
+          <HardDrive size={16} className="text-white/20" />
+          <span className="text-[9px] font-bold text-white/30">
+            {homePath ? homePath : 'HOME'}{currentPath.length > 0 ? '/' + currentPath.map(p => p.name).join('/') : ''}
+          </span>
         </div>
         <div className="text-right">
-           <div className="text-sm font-black text-white flex items-center gap-2 justify-end">
-             <span className="text-emerald-500 animate-pulse">●</span>
-             42.1 GB {t.available || 'AVAILABLE'}
-           </div>
-           <div className="text-[8px] text-white/20 font-black uppercase tracking-[0.2em] mt-1">{t.distributedShardLimit || 'Distributed Shard Limit'}: 100 GB</div>
+          <span className="text-[9px] font-bold text-white/20">
+            {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
     </div>
