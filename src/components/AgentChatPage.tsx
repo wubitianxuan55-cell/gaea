@@ -31,7 +31,14 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
     socket,
     onTranscript: (text, isFinal) => {
       if (isFinal) {
-         // Optionally add to transcript view if separate from chat
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text,
+          userName: user?.displayName || user?.username || 'You',
+          timestamp: new Date().toISOString(),
+          type: 'user',
+          source: 'voice',
+        }]);
       }
     },
     onResponse: (text) => {
@@ -249,9 +256,10 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
       });
     });
 
-    socket.on("agent:response", (data: { text: string; agentName: string }) => {
+    socket.on("agent:response", (data: { text: string; agentName: string; source?: string }) => {
+      // Skip voice responses — handled by useVoiceCall.onResponse
+      if (data.source === 'voice') return;
       setIsTyping(false);
-      // If we have a streaming message, finalize it; otherwise create new
       if (streamingMsgId.current) {
         streamingMsgId.current = null;
       } else {
@@ -477,7 +485,7 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
           <VoiceCallButton 
             callState={callState}
             audioLevel={audioLevel}
-            onStart={() => startCall(selectedVoiceId, personalityId)}
+            onStart={() => startCall(selectedVoiceId, personalityId, agentId)}
             onEnd={endCall}
             hasVoice={voices.length > 0}
           />

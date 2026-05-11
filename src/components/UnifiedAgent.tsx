@@ -341,7 +341,7 @@ Lumi Core Agent
               t={t} 
               callState={callState}
               audioLevel={audioLevel}
-              onStartCall={() => startCall(undefined, personality)}
+              onStartCall={() => startCall(undefined, personality, personality)}
               onEndCall={endCall}
             />
           </div>

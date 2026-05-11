@@ -215,7 +215,7 @@ export function registerChatHandler(
       });
       writeDB(db);
 
-      socket.emit("agent:response", { text: responseText, agentName: personality.name });
+      socket.emit("agent:response", { text: responseText, agentName: personality.name, source: "chat" });
       socket.emit("agent:status", { status: "idle" });
 
       // Async memory extraction

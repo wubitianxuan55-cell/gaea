@@ -213,7 +213,7 @@ export function MobilePlatform({ t, user, lang, setLang, onLogin, onExit, render
                 <button 
                   onClick={() => {
                     triggerHaptic(10);
-                    if (callState === 'idle') startCall(undefined, personalityId);
+                    if (callState === 'idle') startCall(undefined, personalityId, personalityId);
                     else endCall();
                   }}
                   className={`w-full p-6 glass-dark rounded-[2.5rem] border transition-all flex items-center justify-between group active:bg-white/5 ${

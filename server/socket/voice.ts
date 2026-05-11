@@ -10,7 +10,7 @@ import { toolRegistry } from "../tools/registry";
 import { personalityRegistry } from "../personality";
 import { createStreamingSession, getActiveSTTProvider } from "../stt/adapter";
 import { synthesizeSpeech, getActiveProvider as getTTSProvider } from "../tts/adapter";
-import { getOrCreateActiveConversation } from "../conversation/manager";
+import { getOrCreateActiveConversation, addMessage } from "../conversation/manager";
 
 interface AudioSession {
   sttSession: ReturnType<typeof createStreamingSession> | null;
@@ -19,6 +19,7 @@ interface AudioSession {
   currentVoiceId: string | null;
   personalityId: string;
   userId: string;
+  agentId: string;
   accumulatedText: string;
   /** TTS is actively playing audio — user can barge-in */
   isSpeaking: boolean;
@@ -41,6 +42,7 @@ function getAudioSession(socket: Socket): AudioSession {
       isProcessing: false,
       inputQueue: [],
       userId: '',
+      agentId: '',
     };
   }
   return socket.data.audioSession as AudioSession;
@@ -262,27 +264,43 @@ SAFETY:
 
     if (responseText) {
       logger.info(`[Audio] Response: "${responseText.slice(0, 80)}" (${sentenceIdx} sentences, ${toolResults.length} tool calls, provider=${provider})`);
-      socket.emit("agent:response", { text: responseText, agentName: "Lumi" });
+      socket.emit("agent:response", { text: responseText, agentName: "Lumi", source: "voice" });
     }
 
     // Persist interaction with conversation linkage
-    const db = readDB();
-    const conv = getOrCreateActiveConversation(session.userId);
+    const conv = getOrCreateActiveConversation(session.userId, session.agentId);
     if (!conv.title) {
       conv.title = userText.slice(0, 50);
+      const db = readDB();
       writeDB(db);
     }
-    db.interactions.push({
-      id: crypto.randomUUID().slice(0, 9),
-      content: userText,
-      response: responseText,
-      role: "user",
-      personality: session.personalityId,
-      timestamp: new Date().toISOString(),
-      mode: 'voice',
+
+    // User message
+    addMessage({
+      userId: session.userId,
+      agentId: session.agentId,
       conversationId: conv.id,
-    } as any);
-    writeDB(db);
+      role: 'user',
+      content: userText,
+      personality: session.personalityId,
+      mode: 'voice',
+    });
+
+    // Assistant message
+    if (responseText) {
+      addMessage({
+        userId: session.userId,
+        agentId: session.agentId,
+        conversationId: conv.id,
+        role: 'assistant',
+        content: responseText,
+        personality: session.personalityId,
+        mode: 'voice',
+      });
+    }
+
+    // Notify frontend to refresh conversation list
+    socket.emit('chat:conversation_updated', { conversationId: conv.id, agentId: session.agentId });
 
   } catch (err: any) {
     logger.error("[Audio LLM Error]:", err);
@@ -323,7 +341,7 @@ export function registerVoiceHandlers(
   sensoryFn: (uid: string) => any,
   getUserId: (s: Socket) => string,
 ) {
-  socket.on("audio:start", async (data: { voiceId?: string; personalityId?: string }) => {
+  socket.on("audio:start", async (data: { voiceId?: string; personalityId?: string; agentId?: string }) => {
     logger.info(`[Audio] Voice call started by ${socket.id}`);
     const session = getAudioSession(socket);
     session.isActive = true;
@@ -332,6 +350,7 @@ export function registerVoiceHandlers(
     session.isProcessing = false;
     session.inputQueue = [];
     session.userId = getUserId(socket);
+    session.agentId = data.agentId || '';
     session.currentVoiceId = data.voiceId || null;
     session.personalityId = data.personalityId || 'lumi';
 

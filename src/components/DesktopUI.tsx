@@ -1381,7 +1381,7 @@ export function DesktopUI({
               audioLevel={audioLevel}
               highPerformance={isTauri}
               isWallpaperMode={isWallpaperMode}
-              onStartCall={() => startCall(selectedVoiceId, personalityId)}
+              onStartCall={() => startCall(selectedVoiceId, personalityId, personalityId)}
               onEndCall={endCall}
               onInterrupt={interrupt}
               onToggleMute={toggleMute}

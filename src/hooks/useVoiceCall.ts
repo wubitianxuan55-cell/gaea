@@ -237,7 +237,7 @@ export function useVoiceCall({ socket, onTranscript, onResponse }: UseVoiceCallO
     }
   }, [callState, socket]);
 
-  const startCall = useCallback(async (voiceId?: string, personalityId: string = 'lumi') => {
+  const startCall = useCallback(async (voiceId?: string, personalityId: string = 'lumi', agentId?: string) => {
     try {
       setError(null);
       setCallState('connecting');
@@ -291,7 +291,7 @@ export function useVoiceCall({ socket, onTranscript, onResponse }: UseVoiceCallO
       timerInterval.current = setInterval(() => {
         setElapsedSeconds(Math.floor((Date.now() - callStartTime.current) / 1000));
       }, 1000);
-      socket.emit('audio:start', { voiceId, personalityId });
+      socket.emit('audio:start', { voiceId, personalityId, agentId });
     } catch (err: any) {
       setError(err.message || 'Failed to start voice call');
       setCallState('idle');
