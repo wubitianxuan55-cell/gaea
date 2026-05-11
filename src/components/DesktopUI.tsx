@@ -1735,7 +1735,7 @@ export function DesktopUI({
                 height={size.h}
                 t={t}
               >
-                <div className="p-8 h-full">
+                <div className={windowId === 'knowledge' ? 'relative h-full' : 'p-8 h-full'}>
                   {windowId === 'knowledge' ? (
                     <KnowledgeBase t={t} />
                   ) : windowId === 'kernel' ? (

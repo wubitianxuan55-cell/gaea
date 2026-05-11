@@ -450,7 +450,7 @@ export function KnowledgeBase({ t }: { t?: any }) {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-[#020408] font-sans"
+      className="absolute inset-0 overflow-hidden bg-[#020408] font-sans"
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={(e) => {
