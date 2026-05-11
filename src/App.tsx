@@ -19,6 +19,7 @@ import { Solutions } from './components/Solutions';
 import { FoundersSanctuary } from './components/FoundersSanctuary';
 import { LocalAgentSphere } from './components/LocalAgentSphere';
 import { FloatingAgent } from './components/FloatingAgent';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProactiveNotifications } from './components/ProactiveNotifications';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -166,6 +167,7 @@ export default function App() {
           ? 'bg-celestial-deep/90 backdrop-blur-3xl' 
           : 'bg-celestial-deep'
     }`}>
+      <ErrorBoundary>
       <ProactiveNotifications />
       <Toaster position="top-right" theme="dark" />
       <AnimatePresence mode="wait">
@@ -217,6 +219,7 @@ export default function App() {
       />
       
       {uiMode === 'web' && !isDesktop && <FloatingAgent t={t} />}
+      </ErrorBoundary>
     </div>
   );
 }

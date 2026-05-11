@@ -205,6 +205,7 @@ SAFETY:
         (chunk: string) => {
           responseText += chunk;
           sentenceBuffer += chunk;
+          socket.emit("agent:chunk", { text: chunk, agentName: "Lumi" });
           const match = sentenceBuffer.match(/^([\s\S]*?[。！？.!?\n])/);
           if (match) {
             const sentence = match[1];

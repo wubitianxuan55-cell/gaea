@@ -47,6 +47,7 @@ import voiceRoutes from "./routes/voice";
 import fileRoutes from "./routes/files";
 import { mountAuthRoutes } from "./server/routes/auth";
 import { mountMemoryRoutes } from "./server/routes/memory_routes";
+import { mountConversationRoutes } from "./server/routes/conversations";
 import { registerChatHandler } from "./server/socket/chat";
 import { registerTaskHandler } from "./server/socket/task";
 import { registerVoiceHandlers } from "./server/socket/voice";
@@ -947,6 +948,9 @@ apiRouter.post("/interactions", (req, res) => {
 
 // Memory & Reminder routes
 mountMemoryRoutes(apiRouter, JWT_SECRET, { getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen });
+
+// Conversation REST routes
+mountConversationRoutes(apiRouter, JWT_SECRET);
 
 // ── Skill SDK API ──
 

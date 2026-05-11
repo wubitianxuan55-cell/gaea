@@ -41,16 +41,6 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
         }]);
       }
     },
-    onResponse: (text) => {
-      const agentMsg = {
-        id: Date.now().toString(),
-        text: text,
-        userName: agentName,
-        timestamp: new Date().toISOString(),
-        type: 'agent'
-      };
-      setMessages(prev => [...prev, agentMsg]);
-    }
   });
 
   useEffect(() => {
@@ -257,12 +247,15 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
     });
 
     socket.on("agent:response", (data: { text: string; agentName: string; source?: string }) => {
-      // Skip voice responses — handled by useVoiceCall.onResponse
-      if (data.source === 'voice') return;
       setIsTyping(false);
       if (streamingMsgId.current) {
+        // Finalize streamed message with complete text
+        setMessages(prev => prev.map(m =>
+          m.id === streamingMsgId.current ? { ...m, text: data.text } : m
+        ));
         streamingMsgId.current = null;
       } else {
+        // No streaming — add as new message
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           text: data.text,
@@ -271,7 +264,10 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
           type: 'agent'
         }]);
       }
-      speak(data.text);
+      // Don't auto-speak voice responses (already playing via TTS)
+      if (data.source !== 'voice') {
+        speak(data.text);
+      }
     });
 
     socket.on("agent:status", (data: { status: string }) => {
@@ -287,12 +283,20 @@ export function AgentChatPage({ t, user, agent, onBack }: { t: any; user: any; a
       toast.error(data.message);
     });
 
+    // Refresh conversation list when voice saves new messages
+    socket.on("chat:conversation_updated", (data: { conversationId: string; agentId: string }) => {
+      if (data.agentId === agentId) {
+        fetchConversations();
+      }
+    });
+
     return () => {
       socket.off("agent:chunk");
       socket.off("agent:tool");
       socket.off("agent:response");
       socket.off("agent:status");
       socket.off("agent:error");
+      socket.off("chat:conversation_updated");
       stop();
     };
   }, [speak, stop, isFounder, socket]);

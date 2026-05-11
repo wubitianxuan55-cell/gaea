@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { readDB, writeDB } from "../../db_layer";
+import { syncUserToSupabase } from "../config/supabase";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -38,6 +39,9 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
     db.users.push(newUser);
     writeDB(db);
 
+    // Fire-and-forget: sync to Supabase for SaaS
+    syncUserToSupabase(newUser.uid, username, hashedPassword);
+
     const token = jwt.sign({ uid: newUser.uid, username, role: newUser.role }, jwtSecret, { expiresIn: "24h" });
     res.cookie("token", token, getCookieOptions());
 
@@ -54,6 +58,9 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (passwordMatch) {
+      // Fire-and-forget: sync to Supabase for SaaS
+      syncUserToSupabase(user.uid, username, user.password);
+
       const token = jwt.sign({ uid: user.uid, username, role: user.role }, jwtSecret, { expiresIn: "24h" });
       res.cookie("token", token, getCookieOptions());
       const { password: _, ...userWithoutPassword } = user;
