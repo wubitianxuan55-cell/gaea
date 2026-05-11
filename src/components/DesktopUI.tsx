@@ -54,6 +54,8 @@ import { ContextMenu } from './ContextMenu';
 import { DesktopOnboarding } from './DesktopOnboarding';
 import { DeviceSyncCenter } from './DeviceSyncCenter';
 import { AgentChatPage } from './AgentChatPage';
+import { NeuralSynthesisMonitor } from './NeuralSynthesisMonitor';
+import { ContributorNodePanel } from './ContributorNodePanel';
 import { useSocket } from '@/hooks/useSocket';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useApp } from '@/contexts/AppContext';
@@ -76,16 +78,10 @@ interface NativeFile {
   isDirectory: boolean;
 }
 
-interface SystemInfo {
-  platform: string;
-  hostname: string;
-  freeMemory: number;
-}
-
 declare global {
   interface Window {
     lumiElectron?: {
-      getSystemInfo: () => Promise<SystemInfo>;
+      getSystemInfo: () => Promise<{ platform: string; hostname: string; freeMemory: number }>;
       listHomeFiles: () => Promise<NativeFile[]>;
       selectDirectory: () => Promise<string | null>;
       runCommand: (command: string) => Promise<{ success: boolean; output: string }>;
@@ -728,7 +724,6 @@ export function DesktopUI({
   const [chatOpen, setChatOpen] = useState(false);
   const [theme, setTheme] = useState<string>('celestial');
   const [nativeFiles, setNativeFiles] = useState<NativeFile[]>([]);
-  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [isControlCenterOpen, setIsControlCenterOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState('general');
@@ -947,19 +942,6 @@ export function DesktopUI({
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const fetchNativeData = async () => {
-      try {
-        const stats = await systemService.getSystemStats();
-        setSystemInfo(stats);
-        // We could also add listHomeFiles to systemService if needed
-      } catch (err) {
-        console.error('Failed to fetch native data:', err);
-      }
-    };
-    fetchNativeData();
-  }, []);
-
   const toggleWindow = (tab: string) => {
     try { sounds.playClick(); } catch {}
     if (tab === 'home') {
@@ -1176,7 +1158,7 @@ export function DesktopUI({
       {/* Nexus View HUD (Floating Content that only shows in Nexus mode) */}
       <AnimatePresence>
         {viewMode === 'world' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1202,8 +1184,8 @@ export function DesktopUI({
                       key={rate}
                       onClick={() => setSyncRate(rate)}
                       className={`w-12 h-12 rounded-full border flex flex-col items-center justify-center transition-all ${
-                        syncRate === rate 
-                          ? 'bg-celestial-saturn/20 border-celestial-saturn text-celestial-saturn shadow-[0_0_15px_rgba(255,200,80,0.3)]' 
+                        syncRate === rate
+                          ? 'bg-celestial-saturn/20 border-celestial-saturn text-celestial-saturn shadow-[0_0_15px_rgba(255,200,80,0.3)]'
                           : 'bg-white/5 border-white/10 text-white/30 hover:bg-white/10'
                       }`}
                     >
@@ -1224,6 +1206,8 @@ export function DesktopUI({
                 {t.focusPersonalTerritory || 'Focus Personal Territory'}
               </motion.button>
             </div>
+
+            <ContributorNodePanel t={t} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1571,43 +1555,7 @@ export function DesktopUI({
                  </GlassCard>
               </div>
 
-              <TokenUsageWidget t={t} onOpen={() => toggleWindow('tokens')} />
-
-              <GlassCard className="p-6 rounded-[2.5rem] space-y-4 border-white/5 bg-black/30 backdrop-blur-3xl">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
-                    <Activity size={12} /> {t.neuralSynthesis || 'Neural Synthesis'}
-                  </h4>
-                  <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]" />
-                </div>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-[10px] font-bold">
-                        <span className="text-white/40">{t.computeCores || 'Compute Cores'}</span>
-                        <span className="text-celestial-saturn">{navigator.hardwareConcurrency || 1} {t.threads || 'Threads'}</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min((navigator.hardwareConcurrency || 1) * 12.5, 100)}%` }}
-                          className="h-full bg-gradient-to-r from-celestial-mars to-celestial-saturn"
-                        />
-                      </div>
-                    </div>
-                    {systemInfo && (
-                      <>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-white/40">{t.nodeHost || 'Node Host'}</span>
-                          <span className="text-white/80 font-mono text-[10px]">{systemInfo.hostname}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-white/40">{t.memIndex || 'MEM Index'}</span>
-                          <span className="text-white/80 font-mono text-[10px]">{(systemInfo.freeMemory / 1024 / 1024 / 1024).toFixed(1)} {t.gbFree || 'GB Free'}</span>
-                        </div>
-                      </>
-                    )}
-                </div>
-              </GlassCard>
+              <NeuralSynthesisMonitor t={t} onOpenTokens={() => toggleWindow('tokens')} />
 
               {/* Personality Mini Stats */}
               <GlassCard className="p-5 rounded-[2rem] space-y-3 border-white/5 bg-black/30 backdrop-blur-3xl cursor-pointer hover:bg-white/[0.06] transition-all" onClick={() => toggleWindow('persona-stats')}>
@@ -1864,72 +1812,3 @@ function BatteryWidget({ t }: { t?: any }) {
   );
 }
 
-function TokenUsageWidget({ t, onOpen }: { t?: any; onOpen: () => void }) {
-  const [data, setData] = useState<{
-    grandTotal: number;
-    recordCount: number;
-    byProvider: Record<string, { totalTokens: number; calls: number }>;
-  } | null>(null);
-
-  useEffect(() => {
-    fetch('/api/llm/usage?days=30', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setData(d))
-      .catch(() => {});
-  }, []);
-
-  const formatTokens = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return String(n);
-  };
-
-  const topProvider = data?.byProvider
-    ? Object.entries(data.byProvider).sort((a, b) => b[1].totalTokens - a[1].totalTokens)[0]
-    : null;
-
-  return (
-    <div
-      className="p-4 rounded-[2rem] border border-white/5 bg-black/20 backdrop-blur-2xl cursor-pointer hover:bg-white/[0.06] transition-all"
-      onClick={onOpen}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30 flex items-center gap-2">
-          <Zap size={12} className="text-cyan-400" />
-          {t?.tokenUsage || 'Token Usage'}
-        </h4>
-        <ChevronRight size={12} className="text-white/20" />
-      </div>
-
-      {data ? (
-        <>
-          <div className="text-2xl font-black text-white/80 tracking-tight">
-            {formatTokens(data.grandTotal)}
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[9px] text-white/30 font-medium">
-              {data.recordCount} calls across {Object.keys(data.byProvider).length} providers
-            </span>
-          </div>
-          {topProvider && (
-            <div className="mt-3">
-              <div className="flex justify-between text-[8px] font-bold text-white/20 mb-1">
-                <span>Top: {topProvider[0]}</span>
-                <span>{formatTokens(topProvider[1].totalTokens)}</span>
-              </div>
-              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, (topProvider[1].totalTokens / (data.grandTotal || 1)) * 100)}%` }}
-                  className="h-full rounded-full bg-cyan-400/60"
-                />
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-xs text-white/15">Loading...</div>
-      )}
-    </div>
-  );
-}

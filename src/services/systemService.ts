@@ -10,6 +10,24 @@ export interface CommandResponse {
   exitCode?: number;
 }
 
+export interface TempReading {
+  label: string;
+  celsius: number;
+}
+
+export interface LiveStats {
+  cpu_percent: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  memory_percent: number;
+  gpu_vendor: string | null;
+  gpu_utilization: number | null;
+  temperatures: TempReading[];
+  fan_speed_rpm: number | null;
+  hostname: string;
+  uptime_seconds: number;
+}
+
 class SystemService {
   private isTauri: boolean;
   private isElectron: boolean;
@@ -88,6 +106,57 @@ class SystemService {
       platform: navigator.platform,
       userAgent: navigator.userAgent.slice(0, 80),
     };
+  }
+
+  /**
+   * Get live system stats with CPU%, GPU, temperatures
+   */
+  async getLiveStats(): Promise<LiveStats> {
+    if (this.isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<LiveStats>('get_live_stats');
+      } catch (err) {
+        console.error("Failed to get live stats:", err);
+      }
+    }
+    return this.getServerStats();
+  }
+
+  /**
+   * Fallback: get system stats from Express server (works in web/dev mode)
+   */
+  async getServerStats(): Promise<LiveStats> {
+    try {
+      const res = await fetch('/api/system/stats');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const s = await res.json();
+      return {
+        cpu_percent: s.cpu ?? 0,
+        memory_used_gb: s.ram?.used ?? 0,
+        memory_total_gb: s.ram?.total ?? 0,
+        memory_percent: s.ram?.percent ?? 0,
+        gpu_vendor: null,
+        gpu_utilization: null,
+        temperatures: [],
+        fan_speed_rpm: null,
+        hostname: s.hostname ?? 'web',
+        uptime_seconds: s.uptime ?? 0,
+      };
+    } catch {
+      return {
+        cpu_percent: 0,
+        memory_used_gb: 0,
+        memory_total_gb: 0,
+        memory_percent: 0,
+        gpu_vendor: null,
+        gpu_utilization: null,
+        temperatures: [],
+        fan_speed_rpm: null,
+        hostname: 'web',
+        uptime_seconds: 0,
+      };
+    }
   }
 }
 

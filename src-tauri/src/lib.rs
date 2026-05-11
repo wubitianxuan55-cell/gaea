@@ -57,6 +57,109 @@ fn get_system_info() -> SystemInfo {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TempReading {
+    pub label: String,
+    pub celsius: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LiveStats {
+    pub cpu_percent: f32,
+    pub memory_used_gb: f32,
+    pub memory_total_gb: f32,
+    pub memory_percent: f32,
+    pub gpu_vendor: Option<String>,
+    pub gpu_utilization: Option<f32>,
+    pub temperatures: Vec<TempReading>,
+    pub hostname: String,
+    pub uptime_seconds: u64,
+}
+
+fn detect_gpu() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("wmic")
+            .args([
+                "path",
+                "Win32_VideoController",
+                "get",
+                "name",
+                "/format:csv",
+            ])
+            .output();
+        if let Ok(out) = output {
+            let text = String::from_utf8_lossy(&out.stdout);
+            for line in text.lines().skip(2) {
+                let parts: Vec<&str> = line.split(',').collect();
+                if parts.len() >= 2 {
+                    let name = parts[1].trim();
+                    if !name.is_empty() {
+                        return Some(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Linux: check lspci
+        let output = Command::new("sh")
+            .args(["-c", "lspci | grep -i vga | head -1 | cut -d: -f3"])
+            .output();
+        if let Ok(out) = output {
+            let name = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !name.is_empty() {
+                return Some(name);
+            }
+        }
+    }
+    None
+}
+
+#[tauri::command]
+fn get_live_stats() -> LiveStats {
+    use sysinfo::System;
+
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    sys.refresh_cpu_all();
+
+    let cpu_percent = sys.global_cpu_usage();
+    let total_mem = sys.total_memory() as f32;
+    let used_mem = sys.used_memory() as f32;
+    let mem_percent = if total_mem > 0.0 {
+        (used_mem / total_mem) * 100.0
+    } else {
+        0.0
+    };
+
+    let gpu_vendor = detect_gpu();
+
+    let components = sysinfo::Components::new_with_refreshed_list();
+    let temperatures: Vec<TempReading> = components
+        .iter()
+        .filter(|c| c.temperature().is_some())
+        .map(|c| TempReading {
+            label: c.label().to_string(),
+            celsius: c.temperature().unwrap(),
+        })
+        .collect();
+
+    LiveStats {
+        cpu_percent: (cpu_percent * 100.0).min(100.0),
+        memory_used_gb: used_mem / 1024.0 / 1024.0 / 1024.0,
+        memory_total_gb: total_mem / 1024.0 / 1024.0 / 1024.0,
+        memory_percent: mem_percent,
+        gpu_vendor,
+        gpu_utilization: None,
+        temperatures,
+        hostname: sys_info::hostname().unwrap_or_default(),
+        uptime_seconds: System::uptime(),
+    }
+}
+
 #[tauri::command]
 fn list_home_files() -> Vec<NativeFile> {
     let home = dirs_next::home_dir().unwrap_or_default();
@@ -236,6 +339,7 @@ pub fn run() {
         .manage(Mutex::new(WallpaperState { enabled: false }))
         .invoke_handler(tauri::generate_handler![
             get_system_info,
+            get_live_stats,
             list_home_files,
             run_command,
             open_item,

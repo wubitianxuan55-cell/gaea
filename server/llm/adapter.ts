@@ -2,6 +2,7 @@ import { ToolRegistry } from '../tools/registry';
 import { ToolExecutionRecord, ToolContext, LLMUsage } from '../tools/types';
 import { NormalizedMessage, makeLLMCall, makeLLMCallStreaming, StreamCallback } from './providers';
 import { recordWorkflow, WorkflowStep } from '../skills/worklog';
+import { recordLatency } from '../monitor/latency_store';
 
 export interface LLMConfig {
   provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen';
@@ -53,6 +54,7 @@ export async function runWithTools(
     }
     const toolDeclarations = toolRegistry.getToolDeclarations();
 
+    const llmStart = Date.now();
     const response = onStreamChunk
       ? await makeLLMCallStreaming(
           conversationHistory,
@@ -75,6 +77,7 @@ export async function runWithTools(
           getAnthropic || (() => null),
           getQwen || (() => null),
         );
+    recordLatency('llm', Date.now() - llmStart);
 
     // Collect usage from this LLM call
     if (response.usage) {

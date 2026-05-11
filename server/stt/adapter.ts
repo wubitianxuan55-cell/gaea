@@ -3,13 +3,17 @@ import * as deepgram from './providers/deepgram';
 import * as whisper from './providers/whisper';
 import * as qwen from './providers/qwen';
 import { getKey } from '../config/keys';
+import { recordLatency } from '../monitor/latency_store';
 
 export async function transcribe(audioBuffer: Buffer, config: STTConfig): Promise<STTResult> {
+  const start = Date.now();
+  let result: STTResult;
   switch (config.provider) {
     case 'whisper':
-      return whisper.transcribe(audioBuffer, config.language);
+      result = await whisper.transcribe(audioBuffer, config.language);
+      break;
     case 'deepgram':
-      return new Promise((resolve, reject) => {
+      result = await new Promise((resolve, reject) => {
         const session = deepgram.createStream(config.language, false);
         let finalResult: STTResult = { text: '', isFinal: false };
         session.onResult((result) => {
@@ -20,8 +24,9 @@ export async function transcribe(audioBuffer: Buffer, config: STTConfig): Promis
         session.end();
         setTimeout(() => resolve(finalResult), 3000);
       });
+      break;
     case 'qwen':
-      return new Promise((resolve, reject) => {
+      result = await new Promise((resolve, reject) => {
         const session = qwen.createStream(config.language || 'zh', false);
         let finalResult: STTResult = { text: '', isFinal: false };
         session.onResult((result) => {
@@ -32,9 +37,12 @@ export async function transcribe(audioBuffer: Buffer, config: STTConfig): Promis
         session.end();
         setTimeout(() => resolve(finalResult), 3000);
       });
+      break;
     default:
       throw new Error(`Unknown STT provider: ${config.provider}`);
   }
+  recordLatency('stt', Date.now() - start);
+  return result;
 }
 
 export function createStreamingSession(

@@ -5,6 +5,7 @@ import fs from 'fs';
 import { synthesizeSpeech, cloneVoice, listVoices, getActiveProvider } from '../server/tts/adapter';
 import { readDB, writeDB } from '../db_layer';
 import { logger } from '../logger';
+import { recordLatency } from '../server/monitor/latency_store';
 
 const router = Router();
 
@@ -183,10 +184,12 @@ router.post('/voice/synthesize', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No TTS provider configured' });
     }
 
+    const start = Date.now();
     const result = await synthesizeSpeech(text, {
       provider: activeProvider,
       voiceId: voiceId || 'default',
     });
+    recordLatency('tts', Date.now() - start);
 
     res.set('Content-Type', `audio/${result.format}`);
     res.set('X-Audio-Format', result.format);

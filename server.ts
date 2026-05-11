@@ -53,6 +53,7 @@ import { registerTaskHandler } from "./server/socket/task";
 import { registerVoiceHandlers } from "./server/socket/voice";
 import { getSensory, perceptionEvents, MAX_PERCEPTION_EVENTS } from "./server/socket/shared";
 import { loadKeys, saveKeys, getKey, getAllKeyNames } from "./server/config/keys";
+import { getLatencyStats } from "./server/monitor/latency_store";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1359,6 +1360,11 @@ apiRouter.get("/system/stats", (_req: any, res: any) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Latency stats — LLM / TTS / STT inference timing
+apiRouter.get("/monitor/latency", (_req: any, res: any) => {
+  res.json(getLatencyStats());
 });
 
 // LAP routes — Lumi Agent Protocol
