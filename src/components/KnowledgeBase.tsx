@@ -59,29 +59,39 @@ function computeLayout(
   savedPositions: Record<string, { x: number; y: number }>,
 ): KnowledgeNodeData[] {
   const all: KnowledgeNodeData[] = [];
-  const cols = Math.max(5, Math.ceil(Math.sqrt(leafNodes.length)));
+  const total = branchNodes.length + leafNodes.length;
 
   // Branch nodes in a row near top
-  branchNodes.forEach((n, i) => {
-    const x = (i + 1) / (branchNodes.length + 1);
-    const y = 0.12 + Math.random() * 0.06;
-    all.push({
-      ...n,
-      position: savedPositions[n.id] || { x, y },
+  if (branchNodes.length > 0) {
+    branchNodes.forEach((n, i) => {
+      const x = (i + 1) / (branchNodes.length + 1);
+      const y = 0.10 + Math.random() * 0.06;
+      all.push({ ...n, position: savedPositions[n.id] || { x, y } });
     });
-  });
+  }
 
-  // Leaf nodes in a loose grid
-  leafNodes.forEach((n, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = (col + 1) / (cols + 1) + (Math.random() - 0.5) * 0.12;
-    const y = 0.30 + (row / Math.ceil(leafNodes.length / cols)) * 0.55 + (Math.random() - 0.5) * 0.06;
-    all.push({
-      ...n,
-      position: savedPositions[n.id] || { x: Math.max(0.05, Math.min(0.95, x)), y: Math.max(0.08, Math.min(0.92, y)) },
+  // Leaf nodes scattered across the full canvas
+  if (leafNodes.length > 0) {
+    const cols = Math.max(3, Math.ceil(Math.sqrt(leafNodes.length) * 1.3));
+    leafNodes.forEach((n, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const jitterX = (Math.random() - 0.5) * 0.1;
+      const jitterY = (Math.random() - 0.5) * 0.08;
+      const x = (col + 1) / (cols + 1) + jitterX;
+      const totalRows = Math.ceil(leafNodes.length / cols);
+      const yStart = branchNodes.length > 0 ? 0.28 : 0.15;
+      const yRange = branchNodes.length > 0 ? 0.64 : 0.78;
+      const y = yStart + (row / Math.max(1, totalRows - 1)) * yRange + jitterY;
+      all.push({
+        ...n,
+        position: savedPositions[n.id] || {
+          x: Math.max(0.06, Math.min(0.94, x)),
+          y: Math.max(0.05, Math.min(0.90, y)),
+        },
+      });
     });
-  });
+  }
 
   return all;
 }
@@ -127,20 +137,24 @@ export function KnowledgeBase({ t }: { t?: any }) {
     return () => ro.disconnect();
   }, []);
 
-  // Fetch data
+  // Fetch data — load files and memories independently
   const fetchAll = useCallback(async () => {
     setLoading(true);
+
+    // Fetch files
     try {
-      const [filesRes, memoryRes] = await Promise.all([
-        fetch('/api/files/list'),
-        fetch('/api/memory/tree'),
-      ]);
-      if (filesRes.ok) {
-        const d = await filesRes.json();
+      const res = await fetch('/api/files/list');
+      if (res.ok) {
+        const d = await res.json();
         setFiles(d.files || []);
       }
-      if (memoryRes.ok) {
-        const d = await memoryRes.json();
+    } catch (err) { console.warn('[KnowledgeBase] Failed to fetch files:', err); }
+
+    // Fetch memories (requires auth — may 401 if not logged in)
+    try {
+      const res = await fetch('/api/memory/tree');
+      if (res.ok) {
+        const d = await res.json();
         const flat: Memory[] = [];
         const walk = (nodes: MemoryTree[]) => {
           for (const n of nodes) { flat.push(n.node); walk(n.children); }
@@ -148,8 +162,9 @@ export function KnowledgeBase({ t }: { t?: any }) {
         walk(d.tree || []);
         setMemories(flat);
       }
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+    } catch (err) { console.warn('[KnowledgeBase] Failed to fetch memories:', err); }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -465,6 +480,24 @@ export function KnowledgeBase({ t }: { t?: any }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Empty state */}
+      {!loading && nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <div className="text-center space-y-5 pointer-events-auto">
+            <div className="w-20 h-20 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto">
+              <Network size={32} className="text-white/15" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white/30 uppercase tracking-widest">Knowledge Base Empty</p>
+              <p className="text-[10px] text-white/12 mt-1.5 max-w-xs leading-relaxed">
+                Upload files or start a conversation with Lumi to build your knowledge base.
+                Memories and files will appear as glowing nodes in this neural field.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Knowledge Nodes */}
       {filteredNodes.map(node => (
