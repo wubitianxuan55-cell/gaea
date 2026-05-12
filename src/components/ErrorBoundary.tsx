@@ -1,6 +1,16 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { translations } from '@/lib/translations';
+
+function getT() {
+  try {
+    const lang = localStorage.getItem('lumi-lang') || 'zh';
+    return (translations as any)[lang] || (translations as any).zh;
+  } catch {
+    return (translations as any).zh;
+  }
+}
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -34,6 +44,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
 
+      const t = getT();
+
       return (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -45,11 +57,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <AlertTriangle size={28} className="text-red-400" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-black uppercase tracking-widest text-white/60">Signal Interrupted</h3>
-              <p className="text-[10px] text-white/20 font-mono uppercase tracking-widest">Component render failure</p>
+              <h3 className="text-sm font-black uppercase tracking-widest text-white/60">{t.errorSignalInterrupted || 'Signal Interrupted'}</h3>
+              <p className="text-[10px] text-white/20 font-mono uppercase tracking-widest">{t.errorRenderFailure || 'Component render failure'}</p>
             </div>
             <p className="text-xs text-white/40 font-mono bg-white/5 rounded-xl p-3 max-h-20 overflow-auto">
-              {this.state.error?.message?.slice(0, 120) || 'Unknown error'}
+              {this.state.error?.message?.slice(0, 120) || t.errorUnknown || 'Unknown error'}
             </p>
             <div className="flex gap-3 justify-center">
               <button
@@ -57,14 +69,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <RefreshCw size={12} />
-                Retry
+                {t.errorRetry || 'Retry'}
               </button>
               <button
                 onClick={() => window.location.reload()}
                 className="px-5 py-2.5 rounded-xl bg-celestial-saturn/10 border border-celestial-saturn/20 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-celestial-saturn hover:bg-celestial-saturn/20 transition-colors"
               >
                 <Home size={12} />
-                Reload
+                {t.errorReload || 'Reload'}
               </button>
             </div>
           </div>

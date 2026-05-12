@@ -48,7 +48,7 @@ export function LoginModal({ t, isOpen, onClose, onLoginSuccess, onGoogleLogin }
     // Validate username pattern
     const usernameRegex = /^[a-zA-Z0-9_-]+$/;
     if (!usernameRegex.test(username)) {
-      setError('Username can only contain letters, numbers, underscores, and hyphens');
+      setError(t.authValidationUsername || 'Username can only contain letters, numbers, underscores, and hyphens');
       setLoading(false);
       return;
     }
@@ -71,7 +71,7 @@ export function LoginModal({ t, isOpen, onClose, onLoginSuccess, onGoogleLogin }
         onLoginSuccess();
         onClose();
       } else {
-        setError(result.error || (isRegister ? 'Registration failed' : 'Login failed'));
+        setError(result.error || (isRegister ? (t.registerFailed || 'Registration failed') : (t.loginFailed || 'Login failed')));
       }
     } catch (err: any) {
       setError(err.message);
@@ -96,7 +96,7 @@ export function LoginModal({ t, isOpen, onClose, onLoginSuccess, onGoogleLogin }
                 {isRegister ? t.register || 'Create Node' : t.loginTitle || 'Sync Node'}
               </h2>
               <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">
-                Lumi Network Authentication
+                {t.authSubtitle || 'Lumi Network Authentication'}
               </p>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
@@ -113,7 +113,7 @@ export function LoginModal({ t, isOpen, onClose, onLoginSuccess, onGoogleLogin }
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/10 focus:outline-none focus:border-celestial-saturn/50 transition-colors"
-                placeholder="User_ID_0X1F"
+                placeholder={t.authPlaceholderUsername || 'User_ID_0X1F'}
               />
             </div>
 
@@ -170,7 +170,7 @@ export function LoginModal({ t, isOpen, onClose, onLoginSuccess, onGoogleLogin }
 
               <div className="flex items-center gap-4 my-2">
                  <div className="h-px flex-1 bg-white/5" />
-                 <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">or</span>
+                 <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">{t.authOrDivider || 'or'}</span>
                  <div className="h-px flex-1 bg-white/5" />
               </div>
 

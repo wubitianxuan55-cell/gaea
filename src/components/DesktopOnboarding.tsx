@@ -22,26 +22,26 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
 
   const steps = [
     {
-      title: "Welcome to Lumi OS",
-      description: "Your local-first, AI-driven operating system designed for neural performance and privacy.",
+      title: t.onboardingWelcomeTitle || "Welcome to Lumi OS",
+      description: t.onboardingWelcomeDesc || "Your local-first, AI-driven operating system designed for neural performance and privacy.",
       icon: <Sparkles size={48} className="text-celestial-saturn" />,
       color: "from-celestial-saturn/20 to-transparent"
     },
     {
-      title: "Neural Core",
-      description: "The central sphere is your gateway. Click it to interact, or use the voice commands to control your environment.",
+      title: t.onboardingNeuralCore || "Neural Core",
+      description: t.onboardingNeuralCoreDesc || "The central sphere is your gateway. Click it to interact, or use the voice commands to control your environment.",
       icon: <Cpu size={48} className="text-blue-400" />,
       color: "from-blue-500/20 to-transparent"
     },
     {
-      title: "Spotlight Search",
-      description: "Press Cmd+K anytime to summon the Spotlight. Find apps, run commands, and traverse shard directories instantly.",
+      title: t.onboardingSpotlight || "Spotlight Search",
+      description: t.onboardingSpotlightDesc || "Press Cmd+K anytime to summon the Spotlight. Find apps, run commands, and traverse shard directories instantly.",
       icon: <Search size={48} className="text-purple-400" />,
       color: "from-purple-500/20 to-transparent"
     },
     {
-      title: "Privacy First",
-      description: "All neural training and voice processing happens on your local node. Your data remains sharded and encrypted.",
+      title: t.onboardingPrivacy || "Privacy First",
+      description: t.onboardingPrivacyDesc || "All neural training and voice processing happens on your local node. Your data remains sharded and encrypted.",
       icon: <Shield size={48} className="text-emerald-400" />,
       color: "from-emerald-500/20 to-transparent"
     }
@@ -114,7 +114,7 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
                     onClick={() => setCurrentStep(prev => prev + 1)}
                     className="w-full py-6 bg-white text-black rounded-[2rem] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
                   >
-                    Continue
+                    {t.continueBtn || 'Continue'}
                     <ChevronRight size={20} />
                   </button>
                 ) : (
@@ -122,7 +122,7 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
                     onClick={onFinish}
                     className="w-full py-6 bg-celestial-saturn text-black rounded-[2rem] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_40px_rgba(255,200,80,0.3)]"
                   >
-                    Enter Workspace
+                    {t.enterWorkspace || 'Enter Workspace'}
                     <Zap size={20} fill="currentColor" />
                   </button>
                 )}
@@ -130,7 +130,7 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
 
               <div className="flex gap-2">
                  <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">
-                   Powered by Lumi Neural Core v2.0
+                   {t.poweredByLumi || 'Powered by Lumi Neural Core v2.0'}
                  </div>
               </div>
             </div>

@@ -7,9 +7,10 @@ interface VoiceSubtitleProps {
   responseText: string;
   callState: string;
   audioLevel: number;
+  t?: any;
 }
 
-export function VoiceSubtitle({ transcript, responseText, callState, audioLevel }: VoiceSubtitleProps) {
+export function VoiceSubtitle({ transcript, responseText, callState, audioLevel, t }: VoiceSubtitleProps) {
   const [visible, setVisible] = useState(false);
   const [displayText, setDisplayText] = useState('');
   const [displayResponse, setDisplayResponse] = useState('');
@@ -58,7 +59,7 @@ export function VoiceSubtitle({ transcript, responseText, callState, audioLevel 
                   >
                     <Mic size={12} className="text-celestial-saturn" />
                   </motion.div>
-                  <span className="text-[10px] font-medium text-white/60 uppercase tracking-widest">Listening</span>
+                  <span className="text-[10px] font-medium text-white/60 uppercase tracking-widest">{t?.listening || 'Listening'}</span>
                   {/* Audio level bar */}
                   <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
@@ -80,7 +81,7 @@ export function VoiceSubtitle({ transcript, responseText, callState, audioLevel 
                   >
                     <Volume2 size={12} className="text-purple-400" />
                   </motion.div>
-                  <span className="text-[10px] font-medium text-purple-400/60 uppercase tracking-widest">Thinking</span>
+                  <span className="text-[10px] font-medium text-purple-400/60 uppercase tracking-widest">{t?.thinking || 'Thinking'}</span>
                 </>
               )}
               {isSpeaking && (
@@ -91,7 +92,7 @@ export function VoiceSubtitle({ transcript, responseText, callState, audioLevel 
                   >
                     <Volume2 size={12} className="text-emerald-400" />
                   </motion.div>
-                  <span className="text-[10px] font-medium text-emerald-400/60 uppercase tracking-widest">Speaking</span>
+                  <span className="text-[10px] font-medium text-emerald-400/60 uppercase tracking-widest">{t?.speaking || 'Speaking'}</span>
                 </>
               )}
             </div>

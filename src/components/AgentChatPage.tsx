@@ -140,7 +140,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
         const historyMessages = data.messages.map((m: any, idx: number) => ({
           id: `resume-${idx}`,
           text: m.content || m.message || '',
-          userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || 'User'),
+          userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
           timestamp: m.timestamp || new Date().toISOString(),
           type: m.role === 'assistant' ? 'agent' : 'user'
         }));
@@ -175,7 +175,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
         const historyMessages = data.messages.map((m: any, idx: number) => ({
           id: `conv-${idx}`,
           text: m.content || m.message || '',
-          userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || 'User'),
+          userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
           timestamp: m.timestamp || new Date().toISOString(),
           type: m.role === 'assistant' ? 'agent' : 'user'
         }));
@@ -226,7 +226,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
             const historyMessages = data.map((m: any, idx: number) => ({
               id: `history-${idx}`,
               text: m.content,
-              userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || 'User'),
+              userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
               timestamp: new Date().toISOString(),
               type: m.role === 'assistant' ? 'agent' : 'user'
             }));
@@ -275,7 +275,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
 
     socket.on("agent:tool", (data: { name: string; args: any; result?: string; error?: string }) => {
       toast(`Tool: ${data.name}`, {
-        description: data.error ? `Error: ${data.error}` : (data.result?.slice(0, 100) || 'Executing...'),
+        description: data.error ? `Error: ${data.error}` : (data.result?.slice(0, 100) || (t.chatExecuting || 'Executing...')),
         icon: data.error ? undefined : <CheckCircle2 size={14} className="text-celestial-saturn" />,
       });
     });
@@ -346,7 +346,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
     const userMsg = {
       id: Date.now().toString(),
       text,
-      userName: user.displayName || user.username || 'User',
+      userName: user.displayName || user.username || (t.chatUserFallback || 'User'),
       timestamp: new Date().toISOString(),
       type: 'user'
     };
@@ -454,12 +454,12 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
           setIsOptimizing(false);
           setOptimizationProgress(0);
         }, 500);
-        toast.success(`Added to Knowledge Base: ${files.length} file(s)`);
+        toast.success(`${t.chatKnowledgeAdded || 'Added to Knowledge Base'}: ${files.length} file(s)`);
       } else {
         setIsOptimizing(false);
         try {
           const err = JSON.parse(xhr.responseText);
-          toast.error(err.error || 'Upload failed');
+          toast.error(err.error || (t.uploadFailed || 'Upload failed'));
         } catch {
           toast.error('Upload failed');
         }
@@ -467,7 +467,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
     };
     xhr.onerror = () => {
       setIsOptimizing(false);
-      toast.error('Connection error during upload');
+      toast.error(t.chatConnError || 'Connection error during upload');
     };
     xhr.open('POST', '/api/files/upload');
     xhr.withCredentials = true;
@@ -618,7 +618,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
                         })()}
                       </span>
                       {conv.messageCount > 0 && (
-                        <span className="text-[9px] text-white/20">{conv.messageCount} msgs</span>
+                        <span className="text-[9px] text-white/20">{conv.messageCount} {t.chatMsgs || 'msgs'}</span>
                       )}
                     </div>
                   </button>
@@ -636,7 +636,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
                       } catch {}
                     }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-500/20 text-white/20 hover:text-red-400"
-                    title="Close conversation"
+                    title={t.chatCloseConv || 'Close conversation'}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -697,7 +697,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
               }`}
             >
               <Info size={12} />
-              {showInfoPanel ? 'Hide' : 'Info'}
+              {showInfoPanel ? (t.chatHide || 'Hide') : (t.chatInfo || 'Info')}
             </Button>
           </div>
 
@@ -989,7 +989,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
           {/* Bottom hint */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
             <span className="text-[9px] font-bold text-white/15 uppercase tracking-[0.15em] bg-black/30 px-4 py-1.5 rounded-full border border-white/[0.04]">
-              ESC to close · {agentName} · {agentCategory}
+              {t.chatEscClose || 'ESC to close'} · {agentName} · {agentCategory}
             </span>
           </div>
         </motion.div>

@@ -451,7 +451,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
       </div>
       
       <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between font-sans">
-        <span className="text-[10px] font-bold text-white/20 tracking-widest uppercase">Lumi OS v2.0.4</span>
+        <span className="text-[10px] font-bold text-white/20 tracking-widest uppercase">{t.desktopVersion || 'Lumi OS v2.0.4'}</span>
         <button onClick={onClose} className="text-[10px] font-black text-celestial-saturn hover:underline uppercase tracking-widest">{t.closeNexus || 'Close Nexus'}</button>
       </div>
     </motion.div>
@@ -823,7 +823,7 @@ export function DesktopUI({
         setWorkflowSteps(prev => [...prev, {
           id: `thinking-${Date.now()}`,
           type: 'thinking',
-          text: 'Analyzing your request...',
+          text: t.workflowAnalyzing || 'Analyzing your request...',
           time: Date.now(),
         }]);
       } else if (data.status === 'idle') {
@@ -831,7 +831,7 @@ export function DesktopUI({
         setWorkflowSteps(prev => [...prev, {
           id: `done-${Date.now()}`,
           type: 'response',
-          text: 'Completed',
+          text: t.workflowCompleted || 'Completed',
           time: Date.now(),
         }]);
         setTimeout(() => {
@@ -853,7 +853,7 @@ export function DesktopUI({
         setWorkflowSteps(prev => [...prev, {
           id: `tool-ok-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
           type: 'tool_result',
-          text: `${data.name} done`,
+          text: `${data.name} ${t.workflowToolDone || 'done'}`,
           detail: data.result?.slice(0, 100),
           time: Date.now(),
         }]);
@@ -862,7 +862,7 @@ export function DesktopUI({
         setWorkflowSteps(prev => [...prev, {
           id: `tool-err-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
           type: 'error',
-          text: `${data.name} failed`,
+          text: `${data.name} ${t.workflowToolFailed || 'failed'}`,
           detail: data.error?.slice(0, 100),
           time: Date.now(),
         }]);
@@ -874,7 +874,7 @@ export function DesktopUI({
         setWorkflowSteps(prev => [...prev, {
           id: `tool-start-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
           type: 'tool_start',
-          text: `Calling ${data.name}`,
+          text: `${t.workflowCalling || 'Calling'} ${data.name}`,
           detail: argsSummary || undefined,
           time: Date.now(),
         }]);
@@ -885,7 +885,7 @@ export function DesktopUI({
       setWorkflowSteps(prev => [...prev, {
         id: `resp-${Date.now()}`,
         type: 'response',
-        text: 'Response ready',
+        text: t.workflowResponseReady || 'Response ready',
         detail: data.text?.slice(0, 100),
         time: Date.now(),
       }]);
@@ -896,7 +896,7 @@ export function DesktopUI({
       setWorkflowSteps(prev => [...prev, {
         id: `err-${Date.now()}`,
         type: 'error',
-        text: 'Processing failed',
+        text: t.workflowError || 'Processing failed',
         detail: data.message,
         time: Date.now(),
       }]);
@@ -1050,7 +1050,7 @@ export function DesktopUI({
       {/* Hardcore Boot Screen Overlay */}
       <AnimatePresence>
         {bootVisible && (
-          <HardcoreBootSequence onComplete={() => setBootVisible(false)} />
+          <HardcoreBootSequence onComplete={() => setBootVisible(false)} t={t} />
         )}
       </AnimatePresence>
 
@@ -1614,7 +1614,7 @@ export function DesktopUI({
             <GlassCard className="p-4 rounded-2xl border-white/10 bg-black/70 backdrop-blur-2xl space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Live · xiaozhi ⇄ Lumi</span>
+                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{t.liveDeviceLabel || 'Live'} · xiaozhi ⇄ Lumi</span>
               </div>
               <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
                 {mcpActivities.slice(0, 5).map((act) => (
@@ -1642,6 +1642,7 @@ export function DesktopUI({
         visible={isWallpaperMode && (agentStatus !== 'idle' || workflowSteps.length > 0)}
         agentStatus={agentStatus}
         steps={workflowSteps}
+        t={t}
       />
 
       {/* Voice Subtitle Overlay — shows real-time transcript & AI response */}
@@ -1650,6 +1651,7 @@ export function DesktopUI({
         responseText={responseText}
         callState={callState}
         audioLevel={audioLevel}
+        t={t}
       />
 
       <div className="absolute inset-0 z-[20] pointer-events-none">

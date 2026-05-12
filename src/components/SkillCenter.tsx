@@ -211,8 +211,7 @@ export function SkillCenter({ t }: { t: any }) {
       </div>
 
       <p className="text-sm text-white/40 max-w-xl">
-        Browse, install and generate MCP skills. Each skill expands Lumi's capabilities with new tools,
-        APIs, and automations. Installed skills appear in your MCP ecosystem.
+        {t.skillMarketDesc || 'Browse, install and generate MCP skills. Each skill expands Lumi\'s capabilities with new tools, APIs, and automations. Installed skills appear in your MCP ecosystem.'}
       </p>
 
       {/* Tabs */}
@@ -355,7 +354,7 @@ export function SkillCenter({ t }: { t: any }) {
               <div className="p-16 bg-white/5 rounded-[2rem] border border-white/5 text-center">
                 <ShoppingBag size={40} className="text-white/20 mx-auto mb-4" />
                 <p className="text-white/40 font-bold uppercase tracking-widest text-sm">{t.noSkillsFound || 'No skills found'}</p>
-                <p className="text-white/20 text-xs mt-2">{search || activeCategory ? `No results. Try different filters.` : 'Check back soon or generate your own.'}</p>
+                <p className="text-white/20 text-xs mt-2">{search || activeCategory ? (t.skillNoResultsFilter || 'No results. Try different filters.') : (t.skillCheckBack || 'Check back soon or generate your own.')}</p>
               </div>
             )}
           </motion.div>
@@ -365,13 +364,13 @@ export function SkillCenter({ t }: { t: any }) {
           <motion.div key="installed" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }} className="space-y-6">
             {loading ? (
               <div className="p-16 bg-white/5 rounded-[2rem] border border-white/5 text-center">
-                <p className="text-white/40 text-sm">Loading...</p>
+                <p className="text-white/40 text-sm">{t.loading || 'Loading...'}</p>
               </div>
             ) : installedSkills.length === 0 ? (
               <div className="p-16 bg-white/5 rounded-[2rem] border border-white/5 text-center">
                 <Wrench size={40} className="text-white/20 mx-auto mb-4" />
                 <p className="text-white/40 font-bold uppercase tracking-widest text-sm">{t.noSkillsInstalled || 'No skills installed'}</p>
-                <p className="text-white/20 text-xs mt-2">Browse the marketplace or generate one.</p>
+                <p className="text-white/20 text-xs mt-2">{t.skillBrowseMarketplace || 'Browse the marketplace or generate one.'}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -387,7 +386,7 @@ export function SkillCenter({ t }: { t: any }) {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-white/90 text-sm">{skill.name}</h4>
-                          <span className="text-[10px] text-white/30 font-mono">{skill.toolCount} {t.toolsCount || 'tool'}{skill.toolCount !== 1 ? 's' : ''}{skill.installedAt ? ` · ${new Date(skill.installedAt).toLocaleDateString()}` : ''}</span>
+                          <span className="text-[10px] text-white/30 font-mono">{skill.toolCount} {t.toolsCount || 'tools'}{skill.installedAt ? ` · ${new Date(skill.installedAt).toLocaleDateString()}` : ''}</span>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => handleToggle(skill.name, !skill.enabled)}

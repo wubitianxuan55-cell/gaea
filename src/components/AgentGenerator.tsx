@@ -92,7 +92,7 @@ export function AgentGenerator({ t, onChatAgent }: { t: any; onChatAgent?: (agen
 
       // 2. Create the agent
       const agent = await createAgent(agentName, selectedCategory, { files: uploaded.files, voiceCloned: isCloning });
-      if (!agent) throw new Error('Agent creation failed');
+      if (!agent) throw new Error(t.agentCreationFailed || 'Agent creation failed');
 
       // 3. Auto-ingest uploaded files into the agent's memory
       let ingested = 0;
@@ -108,14 +108,14 @@ export function AgentGenerator({ t, onChatAgent }: { t: any; onChatAgent?: (agen
         } catch {}
       }
 
-      toast.success(`Agent synthesized: ${agentName} · ${ingested} files indexed`);
+      toast.success(`${t.agentSynthesized || 'Agent synthesized'}: ${agentName} · ${ingested} files indexed`);
 
       setAgentName('');
       setFiles([]);
       setCurrentStep(1);
     } catch (err: any) {
       console.error('Synthesis error:', err);
-      toast.error(err.message || 'Synthesis failed');
+      toast.error(err.message || (t.synthesisFailed || 'Synthesis failed'));
     } finally {
       setIsGenerating(false);
     }

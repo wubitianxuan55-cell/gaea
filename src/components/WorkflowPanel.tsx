@@ -14,6 +14,7 @@ interface WorkflowPanelProps {
   visible: boolean;
   agentStatus: 'idle' | 'thinking' | 'executing' | 'done' | 'error';
   steps: WorkflowStep[];
+  t?: any;
 }
 
 function StatusLights({ status }: { status: WorkflowPanelProps['agentStatus'] }) {
@@ -49,13 +50,13 @@ function StatusLights({ status }: { status: WorkflowPanelProps['agentStatus'] })
   );
 }
 
-function StatusLabel({ status }: { status: WorkflowPanelProps['agentStatus'] }) {
+function StatusLabel({ status, t }: { status: WorkflowPanelProps['agentStatus']; t?: any }) {
   const label =
-    status === 'thinking' ? 'Thinking...' :
-    status === 'executing' ? 'Executing tools...' :
-    status === 'done' ? 'Done' :
-    status === 'error' ? 'Error' :
-    'Idle';
+    status === 'thinking' ? (t?.thinking || 'Thinking...') :
+    status === 'executing' ? (t?.workflowExecuting || 'Executing tools...') :
+    status === 'done' ? (t?.workflowDone || 'Done') :
+    status === 'error' ? (t?.workflowError || 'Error') :
+    (t?.workflowIdle || 'Idle');
   const color =
     status === 'thinking' ? 'text-yellow-400' :
     status === 'executing' ? 'text-green-400' :
@@ -80,7 +81,7 @@ function StepIcon({ type }: { type: WorkflowStep['type'] }) {
   }
 }
 
-export default function WorkflowPanel({ visible, agentStatus, steps }: WorkflowPanelProps) {
+export default function WorkflowPanel({ visible, agentStatus, steps, t }: WorkflowPanelProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,10 +105,10 @@ export default function WorkflowPanel({ visible, agentStatus, steps }: WorkflowP
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <StatusLights status={agentStatus} />
-                <StatusLabel status={agentStatus} />
+                <StatusLabel status={agentStatus} t={t} />
               </div>
               <span className="text-[8px] text-white/20 font-mono">
-                {steps.length > 0 ? `${steps.length} steps` : ''}
+                {steps.length > 0 ? `${steps.length} ${t?.workflowSteps || 'steps'}` : ''}
               </span>
             </div>
 
@@ -143,7 +144,7 @@ export default function WorkflowPanel({ visible, agentStatus, steps }: WorkflowP
             {/* Empty state */}
             {steps.length === 0 && (
               <div className="text-[10px] text-white/20 text-center py-4">
-                Waiting for agent activity...
+                {t?.workflowWaiting || 'Waiting for agent activity...'}
               </div>
             )}
           </div>

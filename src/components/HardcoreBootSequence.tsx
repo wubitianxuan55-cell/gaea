@@ -8,7 +8,7 @@ interface BootLog {
   timestamp: string;
 }
 
-export function HardcoreBootSequence({ onComplete }: { onComplete: () => void }) {
+export function HardcoreBootSequence({ onComplete, t }: { onComplete: () => void; t?: any }) {
   const [logs, setLogs] = useState<BootLog[]>([]);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'bios' | 'kernel' | 'init' | 'ready'>('bios');
@@ -119,7 +119,7 @@ export function HardcoreBootSequence({ onComplete }: { onComplete: () => void })
         <div className="space-y-4 pt-8 border-t border-white/10">
            <div className="flex justify-between items-end">
               <div className="space-y-2">
-                 <div className="text-[10px] uppercase tracking-widest text-[#00ff41]">Boot Progress: {Math.floor(progress)}%</div>
+                 <div className="text-[10px] uppercase tracking-widest text-[#00ff41]">{t?.bootProgress || 'Boot Progress:'} {Math.floor(progress)}%</div>
                  <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden">
                     <motion.div 
                       animate={{ width: `${progress}%` }}
@@ -128,8 +128,8 @@ export function HardcoreBootSequence({ onComplete }: { onComplete: () => void })
                  </div>
               </div>
               <div className="text-right space-y-1">
-                 <div className="text-[8px] text-white/20 uppercase">Core Temperature: 34°C</div>
-                 <div className="text-[8px] text-white/20 uppercase">Mesh Connectivity: 100%</div>
+                 <div className="text-[8px] text-white/20 uppercase">{t?.bootCoreTemp || 'Core Temperature: 34°C'}</div>
+                 <div className="text-[8px] text-white/20 uppercase">{t?.bootMeshConn || 'Mesh Connectivity: 100%'}</div>
               </div>
            </div>
         </div>
