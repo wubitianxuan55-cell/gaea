@@ -1,7 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import * as cheerio from 'cheerio';
+let cheerio: any = null;
+async function getCheerio() {
+  if (!cheerio) cheerio = await import('cheerio');
+  return cheerio;
+}
 
 async function handler(args: any) {
   const url = String(args.url || '').trim();
@@ -13,7 +17,8 @@ async function handler(args: any) {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = await res.text();
-    const $ = cheerio.load(html);
+    const c = await getCheerio();
+    const $ = c.load(html);
 
     if (selector) {
       const elements: string[] = [];

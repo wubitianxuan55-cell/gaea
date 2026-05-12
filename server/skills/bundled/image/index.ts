@@ -1,13 +1,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import sharp from 'sharp';
-import path from 'path';
+let sharp: any = null;
+async function getSharp() {
+  if (!sharp) sharp = (await import('sharp')).default;
+  return sharp;
+}
 
 async function handler(args: any) {
   const { action, input, width, height, format, quality } = args;
   try {
-    let image = sharp(input);
+    const s = await getSharp();
+    let image = s(input);
 
     if (action === 'resize') {
       if (!width && !height) throw new Error('width or height required for resize');

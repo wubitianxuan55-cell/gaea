@@ -1,13 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { simpleParser } from 'mailparser';
+let mailparser: any = null;
+async function getMailParser() {
+  if (!mailparser) mailparser = await import('mailparser');
+  return mailparser;
+}
 
 async function handler(args: any) {
   const { action, content, host, port, user, password } = args;
   try {
     if (action === 'parse') {
       if (!content) throw new Error('Email content required for parse');
+      const { simpleParser } = await getMailParser();
       const parsed = await simpleParser(Buffer.from(String(content), 'utf-8'));
       const result = JSON.stringify({
         subject: parsed.subject || '(no subject)',

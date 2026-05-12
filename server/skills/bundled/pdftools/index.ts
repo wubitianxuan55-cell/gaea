@@ -1,12 +1,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { PDFDocument } from 'pdf-lib';
 import fs from 'fs/promises';
+let pdfLib: any = null;
+async function getPDFLib() {
+  if (!pdfLib) pdfLib = await import('pdf-lib');
+  return pdfLib;
+}
 
 async function handler(args: any) {
   const { action, files, output, pages } = args;
   try {
+    const { PDFDocument } = await getPDFLib();
     if (action === 'merge') {
       if (!files || !Array.isArray(files) || files.length < 2) {
         throw new Error('At least 2 PDF file paths required for merge');
