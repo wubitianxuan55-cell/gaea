@@ -148,25 +148,26 @@ function OSWindow({
           else if (info.point.x > window.innerWidth - 80) setSnapZone('right');
           else setSnapZone('none');
         }}
-        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+        initial={{ opacity: 0, scale: 0.85, y: 20, filter: 'blur(0px)' }}
         animate={isMinimized
-          ? { opacity: 0, scale: 0.3, y: 40, transition: { duration: 0.25, ease: [0.4, 0, 1, 1] } }
+          ? { opacity: 0, scale: 0.3, y: 40, filter: 'blur(4px)', transition: { duration: 0.25, ease: [0.4, 0, 1, 1] } }
           : {
               opacity: 1,
               scale: 1,
               y: 0,
+              filter: 'blur(0px)',
               width: isMaximized ? '100vw' : snapZone !== 'none' ? '50vw' : width,
               height: isMaximized ? 'calc(100vh - 40px)' : snapZone !== 'none' ? 'calc(100vh - 40px)' : height,
               top: isSnapped ? '40px' : undefined,
               left: isMaximized ? '0' : snapZone === 'left' ? '0' : snapZone === 'right' ? '50%' : undefined,
               x: 0,
-              transition: { type: 'spring', stiffness: 350, damping: 28, mass: 0.8 },
+              transition: { type: 'spring', stiffness: 300, damping: 26, mass: 0.8 },
             }
         }
         onAnimationComplete={() => {
           if (isMinimized) onMinimizeComplete(id);
         }}
-        exit={{ opacity: 0, scale: 0.85, y: 20, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
+        exit={{ opacity: 0, scale: 0.85, y: 20, filter: 'blur(4px)', transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
         style={{
           zIndex: isMinimized ? zIndex - 100 : zIndex,
           position: isSnapped ? 'fixed' : 'absolute',
@@ -463,12 +464,14 @@ interface DesktopIconProps {
   icon: React.ReactNode;
   colorClass: string;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-function DesktopIcon({ label, icon, colorClass, onClick }: DesktopIconProps) {
+function DesktopIcon({ label, icon, colorClass, onClick, onContextMenu }: DesktopIconProps) {
   return (
     <div
-      onClick={onClick}
+      onDoubleClick={onClick}
+      onContextMenu={onContextMenu}
       className="desktop-icon group cursor-pointer"
       role="button"
       tabIndex={0}
@@ -732,6 +735,37 @@ export function DesktopUI({
   const [volume, setVolume] = useState(60);
   const [time, setTime] = useState(new Date());
   const [isWallpaperMode, setIsWallpaperMode] = useState(false);
+  const [wallpaper, setWallpaper] = useState<string>(() => localStorage.getItem('lumi_wallpaper_type') || 'celestial');
+  const [wallpaperUrl, setWallpaperUrl] = useState<string>(() => localStorage.getItem('lumi_wallpaper_url') || '');
+  const wallpaperInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Desktop icon layout: absolute positioning, 4 columns, fixed spacing
+  const desktopIcons = [
+    { id: 'knowledge', labelKey: 'knowledgeBase', icon: <BrainCircuit size={24} />, colorClass: 'from-cyan-400 to-blue-600', windowId: 'knowledge' },
+    { id: 'kernel', labelKey: 'osKernel', icon: <Cpu size={24} />, colorClass: 'from-orange-600 to-red-500', windowId: 'kernel' },
+    { id: 'llm', labelKey: 'llmConfig', icon: <BrainCircuit size={24} />, colorClass: 'from-blue-500 to-indigo-600', windowId: 'llm' },
+    { id: 'tools', labelKey: 'tools', icon: <Wrench size={24} />, colorClass: 'from-amber-500 to-orange-600', windowId: 'tools' },
+    { id: 'github-mcp', labelKey: 'githubMCP', icon: <Globe size={24} />, colorClass: 'from-purple-500 to-violet-600', windowId: 'github-mcp' },
+    { id: 'persona-stats', labelKey: 'personaStats', icon: <Activity size={24} />, colorClass: 'from-violet-500 to-fuchsia-600', windowId: 'persona-stats' },
+    { id: 'devices', labelKey: 'deviceMesh', icon: <Wifi size={24} />, colorClass: 'from-cyan-500 to-blue-600', windowId: 'devices' },
+    { id: 'skills', labelKey: 'skills', icon: <Sparkles size={24} />, colorClass: 'from-emerald-500 to-teal-600', windowId: 'skills' },
+    { id: 'subscription', labelKey: 'subscription', icon: <Crown size={24} />, colorClass: 'from-amber-400 to-yellow-600', windowId: 'subscription' },
+  ];
+
+  const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result as string;
+      setWallpaperUrl(url);
+      setWallpaper('custom');
+      localStorage.setItem('lumi_wallpaper_type', 'custom');
+      localStorage.setItem('lumi_wallpaper_url', url);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const [isTrainingOpen, setIsTrainingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return localStorage.getItem('lumi_onboarding_seen') !== 'true';
@@ -981,6 +1015,7 @@ export function DesktopUI({
     try { sounds.playClick(); } catch {}
     const nextWindows = openWindows.filter(w => w !== tab);
     setOpenWindows(nextWindows);
+    setMinimizedWindows(prev => prev.filter(w => w !== tab));
     setWindowOrder(prev => prev.filter(w => w !== tab));
     if (focusedWindow === tab) {
       setFocusedWindow(nextWindows.length > 0 ? nextWindows[nextWindows.length - 1] : null);
@@ -988,7 +1023,36 @@ export function DesktopUI({
     }
   };
 
-  const { menu, items: contextItems, execute: executeContextAction } = useContextMenu();
+  const handleContextAction = (action: string, context: any) => {
+    switch (action) {
+      case 'refresh':
+        window.location.reload();
+        break;
+      case 'change_wallpaper':
+        wallpaperInputRef.current?.click();
+        break;
+      case 'reset_wallpaper':
+        setWallpaper('celestial');
+        setWallpaperUrl('');
+        localStorage.removeItem('lumi_wallpaper_type');
+        localStorage.removeItem('lumi_wallpaper_url');
+        break;
+      case 'display_settings':
+        toggleWindow('settings');
+        setSettingsSection('appearance');
+        break;
+      case 'open_terminal':
+        toggleWindow('kernel');
+        break;
+      case 'open':
+        if (context?.targetId) toggleWindow(context.targetId);
+        break;
+      case 'properties':
+        break;
+    }
+  };
+
+  const { menu, menuItems: contextItems, showMenu: showContextMenu, execute: executeContextMenu } = useContextMenu();
 
   const appIcons = [
     { id: 'chat', label: t.chat || 'Chat', icon: <MessageSquare size={24} />, color: 'from-green-500 to-emerald-600' },
@@ -1028,8 +1092,19 @@ export function DesktopUI({
       theme === 'nebula' ? 'bg-[#050010]' :
       theme === 'cyber' ? 'bg-[#000808]' :
       'bg-black'
-    }`}>
-      <ContextMenu menu={menu} items={contextItems} onAction={executeContextAction} />
+    }`}
+      style={wallpaper === 'custom' && wallpaperUrl ? {
+        backgroundImage: `url(${wallpaperUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      } : undefined}
+    >
+      <input ref={wallpaperInputRef} type="file" accept="image/*" onChange={handleWallpaperUpload} className="hidden" />
+      <ContextMenu menu={menu} items={contextItems} onAction={(action) => {
+        const result = executeContextMenu(action);
+        handleContextAction(result.action, result.context);
+      }} />
       <ControlCenter
         isOpen={isControlCenterOpen}
         onClose={() => setIsControlCenterOpen(false)}
@@ -1466,61 +1541,39 @@ export function DesktopUI({
       {/* Desktop Grid & Widgets */}
       <div className={`relative z-10 w-full h-full p-8 md:p-12 lg:p-16 overflow-y-auto custom-scrollbar pt-20 transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 blur-sm pointer-events-none' : 'opacity-100'}`}>
         <div className="flex flex-col xl:flex-row justify-between items-start gap-12">
-            <div className="desktop-grid !h-auto !p-0 !grid-cols-[repeat(auto-fill,minmax(110px,1fr))] max-w-2xl flex-1 w-full">
-              <DesktopIcon
-                label={t.knowledgeBase || "智库"}
-                icon={<BrainCircuit size={24} />}
-                colorClass="from-cyan-400 to-blue-600"
-                onClick={() => toggleWindow('knowledge')}
-              />
-              <DesktopIcon
-                label={t.osKernel || "OS Kernel"}
-                icon={<Cpu size={24} />}
-                colorClass="from-orange-600 to-red-500"
-                onClick={() => toggleWindow('kernel')}
-              />
-              <DesktopIcon
-                label={t.llmConfig || "LLM Config"}
-                icon={<BrainCircuit size={24} />}
-                colorClass="from-blue-500 to-indigo-600"
-                onClick={() => toggleWindow('llm')}
-              />
-              <DesktopIcon
-                label={t.tools || "Tools"}
-                icon={<Wrench size={24} />}
-                colorClass="from-amber-500 to-orange-600"
-                onClick={() => toggleWindow('tools')}
-              />
-              <DesktopIcon
-                label={t.githubMCP || "GitHub MCP"}
-                icon={<Globe size={24} />}
-                colorClass="from-purple-500 to-violet-600"
-                onClick={() => toggleWindow('github-mcp')}
-              />
-              <DesktopIcon
-                label={t.personaStats || "Persona Stats"}
-                icon={<Activity size={24} />}
-                colorClass="from-violet-500 to-fuchsia-600"
-                onClick={() => toggleWindow('persona-stats')}
-              />
-              <DesktopIcon
-                label={t.deviceMesh || "Device Mesh"}
-                icon={<Wifi size={24} />}
-                colorClass="from-cyan-500 to-blue-600"
-                onClick={() => toggleWindow('devices')}
-              />
-              <DesktopIcon
-                label={t.skills || "Skill Center"}
-                icon={<Sparkles size={24} />}
-                colorClass="from-emerald-500 to-teal-600"
-                onClick={() => toggleWindow('skills')}
-              />
-              <DesktopIcon
-                label={t.subscription || "Subscription"}
-                icon={<Crown size={24} />}
-                colorClass="from-amber-400 to-yellow-600"
-                onClick={() => toggleWindow('subscription')}
-              />
+            <div className="relative flex-1 w-full min-h-[400px]" style={{ margin: 0, padding: 0 }}>
+              {desktopIcons.map((def, i) => {
+                const x = 40 + (i % 4) * 130;
+                const y = 0 + Math.floor(i / 4) * 120;
+                const label = (t as any)[def.labelKey] || def.labelKey;
+                return (
+                  <motion.div
+                    key={def.id}
+                    onDoubleClick={() => toggleWindow(def.windowId)}
+                    onContextMenu={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      showContextMenu(e.clientX, e.clientY, { type: 'icon', targetId: def.id });
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    style={{ position: 'absolute', left: x, top: y }}
+                    className="desktop-icon group cursor-pointer z-10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(def.windowId); }}}
+                  >
+                    <div className={`desktop-icon-img bg-gradient-to-br ${def.colorClass} shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)]`}>
+                      <div className="text-white group-hover:rotate-12 transition-transform">
+                        {def.icon}
+                      </div>
+                    </div>
+                    <span className="desktop-icon-label">{label}</span>
+                  </motion.div>
+                );
+              })}
             </div>
 
             <div className="flex flex-col gap-6 w-full lg:w-96">
@@ -1687,8 +1740,7 @@ export function DesktopUI({
                 }}
                 onMinimize={(id) => setMinimizedWindows(prev => [...prev, id])}
                 onMinimizeComplete={(id) => {
-                  setMinimizedWindows(prev => prev.filter(w => w !== id));
-                  closeWindow(id);
+                  // Window stays in DOM, just mark animation complete
                 }}
                 onClose={() => closeWindow(windowId)}
                 colorClass={appIcons.find(a => a.id === windowId)?.color}

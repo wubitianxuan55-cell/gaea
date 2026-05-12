@@ -998,6 +998,18 @@ export const translations: any = {
     // ── DesktopUI ──
     desktopVersion: "Lumi OS v2.0.4",
     liveDeviceLabel: "Live",
+    desktopRefresh: "Refresh",
+    desktopChangeWallpaper: "Change Wallpaper",
+    desktopArrangeIcons: "Arrange Icons",
+    desktopDisplaySettings: "Display Settings",
+    desktopOpenTerminal: "Open Terminal",
+    desktopRemoveIcon: "Remove from Desktop",
+    desktopProperties: "Properties",
+    desktopResetWallpaper: "Reset to Default",
+    desktopWallpaperChanged: "Wallpaper updated",
+    desktopAlwaysOnTop: "Always on Top",
+    desktopOpen: "Open",
+    windowRestore: "Restore",
     // ── App ──
     appInitializing: "Lumi Core v2.0 Initializing...",
     // ── AgentGenerator ──
@@ -2006,6 +2018,18 @@ export const translations: any = {
     // ── DesktopUI ──
     desktopVersion: "Lumi OS v2.0.4",
     liveDeviceLabel: "在线",
+    desktopRefresh: "刷新",
+    desktopChangeWallpaper: "更换壁纸",
+    desktopArrangeIcons: "排列图标",
+    desktopDisplaySettings: "显示设置",
+    desktopOpenTerminal: "打开终端",
+    desktopRemoveIcon: "从桌面移除",
+    desktopProperties: "属性",
+    desktopResetWallpaper: "重置默认",
+    desktopWallpaperChanged: "壁纸已更新",
+    desktopAlwaysOnTop: "始终置顶",
+    desktopOpen: "打开",
+    windowRestore: "恢复",
     // ── App ──
     appInitializing: "Lumi 核心 v2.0 初始化中...",
     // ── AgentGenerator ──

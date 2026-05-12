@@ -1,18 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { ContextMenuState, ContextAction } from '@/hooks/useContextMenu';
-
-interface ContextMenuItem {
-  id: string;
-  label?: string;
-  shortcut?: string;
-  separator?: boolean;
-}
+import type { ContextMenuState, ContextMenuItem } from '@/hooks/useContextMenu';
 
 interface Props {
   menu: ContextMenuState;
   items: readonly ContextMenuItem[];
-  onAction: (action: ContextAction) => void;
+  onAction: (action: string) => void;
 }
 
 export const ContextMenu: React.FC<Props> = ({ menu, items, onAction }) => {
@@ -28,14 +21,18 @@ export const ContextMenu: React.FC<Props> = ({ menu, items, onAction }) => {
           style={{ left: menu.x, top: menu.y }}
         >
           {items.map((item, i) => {
-            if ('separator' in item && item.separator) {
+            if (item.separator) {
               return <div key={item.id || `sep-${i}`} className="h-px bg-white/8 my-1 mx-3" />;
             }
             return (
               <button
                 key={item.id}
-                onClick={() => onAction(item.id as ContextAction)}
-                className="w-full flex items-center justify-between px-4 py-2 text-xs text-white/70 hover:text-white hover:bg-white/8 transition-colors"
+                onClick={() => onAction(item.id)}
+                className={`w-full flex items-center justify-between px-4 py-2 text-xs transition-colors ${
+                  item.danger
+                    ? 'text-red-300/70 hover:text-red-300 hover:bg-red-500/10'
+                    : 'text-white/70 hover:text-white hover:bg-white/8'
+                }`}
               >
                 <span className="font-medium">{item.label}</span>
                 {item.shortcut && (
