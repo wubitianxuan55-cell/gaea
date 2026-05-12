@@ -1,8 +1,13 @@
 import { ParsedToolCall, NormalizedLLMResponse } from '../tools/types';
 
+export type MessageContent =
+  | string
+  | null
+  | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } }>;
+
 export interface NormalizedMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
+  content: MessageContent;
   toolCalls?: ParsedToolCall[];
   toolCallId?: string;
   name?: string;
@@ -28,7 +33,7 @@ export function formatDeepSeekRequest(params: {
   userId?: string;
 }): {
   model: string;
-  messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>;
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: any; tool_call_id?: string }>;
   tools?: ToolDeclaration[];
   tool_choice?: string;
   max_tokens?: number;
@@ -109,7 +114,7 @@ export function formatGeminiRequest(params: {
   let systemInstruction: string | undefined;
   const nonSystemMessages = params.messages.filter(m => {
     if (m.role === 'system' && m.content) {
-      systemInstruction = m.content;
+      systemInstruction = m.content as string;
       return false;
     }
     return true;
@@ -233,7 +238,7 @@ export function formatQwenRequest(params: {
   userId?: string;
 }): {
   model: string;
-  messages: Array<{ role: string; content: string | null; tool_calls?: any; tool_call_id?: string }>;
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: any; tool_call_id?: string }>;
   tools?: ToolDeclaration[];
   tool_choice?: string;
   max_tokens?: number;
@@ -278,7 +283,7 @@ export function formatAnthropicRequest(params: {
   let system: string | undefined;
   const nonSystem = params.messages.filter(m => {
     if (m.role === 'system' && m.content) {
-      system = m.content;
+      system = m.content as string;
       return false;
     }
     return true;

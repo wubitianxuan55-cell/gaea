@@ -170,15 +170,17 @@ function recordWorkflowIfToolsUsed(
   userId?: string,
 ): void {
   if (executionLog.length === 0) return;
-  const userMsg = messages.find(m => m.role === 'user')?.content || '';
+  const rawContent = messages.find(m => m.role === 'user')?.content || '';
+  const userMsg = typeof rawContent === 'string' ? rawContent : Array.isArray(rawContent) ? rawContent.filter(c => c.type === 'text').map(c => (c as any).text).join(' ') : '';
+  const safeMsg = userMsg || '';
   recordWorkflow({
     userId: userId || 'anonymous',
-    userIntent: userMsg.slice(0, 200),
+    userIntent: safeMsg.slice(0, 200),
     toolSequence: executionLog.map(e => ({
       name: e.name,
       args: e.arguments,
       resultSummary: (e.result || e.error || '').slice(0, 200),
     })),
-    conversationExcerpt: userMsg.slice(0, 500),
+    conversationExcerpt: safeMsg.slice(0, 500),
   });
 }

@@ -15,6 +15,7 @@ import { personalityRegistry } from '../personality';
 import { deviceRegistry } from '../devices';
 import { canOutputHolographic, textToHolographicOutput } from '../output/holographic';
 import { setOfficeBroadcast } from '../tools/definitions/office_tools';
+import { synthesizeSpeech, getActiveProvider } from '../tts/adapter';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
@@ -107,7 +108,7 @@ export function createLumiMcpServer(llmGetters?: {
           g.getOpenAI || (() => null),
           g.getAnthropic || (() => null),
           g.getQwen || (() => null),
-          undefined, // onStreamChunk
+          (chunk) => bc('mcp:chunk', { device: 'xiaozhi', text: chunk }),
           { toolPolicy: personality.toolPolicy },
         );
 
@@ -141,9 +142,25 @@ export function createLumiMcpServer(llmGetters?: {
         bc('mcp:activity', { device: 'xiaozhi', action: 'chat', status: 'responded', toolCalls: response.toolCalls.length });
         bc('agent:response', { text: response.text, agentName: 'Lumi' });
         bc('agent:status', { status: 'idle', agentName: 'Lumi' });
+
+        // Synthesize TTS audio so xiaozhi can speak with Lumi's voice
+        let audioBase64: string | undefined;
+        let audioFormat: string | undefined;
+        try {
+          const provider = getActiveProvider();
+          const voiceId = personality.ttsVoiceId || 'longxiaochun';
+          const ttsResult = await synthesizeSpeech(response.text, { provider, voiceId });
+          audioBase64 = ttsResult.audioBuffer.toString('base64');
+          audioFormat = ttsResult.format;
+          bc('mcp:activity', { device: 'xiaozhi', action: 'tts', status: 'synthesized', bytes: ttsResult.audioBuffer.length });
+        } catch (ttsErr: any) {
+          console.error('[MCP TTS] Synthesis failed:', ttsErr.message);
+        }
+
         return {
           content: [{ type: 'text' as const, text: response.text }],
           ...(holo && { holographic: holo }),
+          ...(audioBase64 && { audio: audioBase64, audioFormat }),
         };
       } catch (err: any) {
         bc('mcp:activity', { device: 'xiaozhi', action: 'chat', status: 'failed', error: err.message });
@@ -374,6 +391,233 @@ export function createLumiMcpServer(llmGetters?: {
       } catch (err: any) {
         bc('mcp:activity', { device: 'xiaozhi', action: 'create_ppt', status: 'failed', error: err.message });
         return { content: [{ type: 'text' as const, text: `PPT failed: ${err.message}. PowerPoint may not be installed.` }], isError: true };
+      }
+    },
+  );
+
+  // ── Desktop Control Tools (xiaozhi power tools) ──
+
+  // Tool: screenshot + vision analysis
+  mcp.registerTool(
+    'lumi_screenshot',
+    {
+      description: 'Capture a screenshot of the desktop and return it as a base64 PNG image. Optionally provide a prompt to get a vision-based description of what is on screen (e.g. "describe the code", "what error is showing"). Uses PowerShell on Windows.',
+      inputSchema: {
+        prompt: z.string().optional().describe('Optional: what to look for or describe on the screen (uses LLM vision)'),
+      },
+    },
+    async ({ prompt }) => {
+      try {
+        bc('mcp:activity', { device: 'xiaozhi', action: 'screenshot', status: 'capturing' });
+        const { execSync } = await import('child_process');
+        const tmpFile = path.join(os.tmpdir(), `lumi_screen_${Date.now()}.png`);
+
+        const psScript = [
+          'Add-Type -AssemblyName System.Windows.Forms',
+          'Add-Type -AssemblyName System.Drawing',
+          '$screen = [System.Windows.Forms.Screen]::PrimaryScreen',
+          '$w = $screen.Bounds.Width; $h = $screen.Bounds.Height',
+          '$bitmap = New-Object System.Drawing.Bitmap $w, $h',
+          '$g = [System.Drawing.Graphics]::FromImage($bitmap)',
+          '$g.CopyFromScreen($screen.Bounds.X, $screen.Bounds.Y, 0, 0, (New-Object System.Drawing.Size $w $h))',
+          `$bitmap.Save('${tmpFile.replace(/\\/g, '\\\\')}', [System.Drawing.Imaging.ImageFormat]::Png)`,
+          '$bitmap.Dispose(); $g.Dispose()',
+          'Write-Output "OK"',
+        ].join('\n');
+
+        const psFile = path.join(os.tmpdir(), `lumi_ss_${Date.now()}.ps1`);
+        fs.writeFileSync(psFile, psScript, 'utf-8');
+        execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${psFile}"`, { timeout: 15000 });
+        fs.unlinkSync(psFile);
+
+        const imgBuffer = fs.readFileSync(tmpFile);
+        fs.unlinkSync(tmpFile);
+        const base64 = imgBuffer.toString('base64');
+        bc('mcp:activity', { device: 'xiaozhi', action: 'screenshot', status: 'captured', bytes: imgBuffer.length });
+
+        let description: string | undefined;
+        if (prompt && g.getQwen) {
+          try {
+            const qwenClient = g.getQwen();
+            if (qwenClient) {
+              const visionParams = {
+                model: 'qwen-vl-plus',
+                messages: [{
+                  role: 'user',
+                  content: [
+                    { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } },
+                    { type: 'text', text: prompt },
+                  ],
+                }],
+                max_tokens: 512,
+              };
+              const visionResp = await qwenClient.chat.completions.create(visionParams);
+              description = visionResp.choices?.[0]?.message?.content || undefined;
+              bc('mcp:activity', { device: 'xiaozhi', action: 'screenshot', status: 'described' });
+            }
+          } catch (visErr: any) {
+            console.error('[MCP Screenshot] Vision analysis failed:', visErr.message);
+          }
+        }
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              screenshot: base64.slice(0, 200) + '...[truncated]',
+              base64Length: base64.length,
+              format: 'png',
+              ...(description && { description }),
+            }),
+          }],
+          ...(base64 && { image: base64, imageFormat: 'png', ...(description && { description }) }),
+        };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Screenshot failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Tool: read clipboard
+  mcp.registerTool(
+    'lumi_clipboard_read',
+    {
+      description: 'Read the current text content of the system clipboard.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const { execSync } = await import('child_process');
+        const text = execSync('powershell -NoProfile -Command "Get-Clipboard -TextFormatType Text"', {
+          timeout: 5000, encoding: 'utf-8',
+        }).trim();
+        bc('mcp:activity', { device: 'xiaozhi', action: 'clipboard_read', status: 'ok', length: text.length });
+        return { content: [{ type: 'text' as const, text }] };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Clipboard read failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Tool: write clipboard
+  mcp.registerTool(
+    'lumi_clipboard_write',
+    {
+      description: 'Write text to the system clipboard.',
+      inputSchema: {
+        text: z.string().describe('Text to copy to the clipboard'),
+      },
+    },
+    async ({ text }) => {
+      try {
+        const { execSync } = await import('child_process');
+        const psFile = path.join(os.tmpdir(), `lumi_clip_${Date.now()}.ps1`);
+        const escaped = text.replace(/'/g, "''").replace(/`/g, '``');
+        fs.writeFileSync(psFile, `Set-Clipboard -Value '${escaped}'`, 'utf-8');
+        execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${psFile}"`, { timeout: 5000 });
+        fs.unlinkSync(psFile);
+        bc('mcp:activity', { device: 'xiaozhi', action: 'clipboard_write', status: 'ok' });
+        return { content: [{ type: 'text' as const, text: `Copied to clipboard (${text.length} chars)` }] };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Clipboard write failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Tool: list windows
+  mcp.registerTool(
+    'lumi_window_list',
+    {
+      description: 'List all visible application windows with titles on the desktop. Returns process name, window title, and PID.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const { execSync } = await import('child_process');
+        const psScript = 'Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object ProcessName, Id, MainWindowTitle | ConvertTo-Json';
+        const result = execSync(`powershell -NoProfile -Command "${psScript}"`, {
+          timeout: 10000, encoding: 'utf-8',
+        }).trim();
+        const windows = JSON.parse(result || '[]');
+        bc('mcp:activity', { device: 'xiaozhi', action: 'window_list', count: Array.isArray(windows) ? windows.length : 1 });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(windows, null, 2) }] };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Window list failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Tool: focus a window
+  mcp.registerTool(
+    'lumi_window_focus',
+    {
+      description: 'Bring a window to the foreground by its process name or window title substring.',
+      inputSchema: {
+        match: z.string().describe('Process name or window title substring to match (e.g. "chrome", "notepad", "Visual Studio Code")'),
+      },
+    },
+    async ({ match }) => {
+      try {
+        const { execSync } = await import('child_process');
+        const psScript = [
+          'Add-Type @\n',
+          'using System;',
+          'using System.Runtime.InteropServices;',
+          'public class Win32 {',
+          '  [DllImport("user32.dll")]',
+          '  public static extern bool SetForegroundWindow(IntPtr hWnd);',
+          '  [DllImport("user32.dll")]',
+          '  public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);',
+          '}',
+          '@',
+          `$proc = Get-Process | Where-Object {$_.MainWindowTitle -match '${match.replace(/'/g, "''")}' -or $_.ProcessName -match '${match.replace(/'/g, "''")}'} | Select-Object -First 1`,
+          'if ($proc) {',
+          '  [Win32]::ShowWindow($proc.MainWindowHandle, 9)',
+          '  [Win32]::SetForegroundWindow($proc.MainWindowHandle)',
+          '  Write-Output "Focused: $($proc.ProcessName) - $($proc.MainWindowTitle)"',
+          '} else {',
+          '  Write-Output "No window matching: ' + match + '"',
+          '}',
+        ].join('\n');
+        const psFile = path.join(os.tmpdir(), `lumi_focus_${Date.now()}.ps1`);
+        fs.writeFileSync(psFile, psScript, 'utf-8');
+        const result = execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${psFile}"`, {
+          timeout: 10000, encoding: 'utf-8',
+        }).trim();
+        fs.unlinkSync(psFile);
+        bc('mcp:activity', { device: 'xiaozhi', action: 'window_focus', match, result });
+        return { content: [{ type: 'text' as const, text: result }] };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Window focus failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Tool: proactive speak — Lumi pushes TTS audio to xiaozhi
+  mcp.registerTool(
+    'lumi_speak',
+    {
+      description: 'Synthesize speech from text and return audio. Used for Lumi to proactively speak through the xiaozhi device — notifications, reminders, or unprompted comments.',
+      inputSchema: {
+        text: z.string().describe('The text Lumi should speak'),
+        voiceId: z.string().optional().describe('TTS voice ID (default uses Lumi personality voice)'),
+      },
+    },
+    async ({ text, voiceId }) => {
+      try {
+        const provider = getActiveProvider();
+        const vid = voiceId || 'longxiaochun';
+        const ttsResult = await synthesizeSpeech(text, { provider, voiceId: vid });
+        const audioBase64 = ttsResult.audioBuffer.toString('base64');
+        bc('mcp:activity', { device: 'xiaozhi', action: 'speak', text: text.slice(0, 100), bytes: ttsResult.audioBuffer.length });
+        bc('mcp:proactive', { text, audio: audioBase64, format: ttsResult.format });
+        return {
+          content: [{ type: 'text' as const, text: `Speech synthesized (${ttsResult.audioBuffer.length} bytes, ${ttsResult.format})` }],
+          audio: audioBase64,
+          audioFormat: ttsResult.format,
+        };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Speech synthesis failed: ${err.message}` }], isError: true };
       }
     },
   );
