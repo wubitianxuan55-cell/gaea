@@ -142,7 +142,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (id === 'lumi') { toast.error(t.cannotDeleteLumi || "Cannot delete 'lumi'"); return; }
+    if (id === 'lumi' || id === 'scholar' || id === 'founder') { toast.error(t.cannotDeleteCore || "Cannot delete core personalities"); return; }
     try {
       await fetch(`/api/personalities/${id}`, { method: 'DELETE' });
       toast.success(t.personalityDeleted || 'Personality deleted');
@@ -404,7 +404,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
                 onClick={() => handleDelete(editing.id)}
                 variant="ghost"
                 className="text-red-500/50 hover:text-red-500 text-xs px-4 py-2"
-                disabled={editing.id === 'lumi'}
+                disabled={editing.id === 'lumi' || editing.id === 'scholar' || editing.id === 'founder'}
               >
                 <Trash2 size={14} className="mr-1" /> {t.deleteBtn || 'Delete'}
               </Button>

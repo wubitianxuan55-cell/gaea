@@ -247,7 +247,18 @@ export function generateSystemPrompt(
   blocks.push(`You are ${config.name}, ${effective.expressionStyle.persona}.`);
   blocks.push(`Your core drive: ${config.coreMotivation}`);
 
-  // 2. Behavioral boundaries
+  // 2. Execution modes — Lumi's internal thinking-mode presets
+  if (config.executionModes && Object.keys(config.executionModes).length > 0) {
+    blocks.push('\n## Execution Modes');
+    blocks.push('You have internal thinking-mode presets. Switch to the appropriate mode when the task demands it:');
+    for (const [modeId, mode] of Object.entries(config.executionModes)) {
+      blocks.push(`\n### ${modeId} — ${mode.description}`);
+      blocks.push(mode.promptExtension);
+    }
+    blocks.push('\nReturn to your default Lumi mode when the sub-task is complete.');
+  }
+
+  // 3. Behavioral boundaries
   if (config.behavioralBoundaries.length > 0) {
     blocks.push('\n## Boundaries');
     blocks.push('You must NEVER:');

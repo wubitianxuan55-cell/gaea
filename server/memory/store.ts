@@ -820,6 +820,95 @@ function findContradictions(
   return contradictions;
 }
 
+// ── Cross-Agent Memory Sharing ──
+
+/**
+ * Borrow high-value memories from other agents that match the given topic.
+ * Only returns memories marked crossAgentShare:true, and respects sharedToAgentIds.
+ *
+ * This enables the "wisdom of the swarm" — agents learn from each other's
+ * crystallized insights without sharing raw episodic context.
+ */
+export function borrowAgentMemories(
+  requestingAgentId: string,
+  topic: string,
+  userId: string,
+  limit: number = 5,
+): Memory[] {
+  const all = getMemoryStore();
+  const topicTokens = new Set(tokenize(topic.toLowerCase()));
+
+  const candidates: Array<{ memory: Memory; score: number }> = [];
+
+  for (const m of all) {
+    // Skip own memories
+    if (m.agentId === requestingAgentId) continue;
+    // Skip if not cross-agent shareable
+    if (!m.crossAgentShare) continue;
+    // Respect targeted sharing
+    if (m.sharedToAgentIds && m.sharedToAgentIds.length > 0) {
+      if (!m.sharedToAgentIds.includes(requestingAgentId) && !m.sharedToAgentIds.includes('*')) {
+        continue;
+      }
+    }
+    // Must be same user
+    if (m.userId !== userId) continue;
+    // Only high-tier memories (growth, internalized) are worth borrowing
+    if (m.tier !== 'growth' && m.tier !== 'internalized' && m.tier !== 'core_identity') continue;
+    // Minimum importance threshold
+    if (m.importance < 0.6) continue;
+
+    // Score by topic relevance
+    const memTokens = new Set(m.keywords.map(k => k.toLowerCase()));
+    let overlap = 0;
+    for (const t of topicTokens) {
+      if (memTokens.has(t)) overlap++;
+    }
+    // Also check content for substring match
+    const contentLower = m.content.toLowerCase();
+    for (const t of topicTokens) {
+      if (contentLower.includes(t)) overlap += 0.5;
+    }
+
+    if (overlap > 0) {
+      // Weight by tier and importance
+      const tierWeight = m.tier === 'core_identity' ? 1.5 : m.tier === 'growth' ? 1.2 : 0.9;
+      const score = overlap * tierWeight * m.importance;
+      candidates.push({ memory: m, score });
+    }
+  }
+
+  // Sort by score descending, take top N
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, limit).map(c => c.memory);
+}
+
+/**
+ * Auto-mark high-value memories as cross-agent shareable.
+ * Called after memory promotion/crystallization.
+ * Growth-tier memories and internalized memories with importance > 0.7 get auto-shared.
+ */
+export function autoMarkCrossAgentShare(userId: string): number {
+  const all = getMemoryStore();
+  let marked = 0;
+
+  for (const m of all) {
+    if (m.userId !== userId) continue;
+    if (m.crossAgentShare) continue; // Already marked
+
+    if (m.tier === 'growth') {
+      m.crossAgentShare = true;
+      marked++;
+    } else if (m.tier === 'internalized' && m.importance > 0.7) {
+      m.crossAgentShare = true;
+      marked++;
+    }
+  }
+
+  if (marked > 0) saveMemoryStore(all);
+  return marked;
+}
+
 // ── Helpers ──
 
 function dedupeKeywords(keywords: string[]): string[] {

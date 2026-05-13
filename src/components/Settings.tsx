@@ -4,7 +4,6 @@ import {
   Shield,
   Globe,
   Cpu,
-  Eye,
   Database,
   Radio,
   Key,
@@ -105,9 +104,6 @@ export function Settings({
   const [showApiKey, setShowApiKey] = useState(false);
   const [personalities, setPersonalities] = useState<any[]>([]);
   const [providerStatus, setProviderStatus] = useState<Record<string, { available: boolean; model: string }>>({});
-  const [observerMode, setObserverModeState] = useState(() => {
-    return localStorage.getItem('lumi_observer_mode') === 'true';
-  });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -131,18 +127,6 @@ export function Settings({
       if (next.has(label)) next.delete(label); else next.add(label);
       return next;
     });
-  };
-
-  const setObserverMode = (on: boolean) => {
-    setObserverModeState(on);
-    localStorage.setItem('lumi_observer_mode', String(on));
-    if (on) {
-      setPersonalityId('observer');
-      toast.info(t.observationModeOn || 'Observer mode activated — Lumi will watch quietly and learn from patterns.');
-    } else {
-      setPersonalityId('lumi');
-      toast.info(t.observationModeOff || 'Observer mode deactivated — Lumi is back to full interaction.');
-    }
   };
 
   const renderContent = (section: string) => {
@@ -210,23 +194,6 @@ export function Settings({
                       ))}
                     </select>
                     <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                  </div>
-                </div>
-                <div className={`p-6 rounded-2xl border transition-all ${observerMode ? 'bg-celestial-saturn/5 border-celestial-saturn/30' : 'bg-white/5 border-white/5'}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${observerMode ? 'bg-celestial-saturn/20 text-celestial-saturn' : 'bg-white/5 text-white/20'}`}>
-                        <Eye size={20} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-white/90">{t.observationMode || "Observation Mode"}</div>
-                        <div className="text-[10px] text-white/40">{t.observationModeDesc || "Lumi watches quietly, learns from patterns, speaks only with insight."}</div>
-                      </div>
-                    </div>
-                    <div onClick={() => setObserverMode(!observerMode)}
-                      className={`w-10 h-5 rounded-full p-1 transition-colors cursor-pointer ${observerMode ? 'bg-celestial-saturn' : 'bg-white/10'}`}>
-                      <div className={`w-3 h-3 rounded-full bg-white transition-transform ${observerMode ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

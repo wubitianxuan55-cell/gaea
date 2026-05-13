@@ -30,6 +30,17 @@ export interface PersonalityVector {
   };
 }
 
+/** An execution mode preset stored inside a personality config.
+ *  Scholar and Founder are no longer independent personalities —
+ *  they are Lumi's internal thinking-mode presets. */
+export interface ExecutionMode {
+  description: string;
+  tone: ExpressionStyle['tone'];
+  verbosity: ExpressionStyle['verbosity'];
+  languages?: string[];
+  promptExtension: string;
+}
+
 export interface ExpressionStyle {
   /** Short persona description for self-reference, e.g. "futuristic AI architect" */
   persona: string;
@@ -102,6 +113,10 @@ export interface PersonalityConfig {
   /** Continuous personality vector — enables smooth evolution. When set,
    *  expressionStyle.tone and verbosity are derived from this vector. */
   personalityVector?: PersonalityVector;
+
+  /** Execution mode presets (e.g. scholar, founder) — internal thinking-mode switches
+   *  that Lumi can activate for specific task types. These are NOT independent personalities. */
+  executionModes?: Record<string, ExecutionMode>;
 
   /** Per-context overrides — e.g. 'floating-window' can be more concise than 'full-screen' */
   contextOverrides?: Record<string, Partial<{

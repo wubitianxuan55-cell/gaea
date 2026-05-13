@@ -16,6 +16,7 @@ import { retrieveChunks } from "../agents/rag";
 import { getSensory } from "./shared";
 import { processInput, handleLLMFailure, CognitiveContext } from "../cognition";
 import { checkLLMAccess, recordUsage, estimateTokens } from "../subscription/proxy";
+import { classifyComplexity, decomposeTask, matchWorkers, executeWorkflow, aggregateWithLLM, recordWorkflowPattern, shouldDistillSkill, buildSkillDescription } from "../agents/orchestrator";
 
 const immortalitySkills: Record<string, string> = {
   colleague: "【同事技能包】：你现在是一个专业且高效的同事。你拥有深厚的行业背景，熟悉办公流程，擅长团队协作。你说话直接、专业，注重结果。",
@@ -143,8 +144,55 @@ export function registerChatHandler(
         // Path A: Lumi handled this directly — no LLM needed
         responseText = cognition.responseText;
         console.log(`[Cognition] Direct tool '${cognition.intent.directToolCall?.name}' handled without LLM`);
-      } else {
-        // Path B: Needs LLM for text generation or complex reasoning
+      } else if (cognition.intent.category === 'command' || cognition.intent.category === 'code' || cognition.intent.category === 'question') {
+        // Path B: Orchestrator — decompose complex tasks into sub-tasks for worker agents
+        const complexity = classifyComplexity(text, { userId: uid, personalityId });
+        if (complexity === 'complex') {
+          const db = readDB();
+          const availableAgents = (db.agents || []).filter((a: any) => a.status !== 'offline');
+          if (availableAgents.length >= 1) {
+            try {
+              socket.emit("agent:status", { status: "thinking", agentName: "Lumi Orchestrator" });
+
+              const subTasks = await decomposeTask(text, { provider, model: activeModel }, { userId: uid, personalityId }, llmGetters);
+              socket.emit("agent:chunk", { text: `[Orchestrator] Decomposed into ${subTasks.length} sub-tasks\n`, agentName: "Lumi" });
+
+              const assignments = matchWorkers(subTasks, availableAgents);
+              socket.emit("agent:chunk", { text: `[Orchestrator] Assigned to ${assignments.length} worker(s)\n`, agentName: "Lumi" });
+
+              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId }, { provider, model: activeModel }, llmGetters);
+              const aggregated = await aggregateWithLLM(workflowResult, text, { provider, model: activeModel }, llmGetters);
+              responseText = aggregated;
+              llmWasCalled = true;
+
+              // Record workflow pattern for future skill distillation
+              const skillTags = subTasks.map(s => s.requiredSkill);
+              recordWorkflowPattern(text, subTasks.length, skillTags, uid);
+
+              // Check if this pattern should be auto-distilled into a skill
+              if (shouldDistillSkill(text)) {
+                const skillDesc = buildSkillDescription(text, workflowResult);
+                console.log('[Orchestrator] Pattern detected — candidate for skill distillation:', skillDesc.slice(0, 100));
+                // Skill generation is async — emit a hint to the user
+                socket.emit("agent:proactive", {
+                  type: 'distill_hint',
+                  message: 'I notice this type of task is recurring. I can create an automated skill for this — would you like me to?',
+                  skillDescription: skillDesc,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+
+              socket.emit("agent:chunk", { text: `\n[Orchestrator] Workflow complete — ${workflowResult.totalAgentsUsed} agent(s) used\n`, agentName: "Lumi" });
+            } catch (orchErr: any) {
+              console.error('[Orchestrator] Workflow failed, falling back to normal chat:', orchErr.message);
+              // Fall through to normal LLM path below
+            }
+          }
+        }
+      }
+
+      if (!responseText) {
+        // Path C: Normal LLM path (simple queries, or orchestrator fallback)
 
         // Load conversation history from persistence (survives page reload / reconnect)
         let persistedHistory: NormalizedMessage[] = [];

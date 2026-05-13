@@ -43,6 +43,10 @@ export interface Memory {
   agentId: string;
   /** Tree node type: 'branch' = topic container, 'leaf' = content memory. Default 'leaf' */
   nodeType: MemoryNodeType;
+  /** Whether this memory can be borrowed by other agents (cross-agent sharing) */
+  crossAgentShare?: boolean;
+  /** Specific agent IDs this memory is shared with. Empty = all agents can borrow. */
+  sharedToAgentIds?: string[];
 }
 
 export interface MemoryTree {

@@ -8,7 +8,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { z } from 'zod';
-import { queryMemories, addMemory, getDueReminders, buildNarrativeChain } from '../memory';
+import { queryMemories, addMemory, getDueReminders, buildNarrativeChain, borrowAgentMemories } from '../memory';
 import { runWithTools } from '../llm/adapter';
 import { toolRegistry, ToolRegistry } from '../tools/registry';
 import { personalityRegistry } from '../personality';
@@ -357,6 +357,42 @@ export function createLumiMcpServer(llmGetters?: {
         };
       } catch (err: any) {
         return { content: [{ type: 'text' as const, text: `Narrative generation failed: ${err.message}` }], isError: true };
+      }
+    },
+  );
+
+  // Cross-agent memory sharing: borrow memories from other agents
+  mcp.registerTool(
+    'lumi_agent_share',
+    {
+      description: '从其他 Agent 借用与某个主题相关的高价值记忆。只返回标记为跨 Agent 共享的记忆（growth 层 + 高重要性 internalized 层）。',
+      inputSchema: {
+        requestingAgentId: z.string().describe('请求借用的 Agent ID'),
+        topic: z.string().describe('搜索主题'),
+        limit: z.number().optional().default(5).describe('返回的最大记忆数'),
+      },
+    },
+    async ({ requestingAgentId, topic, limit }) => {
+      try {
+        const memories = borrowAgentMemories(requestingAgentId, topic, 'mcp_remote', limit);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              borrowed: memories.length,
+              memories: memories.map(m => ({
+                id: m.id,
+                content: m.content,
+                tier: m.tier,
+                importance: m.importance,
+                agentId: m.agentId,
+                keywords: m.keywords,
+              })),
+            }, null, 2),
+          }],
+        };
+      } catch (err: any) {
+        return { content: [{ type: 'text' as const, text: `Agent share failed: ${err.message}` }], isError: true };
       }
     },
   );

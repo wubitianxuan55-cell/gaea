@@ -2,7 +2,7 @@
 // Each check-in fires a socket event to the UI so the user sees "Lumi checked in"
 
 import { Server as SocketIOServer } from 'socket.io';
-import { queryMemories, getDueReminders, fireReminder, runBehavioralAnalysis, decayMemories, dynamicDecayMemories, promoteMemories, getUnconsolidatedEpisodic } from './memory';
+import { queryMemories, getDueReminders, fireReminder, runBehavioralAnalysis, decayMemories, dynamicDecayMemories, promoteMemories, getUnconsolidatedEpisodic, autoMarkCrossAgentShare } from './memory';
 import { consolidateEpisodic, selfReflect, ConsolidationContext } from './memory/consolidator';
 import { buildTree, ensureBranch, moveNode } from './memory/tree';
 import { makeLLMCall } from './llm/providers';
@@ -177,6 +177,8 @@ export function registerScheduledTasks(
       for (const userId of userIds) {
         const emotionalState = loadEmotionalState(userId);
         totalPromoted += promoteMemories(userId, emotionalState.intimacy);
+        // Auto-mark newly crystallized memories as cross-agent shareable
+        autoMarkCrossAgentShare(userId);
       }
       if (totalPromoted > 0) {
         return `${totalPromoted} memories have crystallized into deeper knowledge.`;

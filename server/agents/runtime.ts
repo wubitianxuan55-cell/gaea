@@ -13,11 +13,21 @@ export interface AgentRecord {
   ownerUid?: string;
   userId?: string;
   status: string;
-  personalityId: string;
+  /** REMOVED: personalityId — agents no longer bind to a personality.
+   *  Lumi is the sole orchestrator; worker agents are limbs. */
+  personalityId?: string;
   modelPreference: string;
   memoryScope: 'shared' | 'private';
   autonomyLevel: 'reactive' | 'scheduled' | 'autonomous';
   runtimeConfig: string;
+  /** Skill tags for worker matching (Phase 2.3) */
+  skillTags?: string[];
+  /** Default execution mode when this agent receives a sub-task */
+  executionMode?: string;
+  /** Knowledge domain tags for RAG routing */
+  knowledgeDomains?: string[];
+  /** Whether this agent's memories can be borrowed by other agents */
+  allowCrossPollination?: boolean;
 }
 
 export interface AgentTickResult {
@@ -39,11 +49,11 @@ export class AgentRuntime {
 
   constructor(
     agentRecord: AgentRecord,
-    personality: PersonalityConfig,
+    personality?: PersonalityConfig,
   ) {
     this.agentId = agentRecord.id;
     this.agentRecord = agentRecord;
-    this.personality = personality;
+    this.personality = personality || ({} as PersonalityConfig);
     this.emotionalState = createDefaultEmotionalState();
   }
 
