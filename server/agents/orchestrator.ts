@@ -11,7 +11,7 @@
  * - Valuable outputs crystallize into growth-tier memories (memory crystallization)
  */
 
-import { readDB } from "../../db_layer";
+import { readDB, writeDB } from "../../db_layer";
 import { NormalizedMessage, makeLLMCall } from "../llm/providers";
 import { runWithTools } from "../llm/adapter";
 import { toolRegistry } from "../tools/registry";
@@ -689,4 +689,49 @@ export function buildSkillDescription(
     subTaskDescriptions,
     `\nThis skill automates the full workflow. Input: task description. Output: aggregated result.`,
   ].join('\n');
+}
+
+/** Clean up ephemeral agents older than the TTL (default 6 hours) */
+export function cleanupEphemeralAgents(ttlHours: number = 6): number {
+  try {
+    const db = readDB();
+    if (!db.agents || db.agents.length === 0) return 0;
+
+    const cutoff = Date.now() - ttlHours * 60 * 60 * 1000;
+    const before = db.agents.length;
+
+    db.agents = db.agents.filter((a: any) => {
+      if (!a.id || !a.id.startsWith('ephemeral_')) return true;
+      const created = new Date(a.createdAt || 0).getTime();
+      return created > cutoff;
+    });
+
+    const removed = before - db.agents.length;
+    if (removed > 0) {
+      // Clean up orphaned interactions for removed agents
+      const removedIds = new Set<string>();
+      // We already filtered, so we'd need to track removed IDs differently
+      if (db.interactions) {
+        db.interactions = db.interactions.filter((i: any) => {
+          if (!i.agentId || !i.agentId.startsWith('ephemeral_')) return true;
+          const created = new Date(i.timestamp || 0).getTime();
+          return created > cutoff;
+        });
+      }
+      // Clean up orphaned memories
+      if (db.memories) {
+        db.memories = db.memories.filter((m: any) => {
+          if (!m.agentId || !m.agentId.startsWith('ephemeral_')) return true;
+          const created = new Date(m.createdAt || 0).getTime();
+          return created > cutoff;
+        });
+      }
+      writeDB(db);
+      console.log(`[Orchestrator] Cleaned up ${removed} ephemeral agents`);
+    }
+    return removed;
+  } catch (err) {
+    console.warn('[Orchestrator] Ephemeral cleanup failed:', err);
+    return 0;
+  }
 }

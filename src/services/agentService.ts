@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { callAI } from "./aiService";
 
 export interface AgentResponse {

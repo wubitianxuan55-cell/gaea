@@ -4,7 +4,7 @@ import { MessageSquare, X, Send, Sparkles, Loader2, Bot, Settings, Mic, MicOff, 
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { GlassCard } from './SharedUI';
-import { socketService } from '@/services/socketService';
+import { useSocket } from '@/hooks/useSocket';
 import { useTTS } from '@/hooks/useTTS';
 import { useApp } from '@/contexts/AppContext';
 import Markdown from 'react-markdown';
@@ -20,7 +20,7 @@ export function FloatingAgent({ t }: { t: any }) {
   const { speak, isSpeaking } = useTTS();
   const { personalityId } = useApp();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const socket = useRef<any>(null);
+  const socket = useSocket();
 
   const quickSuggestions = [
     { id: 'create', label: t.howToCreateAgent },
@@ -30,29 +30,23 @@ export function FloatingAgent({ t }: { t: any }) {
   ];
 
   useEffect(() => {
-    if (isOpen && !socket.current) {
-      socket.current = socketService.connect();
-    }
+    if (!socket || !isOpen) return;
 
-    if (socket.current) {
-      socket.current.on("agent:response", (data: { text: string }) => {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.text }]);
-        speak(data.text);
-        setIsLoading(false);
-      });
+    socket.on("agent:response", (data: { text: string }) => {
+      setMessages(prev => [...prev, { role: 'assistant', content: data.text }]);
+      speak(data.text);
+      setIsLoading(false);
+    });
 
-      socket.current.on("agent:status", (data: { status: string }) => {
-        setIsLoading(data.status === "thinking");
-      });
-    }
+    socket.on("agent:status", (data: { status: string }) => {
+      setIsLoading(data.status === "thinking");
+    });
 
     return () => {
-      if (socket.current) {
-        socket.current.off("agent:response");
-        socket.current.off("agent:status");
-      }
+      socket.off("agent:response");
+      socket.off("agent:status");
     };
-  }, [isOpen, speak]);
+  }, [isOpen, socket, speak]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -68,8 +62,8 @@ export function FloatingAgent({ t }: { t: any }) {
     setMessages(prev => [...prev, { role: 'user', content: messageToSend }]);
     setIsLoading(true);
 
-    if (socket.current) {
-      socket.current.emit("agent:chat", {
+    if (socket) {
+      socket.emit("agent:chat", {
         text: messageToSend,
         history: messages.map(m => ({
           role: m.role,

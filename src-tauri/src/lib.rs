@@ -2,11 +2,22 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Mutex;
+use std::time::SystemTime;
 use tauri::Manager;
+
+struct SpawnConfig {
+    exe: PathBuf,
+    entry: PathBuf,
+    work_dir: PathBuf,
+}
 
 struct BackendProcesses {
     node: Option<Child>,
     python: Option<Child>,
+    node_restarts: u32,
+    python_restarts: u32,
+    node_config: Option<SpawnConfig>,
+    python_config: Option<SpawnConfig>,
 }
 
 /// Track whether wallpaper (click-through) mode is active
@@ -42,18 +53,21 @@ pub struct NativeFile {
 
 #[tauri::command]
 fn get_system_info() -> SystemInfo {
+    use sysinfo::System;
+    let sys = System::new_all();
+    // sysinfo reports memory in bytes; sys_info was KB. Preserve backward-compat by converting to KB.
     SystemInfo {
         platform: std::env::consts::OS.to_string(),
-        release: sys_info::os_release().unwrap_or_default(),
+        release: System::long_os_version().unwrap_or_default(),
         arch: std::env::consts::ARCH.to_string(),
-        hostname: sys_info::hostname().unwrap_or_default(),
-        total_memory: sys_info::mem_info().map(|m| m.total).unwrap_or(0),
-        free_memory: sys_info::mem_info().map(|m| m.avail).unwrap_or(0),
+        hostname: System::host_name().unwrap_or_default(),
+        total_memory: sys.total_memory() / 1024,
+        free_memory: sys.available_memory() / 1024,
         home_dir: dirs_next::home_dir()
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_default(),
-        cpus: sys_info::cpu_num().unwrap_or(0) as usize,
-        uptime: 0, // sys_info 0.9 removed uptime()
+        cpus: sys.physical_core_count().unwrap_or(1),
+        uptime: System::uptime(),
     }
 }
 
@@ -157,7 +171,7 @@ fn get_live_stats() -> LiveStats {
         gpu_utilization: None,
         temperatures,
         fan_speed_rpm: None,
-        hostname: sys_info::hostname().unwrap_or_default(),
+        hostname: System::host_name().unwrap_or_default(),
         uptime_seconds: System::uptime(),
     }
 }
@@ -186,7 +200,13 @@ fn list_home_files() -> Vec<NativeFile> {
 
 #[tauri::command]
 fn run_command(command: String) -> CommandResult {
-    // Safety: restrict to cmd.exe /C for Windows compatibility
+    let now = SystemTime::now();
+    let truncated: String = if command.len() > 500 {
+        format!("{}... (truncated, {} bytes total)", &command[..500], command.len())
+    } else {
+        command.clone()
+    };
+
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd").args(["/C", &command]).output()
     } else {
@@ -197,15 +217,26 @@ fn run_command(command: String) -> CommandResult {
         Ok(out) => {
             let stdout = String::from_utf8_lossy(&out.stdout).to_string();
             let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+            let success = out.status.success();
+            eprintln!(
+                "[LumiOS Audit] ts={:?} ok={} cmd={}",
+                now, success, truncated
+            );
             CommandResult {
-                success: out.status.success(),
+                success,
                 output: if stdout.is_empty() { stderr } else { stdout },
             }
         }
-        Err(e) => CommandResult {
-            success: false,
-            output: e.to_string(),
-        },
+        Err(e) => {
+            eprintln!(
+                "[LumiOS Audit] ts={:?} ok=false cmd={} err={}",
+                now, truncated, e
+            );
+            CommandResult {
+                success: false,
+                output: e.to_string(),
+            }
+        }
     }
 }
 
@@ -337,7 +368,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .manage(Mutex::new(BackendProcesses { node: None, python: None }))
+        .manage(Mutex::new(BackendProcesses { node: None, python: None, node_restarts: 0, python_restarts: 0, node_config: None, python_config: None }))
         .manage(Mutex::new(WallpaperState { enabled: false }))
         .invoke_handler(tauri::generate_handler![
             get_system_info,
@@ -413,17 +444,22 @@ pub fn run() {
                     normalized_entry.display(),
                     normalized_cwd.display(),
                 );
-                match Command::new(normalized_node)
-                    .arg(normalized_entry)
+                match Command::new(&normalized_node)
+                    .arg(&normalized_entry)
                     .env("LUMI_DESKTOP", "1")
                     .env("HOST", "127.0.0.1")
-                    .current_dir(normalized_cwd)
+                    .current_dir(&normalized_cwd)
                     .spawn()
                 {
                     Ok(child) => {
                         println!("[LumiOS] Backend PID: {}", child.id());
-                        let state = app.state::<Mutex<BackendProcesses>>();
-                        state.lock().unwrap().node = Some(child);
+                        let mut state = app.state::<Mutex<BackendProcesses>>().lock().unwrap();
+                        state.node_config = Some(SpawnConfig {
+                            exe: normalized_node.to_path_buf(),
+                            entry: normalized_entry.to_path_buf(),
+                            work_dir: normalized_cwd.to_path_buf(),
+                        });
+                        state.node = Some(child);
                     }
                     Err(e) => {
                         eprintln!("[LumiOS] Failed to start backend: {}", e);
@@ -458,10 +494,117 @@ pub fn run() {
                 None
             };
             if let Some(child) = python_child {
-                let state = app.state::<Mutex<BackendProcesses>>();
-                state.lock().unwrap().python = Some(child);
+                let mut state = app.state::<Mutex<BackendProcesses>>().lock().unwrap();
+                if python_exe.exists() && api_py.exists() {
+                    state.python_config = Some(SpawnConfig {
+                        exe: python_exe,
+                        entry: api_py,
+                        work_dir: gpt_sovits_dir,
+                    });
+                } else {
+                    state.python_config = Some(SpawnConfig {
+                        exe: dev_python,
+                        entry: dev_api,
+                        work_dir: PathBuf::from("../gpt-sovits-src"),
+                    });
+                }
+                state.python = Some(child);
+            }
             }
             } // end else (release mode spawns backend)
+
+            // ── Child process health check (release mode, checks every 30s) ──
+            if !cfg!(debug_assertions) {
+                let app_handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    let max_restarts: u32 = 3;
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_secs(30));
+                        let mut state = app_handle.state::<Mutex<BackendProcesses>>().lock().unwrap();
+
+                        // Check Node.js backend
+                        let mut restart_node = false;
+                        if let Some(ref mut child) = state.node {
+                            match child.try_wait() {
+                                Ok(Some(status)) => {
+                                    eprintln!("[LumiOS] Node backend exited with status {:?}", status.code());
+                                    restart_node = true;
+                                }
+                                Ok(None) => { /* still running */ }
+                                Err(e) => {
+                                    eprintln!("[LumiOS] Node backend health check failed: {}", e);
+                                    restart_node = true;
+                                }
+                            }
+                        }
+                        if restart_node && state.node_restarts < max_restarts {
+                            if let Some(ref cfg) = state.node_config {
+                                eprintln!("[LumiOS] Restarting Node backend (attempt {}/{})", state.node_restarts + 1, max_restarts);
+                                match Command::new(&cfg.exe)
+                                    .arg(&cfg.entry)
+                                    .env("LUMI_DESKTOP", "1")
+                                    .env("HOST", "127.0.0.1")
+                                    .current_dir(&cfg.work_dir)
+                                    .spawn()
+                                {
+                                    Ok(child) => {
+                                        println!("[LumiOS] Backend restarted, PID: {}", child.id());
+                                        state.node = Some(child);
+                                        state.node_restarts += 1;
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[LumiOS] Failed to restart Node backend: {}", e);
+                                    }
+                                }
+                            }
+                        } else if restart_node {
+                            eprintln!("[LumiOS] Node backend max restarts ({}) reached, giving up", max_restarts);
+                            state.node = None;
+                        }
+
+                        // Check GPT-SoVITS Python API
+                        let mut restart_python = false;
+                        if let Some(ref mut child) = state.python {
+                            match child.try_wait() {
+                                Ok(Some(status)) => {
+                                    eprintln!("[LumiOS] Python API exited with status {:?}", status.code());
+                                    restart_python = true;
+                                }
+                                Ok(None) => { /* still running */ }
+                                Err(e) => {
+                                    eprintln!("[LumiOS] Python API health check failed: {}", e);
+                                    restart_python = true;
+                                }
+                            }
+                        }
+                        if restart_python && state.python_restarts < max_restarts {
+                            if let Some(ref cfg) = state.python_config {
+                                eprintln!("[LumiOS] Restarting Python API (attempt {}/{})", state.python_restarts + 1, max_restarts);
+                                match Command::new(&cfg.exe)
+                                    .arg(&cfg.entry)
+                                    .arg("-a").arg("127.0.0.1")
+                                    .arg("-p").arg("9880")
+                                    .arg("-c").arg("GPT_SoVITS/configs/tts_infer.yaml")
+                                    .current_dir(&cfg.work_dir)
+                                    .spawn()
+                                {
+                                    Ok(child) => {
+                                        println!("[LumiOS] Python API restarted, PID: {}", child.id());
+                                        state.python = Some(child);
+                                        state.python_restarts += 1;
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[LumiOS] Failed to restart Python API: {}", e);
+                                    }
+                                }
+                            }
+                        } else if restart_python {
+                            eprintln!("[LumiOS] Python API max restarts ({}) reached, giving up", max_restarts);
+                            state.python = None;
+                        }
+                    }
+                });
+            }
 
             // Register Alt+Space global shortcut (hide/show window)
             use tauri_plugin_global_shortcut::GlobalShortcutExt;

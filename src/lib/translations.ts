@@ -1,4 +1,7 @@
-export const translations: any = {
+export type TranslationDict = Record<string, string>;
+export type TranslationMap = { en: TranslationDict; zh: TranslationDict };
+
+export const translations: TranslationMap = {
   en: {
     welcome: "Welcome to",
     tagline: "A decentralized ecosystem for personal intelligence and collaborative evolution. Build the future on your own data.",

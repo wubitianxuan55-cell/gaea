@@ -15,7 +15,7 @@ import { spawn, ChildProcess } from "child_process";
 import { Server } from "socket.io";
 import http from "http";
 import { readDB, writeDB, ensureDatabaseInitialized, isDbDirty } from "./db_layer";
-import { getOrCreateActiveConversation, closeConversation, getActiveConversation, getUserConversations, addMessage, getMessages, getUnclosedConversation } from "./server/conversation/manager";
+import { getOrCreateActiveConversation, closeConversation, getActiveConversation, getUserConversations, addMessage, getMessages } from "./server/conversation/manager";
 import { logger } from "./logger";
 import { createStreamingSession, getActiveSTTProvider } from "./server/stt/adapter";
 
@@ -49,6 +49,10 @@ import fileRoutes from "./routes/files";
 import { mountAuthRoutes } from "./server/routes/auth";
 import { mountMemoryRoutes } from "./server/routes/memory_routes";
 import { mountConversationRoutes } from "./server/routes/conversations";
+import { mountAgentRoutes } from "./server/routes/agent_routes";
+import { mountSkillRoutes } from "./server/routes/skill_routes";
+import { mountMarketplaceRoutes } from "./server/routes/marketplace_routes";
+import { mountSystemRoutes } from "./server/routes/system_routes";
 import { registerChatHandler } from "./server/socket/chat";
 import { registerTaskHandler } from "./server/socket/task";
 import { registerVoiceHandlers } from "./server/socket/voice";
@@ -582,6 +586,9 @@ apiRouter.get("/devices", (req, res) => {
   res.json({ devices, sensoryContext: sensory });
 });
 
+// 0.4 System routes (health, tools, scheduler, llm/usage, llm/providers, llm/test, settings/keys, system/stats, monitor/latency)
+mountSystemRoutes(apiRouter, JWT_SECRET);
+
 // 0.4. Health Check
 apiRouter.get("/health", (req, res) => {
   try {
@@ -737,60 +744,6 @@ apiRouter.post("/settings/keys", (req, res) => {
   res.json({ success: true, saved: Object.keys(filtered) });
 });
 
-// 0.7 Conversation API
-apiRouter.get("/conversations", (req, res) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    const decoded: any = jwt.verify(token, JWT_SECRET);
-    const limit = parseInt(req.query.limit as string) || 20;
-    const offset = parseInt(req.query.offset as string) || 0;
-    const convs = getUserConversations(decoded.uid, limit, offset);
-    res.json({ conversations: convs, limit, offset });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
-
-apiRouter.get("/conversations/active", (req, res) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    const decoded: any = jwt.verify(token, JWT_SECRET);
-    const conv = getUnclosedConversation(decoded.uid);
-    res.json({ activeConversation: conv });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
-
-apiRouter.get("/conversations/:id/messages", (req, res) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    jwt.verify(token, JWT_SECRET);
-    const limit = parseInt(req.query.limit as string) || 50;
-    const messages = getMessages(req.params.id, limit);
-    res.json({ messages });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
-
-apiRouter.post("/conversations/:id/close", (req, res) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    jwt.verify(token, JWT_SECRET);
-    const { summary } = req.body || {};
-    const conv = closeConversation(req.params.id, summary);
-    if (!conv) return res.status(404).json({ error: "Conversation not found" });
-    res.json({ success: true, conversation: conv });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
-
 // 1. AI Proxy Route — with subscription enforcement
 apiRouter.post("/ai/chat", asyncHandler(async (req, res) => {
   const { provider = "gemini", model, messages, prompt } = req.body;
@@ -913,6 +866,8 @@ apiRouter.post("/ai/chat", asyncHandler(async (req, res) => {
 mountAuthRoutes(apiRouter, JWT_SECRET, getCookieOptions);
 
 // 3. Agent Management
+mountAgentRoutes(apiRouter, JWT_SECRET, { getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen });
+
 // ── Agent Distillation — create a memory avatar from chat records ──
 apiRouter.post("/agents/distill", asyncHandler(async (req, res) => {
   const token = req.cookies.token;
@@ -1331,6 +1286,7 @@ mountMemoryRoutes(apiRouter, JWT_SECRET, { getDeepSeek, getGemini, getOpenAI, ge
 mountConversationRoutes(apiRouter, JWT_SECRET);
 
 // ── Skill SDK API ──
+mountSkillRoutes(apiRouter, JWT_SECRET, { getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen }, io);
 
 // List all installed skills (local + external MCP servers)
 apiRouter.get("/skills", (req, res) => {
@@ -1492,6 +1448,7 @@ apiRouter.get("/skills/workflows", (req, res) => {
 });
 
 // ── Marketplace Routes ──
+mountMarketplaceRoutes(apiRouter, JWT_SECRET, io);
 
 // Discoverable marketplace skills (dynamic from registry)
 apiRouter.get("/marketplace/skills", (req, res) => {

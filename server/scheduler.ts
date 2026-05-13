@@ -15,6 +15,7 @@ import { evolvePersonality } from './personality/evolution';
 import { loadEmotionalState } from './personality/state';
 import { getSameMonthDayPast, getMonthDayFromISO } from './time/utils';
 import { detectSpatiotemporalPatterns } from './time/spatiotemporal';
+import { cleanupEphemeralAgents } from './agents/orchestrator';
 
 interface ScheduledTask {
   id: string;
@@ -967,6 +968,20 @@ Output ONLY the check-in message — no preamble, no labels.`;
       return messages.length > 0
         ? `时空模式分析 — ${messages.join('\n')}`
         : null;
+    },
+  });
+
+  // Ephemeral agent cleanup (every 1h) — removes orphaned auto-created workers
+  scheduler.register({
+    id: 'ephemeral_cleanup',
+    cron: 'every_1h',
+    lastRun: null,
+    handler: async () => {
+      const removed = cleanupEphemeralAgents(6);
+      if (removed > 0) {
+        return `Cleaned up ${removed} ephemeral worker agents`;
+      }
+      return null;
     },
   });
 }

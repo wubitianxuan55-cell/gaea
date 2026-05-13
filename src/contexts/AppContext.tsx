@@ -208,8 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateBalance = async (amount: number) => {
-    // Local balance update logic could be added here
-    toast.info('Balance updates are handled by the core system.');
+    setUser((prev) => prev ? { ...prev, balance: (prev.balance || 0) + amount } : prev);
   };
 
   const setPersonalityId = (id: string) => {

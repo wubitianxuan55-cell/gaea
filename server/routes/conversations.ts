@@ -15,8 +15,10 @@ export function mountConversationRoutes(router: Router, jwtSecret: string) {
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
       const decoded: any = jwt.verify(token, jwtSecret);
-      const conversations = getUserConversations(decoded.uid, 30);
-      res.json({ conversations });
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const conversations = getUserConversations(decoded.uid, limit, offset);
+      res.json({ conversations, limit, offset });
     } catch (err: any) {
       res.status(401).json({ error: "Invalid token" });
     }
@@ -40,8 +42,8 @@ export function mountConversationRoutes(router: Router, jwtSecret: string) {
     const token = req.cookies.token;
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const limit = parseInt(req.query.limit as string) || 100;
+      jwt.verify(token, jwtSecret);
+      const limit = parseInt(req.query.limit as string) || 50;
       const messages = getMessages(req.params.id, limit);
       res.json({ messages });
     } catch (err: any) {
@@ -55,7 +57,9 @@ export function mountConversationRoutes(router: Router, jwtSecret: string) {
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
       jwt.verify(token, jwtSecret);
-      const conv = closeConversation(req.params.id);
+      const { summary } = req.body || {};
+      const conv = closeConversation(req.params.id, summary);
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
       res.json({ success: true, conversation: conv });
     } catch (err: any) {
       res.status(401).json({ error: "Invalid token" });
