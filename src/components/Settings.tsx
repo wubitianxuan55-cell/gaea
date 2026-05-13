@@ -19,7 +19,8 @@ import {
   Mic,
   CheckCircle,
   AlertCircle,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -97,8 +98,7 @@ export function Settings({
   onSectionChange?: (section: string) => void;
 }) {
   const { platform, isElectron } = usePlatform();
-  const { aiConfig, updateAIConfig } = useApp();
-  const [showApiKey, setShowApiKey] = useState(false);
+  const { aiConfig, updateAIConfig, logout } = useApp();
   const [providerStatus, setProviderStatus] = useState<Record<string, { available: boolean; model: string }>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -187,38 +187,20 @@ export function Settings({
                     <p className="text-[10px] text-white/30">{t.persistentLongTermRecallDesc || "Enables cross-session memory shared across all identified node devices."}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2">{t.primaryReasoningBrain || "Primary Reasoning Brain"}</label>
-                    <div className="relative">
-                      <select value={aiConfig.provider} onChange={(e) => updateAIConfig({ provider: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold appearance-none cursor-pointer focus:border-celestial-saturn/50 outline-none">
-                        <option value="gemini">Google Gemini (Native)</option>
-                        <option value="openai">OpenAI (Advanced)</option>
-                        <option value="deepseek">DeepSeek (Optimization)</option>
-                        <option value="anthropic">Anthropic Claude</option>
-                      </select>
-                      <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2">{t.neuralModelVersion || "Neural Model (Version)"}</label>
-                    <input type="text" value={aiConfig.model} onChange={(e) => updateAIConfig({ model: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold focus:border-celestial-saturn/50 outline-none font-mono" />
-                  </div>
-                </div>
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center px-2">
-                    <label className="text-[10px] font-black uppercase text-white/30">{t.proprietaryApiKeyEncrypted || "Proprietary API Key (Encrypted)"}</label>
-                    <button onClick={() => setShowApiKey(!showApiKey)} className="text-[9px] font-bold text-celestial-saturn uppercase tracking-widest">{showApiKey ? (t.hide || 'Hide') : (t.reveal || 'Reveal')}</button>
-                  </div>
+                  <label className="text-[10px] font-black uppercase text-white/30 ml-2">{t.primaryReasoningBrain || "Primary Reasoning Brain"}</label>
                   <div className="relative">
-                    <Key size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" />
-                    <input type={showApiKey ? "text" : "password"} value={aiConfig.apiKey} onChange={(e) => updateAIConfig({ apiKey: e.target.value })}
-                      placeholder={t.apiKeyOptional || "Optional: Enter key to bypass proxy rate limits"}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-sm font-mono focus:border-celestial-saturn/50 outline-none" />
+                    <select value={aiConfig.provider} onChange={(e) => updateAIConfig({ provider: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold appearance-none cursor-pointer focus:border-celestial-saturn/50 outline-none">
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="qwen">Qwen (DashScope)</option>
+                      <option value="gemini">Google Gemini</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="anthropic">Anthropic Claude</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20" />
                   </div>
-                  <p className="text-[9px] text-white/20 px-2">{t.apiKeyLocalHint || "Your key is stored locally and never leaves your secure mesh node."}</p>
+                  <p className="text-[9px] text-white/20 px-2">Active model: <span className="text-white/40 font-mono">{aiConfig.model}</span> — change per provider in API Matrix.</p>
                 </div>
               </div>
             </SettingsSection>
@@ -231,25 +213,16 @@ export function Settings({
           <div className="space-y-8">
             <SettingsSection title={t.voiceServicesApi || "Voice Services API"} icon={<Headphones size={18} className="text-amber-400" />}>
               <p className="text-sm text-white/40 max-w-xl mb-6">
-                {t.voiceServicesDesc || "API keys for speech recognition (STT) and speech synthesis (TTS). These are required for Lumi to hear you and speak back."}
+                Both speech recognition (Qwen ASR) and speech synthesis (CosyVoice TTS) run on DashScope. One key covers everything.
               </p>
               <div className="grid grid-cols-1 gap-6">
                 <ApiKeyField
-                  icon={<Mic size={18} className="text-cyan-400" />}
-                  label={t.deepgramSTT || "Deepgram (Speech-to-Text)"}
-                  placeholder={t.deepgramPlaceholder || "Enter Deepgram API key..."}
-                  storageKey="lumi_deepgram_key"
-                  serverKey="DEEPGRAM_API_KEY"
-                  hint={t.deepgramHint || "Required for voice input. Get your key at console.deepgram.com"}
-                  t={t}
-                />
-                <ApiKeyField
-                  icon={<Volume2 size={18} className="text-violet-400" />}
-                  label={t.dashscopeTTS || "DashScope / CosyVoice (Text-to-Speech)"}
-                  placeholder={t.dashscopePlaceholder || "Enter DashScope API key..."}
+                  icon={<Zap size={18} className="text-violet-400" />}
+                  label="DashScope (STT + TTS)"
+                  placeholder="sk-..."
                   storageKey="lumi_dashscope_key"
                   serverKey="DASHSCOPE_API_KEY"
-                  hint={t.dashscopeHint || "Alibaba Cloud DashScope. Powers CosyVoice TTS and Qwen LLM. Get your key at dashscope.aliyun.com"}
+                  hint="Powers Qwen ASR for speech recognition and CosyVoice for speech synthesis. Get your key at dashscope.aliyun.com"
                   t={t}
                 />
               </div>
@@ -260,15 +233,56 @@ export function Settings({
         return (
           <div className="space-y-8">
             <SettingsSection title={t.neuralApiMatrix || "Neural API Matrix"} icon={<Key size={18} className="text-celestial-saturn" />}>
+              <p className="text-sm text-white/40 max-w-xl mb-6">
+                Configure API keys and preferred models for each LLM provider. These keys are stored server-side and shared across all devices.
+              </p>
               <div className="grid grid-cols-1 gap-6">
-                <ApiKeyField icon={<Sparkle size={18} className="text-purple-400" />} label="Anthropic / Claude 3.5 API" placeholder="sk-ant-..." storageKey="lumi_anthropic_key" serverKey="ANTHROPIC_API_KEY" t={t} />
-                <ApiKeyField icon={<MessagesSquare size={18} className="text-green-400" />} label="OpenAI / GPT-4o API" placeholder="sk-..." storageKey="lumi_openai_key" serverKey="OPENAI_API_KEY" t={t} />
-                <ApiKeyField icon={<BrainCircuit size={18} className="text-blue-400" />}
-                  label={`Google Gemini API${providerStatus.gemini?.available ? ` (${providerStatus.gemini.model})` : ''}`}
+                <LLMProviderRow
+                  icon={<BrainCircuit size={18} className="text-blue-400" />}
+                  label="DeepSeek"
+                  providerId="deepseek"
+                  models={['deepseek-chat', 'deepseek-reasoner']}
+                  placeholder="sk-..."
+                  serverKey="DEEPSEEK_API_KEY"
+                  t={t}
+                />
+                <LLMProviderRow
+                  icon={<Zap size={18} className="text-violet-400" />}
+                  label="Qwen / DashScope (Alibaba Cloud)"
+                  providerId="qwen"
+                  models={['qwen-plus', 'qwen-max', 'qwen-turbo']}
+                  placeholder="sk-..."
+                  serverKey="DASHSCOPE_API_KEY"
+                  t={t}
+                />
+                <LLMProviderRow
+                  icon={<BrainCircuit size={18} className="text-blue-400" />}
+                  label={`Google Gemini${providerStatus.gemini?.available ? ` (${providerStatus.gemini.model})` : ''}`}
+                  providerId="gemini"
+                  models={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']}
                   placeholder={providerStatus.gemini?.available ? (t.connectedViaEnv || 'Connected via environment') : (t.noKeyConfigured || 'No key configured')}
-                  disabled={providerStatus.gemini?.available} storageKey="lumi_gemini_key" serverKey="GEMINI_API_KEY" t={t} />
-                <ApiKeyField icon={<Cpu size={18} className="text-orange-400" />} label="DeepSeek / LLM API" placeholder="sk-..." storageKey="lumi_deepseek_key" serverKey="DEEPSEEK_API_KEY" t={t} />
-                <ApiKeyField icon={<Zap size={18} className="text-violet-400" />} label="Qwen / DashScope (Alibaba Cloud)" placeholder="sk-..." storageKey="lumi_qwen_key" serverKey="DASHSCOPE_API_KEY" t={t} />
+                  disabled={providerStatus.gemini?.available}
+                  serverKey="GEMINI_API_KEY"
+                  t={t}
+                />
+                <LLMProviderRow
+                  icon={<MessagesSquare size={18} className="text-green-400" />}
+                  label="OpenAI"
+                  providerId="openai"
+                  models={['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']}
+                  placeholder="sk-..."
+                  serverKey="OPENAI_API_KEY"
+                  t={t}
+                />
+                <LLMProviderRow
+                  icon={<Sparkle size={18} className="text-purple-400" />}
+                  label="Anthropic Claude"
+                  providerId="anthropic"
+                  models={['claude-sonnet-4-6', 'claude-opus-4-7', 'claude-haiku-4-5']}
+                  placeholder="sk-ant-..."
+                  serverKey="ANTHROPIC_API_KEY"
+                  t={t}
+                />
               </div>
             </SettingsSection>
           </div>
@@ -390,6 +404,25 @@ case 'memory':
               </div>
             );
           })}
+        </div>
+
+        <div className="px-2 pb-4 pt-2 border-t border-white/5">
+          <button
+            onClick={async () => {
+              try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                localStorage.removeItem('lumi_auth_token');
+                window.location.reload();
+              } catch {
+                localStorage.removeItem('lumi_auth_token');
+                window.location.reload();
+              }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-[11px] font-bold text-red-400/60 hover:text-red-300 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
         </div>
       </div>
 
@@ -547,6 +580,127 @@ function SidebarItem({ active, onClick, icon, label }: { active: boolean, onClic
       <span className="text-[9px] font-bold uppercase tracking-tight truncate">{label}</span>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-celestial-saturn rounded-full" />}
     </button>
+  );
+}
+
+function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled = false, serverKey, t }: {
+  icon: React.ReactNode; label: string; providerId: string; models: string[];
+  placeholder: string; disabled?: boolean; serverKey: string; t?: any;
+}) {
+  const { aiConfig, updateAIConfig, logout } = useApp();
+  const [keyValue, setKeyValue] = useState(() => {
+    try { return localStorage.getItem(`lumi_${providerId}_key`) || ''; } catch { return ''; }
+  });
+  const [saved, setSaved] = useState(false);
+  const [serverConfigured, setServerConfigured] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+
+  const savedModels = (() => {
+    try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+  })();
+  const [model, setModel] = useState(() => {
+    return savedModels[providerId] || models[0];
+  });
+
+  useEffect(() => {
+    fetch('/api/settings/keys')
+      .then(r => r.json())
+      .then(data => setServerConfigured(!!data[serverKey]))
+      .catch(() => {});
+  }, [serverKey]);
+
+  const handleSaveKey = () => {
+    if (!keyValue.trim()) {
+      localStorage.removeItem(`lumi_${providerId}_key`);
+      fetch('/api/settings/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys: { [serverKey]: '' } }),
+      }).catch(() => {});
+    } else {
+      localStorage.setItem(`lumi_${providerId}_key`, keyValue.trim());
+      fetch('/api/settings/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys: { [serverKey]: keyValue.trim() } }),
+      }).then(() => setServerConfigured(true))
+        .catch(() => toast.error('Failed to save key'));
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const syncToServer = (models: Record<string, string>) => {
+    fetch('/api/preferences/llm', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: aiConfig.provider, models }),
+      credentials: 'include',
+    }).catch(() => {});
+  };
+
+  const handleModelChange = (m: string) => {
+    setModel(m);
+    const allModels = (() => {
+      try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+    })();
+    allModels[providerId] = m;
+    localStorage.setItem('lumi_llm_models', JSON.stringify(allModels));
+    syncToServer(allModels);
+    if (aiConfig.provider === providerId) {
+      updateAIConfig({ model: m });
+    }
+  };
+
+  return (
+    <div className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="p-2 bg-white/5 rounded-lg">{icon}</div>
+        <label className="text-[10px] font-black uppercase tracking-widest text-white/50">{label}</label>
+        {serverConfigured && <span className="text-[8px] px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full font-bold">CONFIGURED</span>}
+        {saved && <CheckCircle size={14} className="text-green-400 ml-auto" />}
+      </div>
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <input
+            disabled={disabled}
+            type={showKey ? 'text' : 'password'}
+            value={keyValue}
+            onChange={e => setKeyValue(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
+            placeholder={serverConfigured && !keyValue ? 'Key saved on server' : placeholder}
+            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pr-20 text-white font-mono text-sm outline-none focus:border-celestial-saturn/50 transition-colors disabled:opacity-50"
+          />
+          <div className="absolute right-2 top-2 flex gap-1">
+            <button type="button" onClick={() => setShowKey(!showKey)}
+              className="h-10 px-2 bg-white/5 hover:bg-white/10 text-[8px] font-bold uppercase border border-white/5 rounded-lg">
+              {showKey ? 'Hide' : 'Show'}
+            </button>
+            <Button onClick={handleSaveKey} disabled={disabled}
+              className="h-10 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10 rounded-lg">
+              Save
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <label className="text-[9px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap">Model</label>
+        <input
+          type="text"
+          value={model}
+          onChange={e => handleModelChange(e.target.value)}
+          list={`models-${providerId}`}
+          placeholder={models[0]}
+          className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono font-bold outline-none focus:border-celestial-saturn/50"
+        />
+        <datalist id={`models-${providerId}`}>
+          {models.map(m => <option key={m} value={m} />)}
+        </datalist>
+        {aiConfig.provider === providerId && (
+          <span className="text-[8px] px-2 py-0.5 bg-celestial-saturn/10 border border-celestial-saturn/20 text-celestial-saturn rounded-full font-bold whitespace-nowrap">ACTIVE</span>
+        )}
+      </div>
+    </div>
   );
 }
 

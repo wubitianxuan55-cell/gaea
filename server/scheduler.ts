@@ -465,7 +465,9 @@ Rules:
             emotionalState.connection,
             getDeepSeek,
             getGemini,
-            getQwen,
+            getOpenAI || (() => null),
+            getAnthropic || (() => null),
+            getQwen || (() => null),
             evolutionConfig,
           );
 

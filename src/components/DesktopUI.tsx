@@ -44,7 +44,6 @@ import { GlassCard } from './SharedUI';
 import { LocalAgentSphere } from './LocalAgentSphere';
 import { VoiceTrainingDialog } from './VoiceTrainingDialog';
 import { VoicePicker } from './VoicePicker';
-import { LLMConfigPanel } from './LLMConfigPanel';
 import { ToolPanel } from './ToolPanel';
 import { GitHubMCPBrowser } from './GitHubMCPBrowser';
 import { SkillCenter } from './SkillCenter';
@@ -247,7 +246,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
 }) {
   const [nightShift, setNightShift] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const { aiConfig, selectedVoiceId, unreadCount } = useApp();
+  const { selectedVoiceId, unreadCount } = useApp();
 
   if (!isOpen) return null;
 
@@ -365,18 +364,6 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
               <span className="text-xs font-bold text-white/70">{t.voiceLabel || 'Voice'}</span>
             </div>
             <span className="text-[10px] font-black text-pink-400 uppercase truncate max-w-[100px]">{selectedVoiceId || (t.defaultLabel || 'Default')}</span>
-          </button>
-
-          {/* LLM Provider */}
-          <button
-            onClick={() => { toggleWindow('llm'); onClose(); }}
-            className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <BrainCircuit size={14} className="text-blue-400" />
-              <span className="text-xs font-bold text-white/70">{t.llmLabel || 'LLM'}</span>
-            </div>
-            <span className="text-[10px] font-black text-blue-400 uppercase">{aiConfig.provider}</span>
           </button>
 
           {/* Notifications shortcut */}
@@ -795,9 +782,7 @@ export function DesktopUI({
 
   // Desktop icon layout: absolute positioning, 4 columns, fixed spacing
   const desktopIcons = [
-    { id: 'knowledge', labelKey: 'knowledgeBase', icon: <BrainCircuit size={24} />, colorClass: 'from-cyan-400 to-blue-600', windowId: 'knowledge' },
     { id: 'kernel', labelKey: 'osKernel', icon: <Cpu size={24} />, colorClass: 'from-orange-600 to-red-500', windowId: 'kernel' },
-    { id: 'llm', labelKey: 'llmConfig', icon: <BrainCircuit size={24} />, colorClass: 'from-blue-500 to-indigo-600', windowId: 'llm' },
     { id: 'tools', labelKey: 'tools', icon: <Wrench size={24} />, colorClass: 'from-amber-500 to-orange-600', windowId: 'tools' },
     { id: 'github-mcp', labelKey: 'githubMCP', icon: <Globe size={24} />, colorClass: 'from-purple-500 to-violet-600', windowId: 'github-mcp' },
     { id: 'devices', labelKey: 'deviceMesh', icon: <Wifi size={24} />, colorClass: 'from-cyan-500 to-blue-600', windowId: 'devices' },
@@ -1215,7 +1200,6 @@ export function DesktopUI({
     if (windowId === 'music') return { w: '850px', h: '620px' };
     if (windowId === 'tools') return { w: '850px', h: '620px' };
     if (windowId === 'github-mcp') return { w: '850px', h: '620px' };
-    if (windowId === 'llm') return { w: '700px', h: '550px' };
     if (windowId === 'notifications') return { w: '700px', h: '550px' };
     if (windowId === 'reminders') return { w: '650px', h: '620px' };
     if (windowId === 'devices') return { w: '900px', h: '700px' };
@@ -1945,8 +1929,6 @@ export function DesktopUI({
                     </div>
                   ) : windowId === 'personality' ? (
                     <PersonalityEditor t={t} />
-                  ) : windowId === 'llm' ? (
-                    <LLMConfigPanel />
                   ) : windowId === 'tools' ? (
                     <ToolPanel />
                   ) : windowId === 'github-mcp' ? (

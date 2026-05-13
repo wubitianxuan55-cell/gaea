@@ -287,6 +287,8 @@ apiRouter.post("/personality/:id/evolve", asyncHandler(async (req, res) => {
       emotionalState.connection,
       getDeepSeek,
       getGemini,
+      getOpenAI,
+      getAnthropic,
       getQwen,
       evolutionConfig,
     );

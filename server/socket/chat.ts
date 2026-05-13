@@ -93,34 +93,48 @@ export function registerChatHandler(
     try {
       socket.emit("agent:status", { status: "thinking", agentName: personality.name });
 
+      // Read user's LLM prefs from settings (synced from API Matrix)
+      const userLLMPrefs = (() => {
+        try {
+          const db = readDB();
+          const setting = (db.settings || []).find((s: any) => s.key === `llm_prefs_${uid}`);
+          if (setting) return JSON.parse(setting.value);
+        } catch {}
+        return { provider: '', models: {} };
+      })();
+      const DEFAULT_MODELS: Record<string, string> = {
+        deepseek: 'deepseek-chat', qwen: 'qwen-plus', openai: 'gpt-4o',
+        gemini: 'gemini-2.0-flash', anthropic: 'claude-sonnet-4-6',
+      };
       const resolveProvider = (model: string) =>
         model.startsWith('deepseek') ? 'deepseek' as const
         : model.startsWith('qwen') ? 'qwen' as const
+        : model.startsWith('gpt') || model.startsWith('o1') ? 'openai' as const
+        : model.startsWith('claude') ? 'anthropic' as const
         : 'gemini' as const;
 
-      let provider = resolveProvider(personality.defaultModel);
-      let activeModel = personality.defaultModel;
+      let activeProvider = userLLMPrefs.provider || 'deepseek';
+      let activeModel = (userLLMPrefs.models || {})[activeProvider] || DEFAULT_MODELS[activeProvider] || 'deepseek-chat';
 
       // ── Subscription enforcement (with fallback) ──
-      const access = checkLLMAccess({ userId: uid, provider, model: activeModel });
+      const access = checkLLMAccess({ userId: uid, provider: activeProvider, model: activeModel });
       if (!access.allowed) {
-        const fallbackModel = personality.fallbackModel || 'qwen-plus';
-        const fallbackProvider = resolveProvider(fallbackModel);
-        if (fallbackProvider !== provider && personality.fallbackModel) {
-          const fallbackAccess = checkLLMAccess({ userId: uid, provider: fallbackProvider, model: fallbackModel });
-          if (fallbackAccess.allowed) {
-            provider = fallbackProvider;
-            activeModel = fallbackModel;
-            console.log(`[Chat] Subscription fallback: ${personality.defaultModel} → ${fallbackModel} for user ${uid}`);
-          } else {
-            socket.emit("agent:error", {
-              message: access.reason,
-              code: access.tokenLimitReached ? 'TOKEN_LIMIT' : 'PROVIDER_RESTRICTED',
-            });
-            socket.emit("agent:status", { status: "error" });
-            return;
+        // Try each other configured provider from prefs
+        const fallbackCandidates = Object.entries(userLLMPrefs.models || {})
+          .filter(([p]) => p !== activeProvider)
+          .map(([p, m]) => ({ provider: p, model: m as string }));
+        let found = false;
+        for (const { provider: fbProvider, model: fbModel } of fallbackCandidates) {
+          const fbAccess = checkLLMAccess({ userId: uid, provider: fbProvider, model: fbModel });
+          if (fbAccess.allowed) {
+            activeProvider = fbProvider;
+            activeModel = fbModel;
+            console.log(`[Chat] Subscription fallback: ${activeProvider} → ${fbProvider} for user ${uid}`);
+            found = true;
+            break;
           }
-        } else {
+        }
+        if (!found) {
           socket.emit("agent:error", {
             message: access.reason,
             code: access.tokenLimitReached ? 'TOKEN_LIMIT' : 'PROVIDER_RESTRICTED',
@@ -136,7 +150,7 @@ export function registerChatHandler(
         agentId: agentId || undefined,
         personalityId: personality.id,
         personalityName: personality.name,
-        llmProvider: provider,
+        llmProvider: activeProvider,
         llmModel: activeModel,
         isLLMAvailable: true,
       };
@@ -160,7 +174,7 @@ export function registerChatHandler(
             try {
               socket.emit("agent:status", { status: "thinking", agentName: "Lumi Orchestrator" });
 
-              const subTasks = await decomposeTask(text, { provider, model: activeModel }, { userId: uid, personalityId }, llmGetters);
+              const subTasks = await decomposeTask(text, { provider: activeProvider, model: activeModel }, { userId: uid, personalityId }, llmGetters);
               // Cap sub-tasks: moderate complexity → max 2, complex → max 5
               const capped = complexity === 'moderate'
                 ? subTasks.slice(0, Math.min(2, subTasks.length))
@@ -170,12 +184,12 @@ export function registerChatHandler(
               const assignments = matchWorkers(capped, availableAgents);
               socket.emit("agent:chunk", { text: `[Orchestrator] Assigned to ${assignments.length} worker(s)\n`, agentName: "Lumi" });
 
-              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId }, { provider, model: activeModel }, llmGetters, availableAgents);
+              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId }, { provider: activeProvider, model: activeModel }, llmGetters, availableAgents);
 
               // For moderate tasks with ≤2 results, simple concatenation is enough — no LLM aggregation needed
               const aggregated = complexity === 'moderate' && capped.length <= 2
                 ? workflowResult.aggregatedOutput
-                : await aggregateWithLLM(workflowResult, text, { provider, model: activeModel }, llmGetters);
+                : await aggregateWithLLM(workflowResult, text, { provider: activeProvider, model: activeModel }, llmGetters);
               responseText = aggregated;
               llmWasCalled = true;
 
@@ -245,7 +259,7 @@ export function registerChatHandler(
           const result = await runWithTools(
             messages,
             toolRegistry,
-            { provider, model: activeModel, userId: uid },
+            { provider: activeProvider, model: activeModel, userId: uid },
             isSanctuary ? undefined : (record) => {
               socket.emit("agent:tool", { name: record.name, args: record.arguments, result: record.result?.slice(0, 200), error: record.error });
             },
@@ -264,13 +278,13 @@ export function registerChatHandler(
           const tokens = estimateTokens(text + ' ' + responseText);
           recordUsage(uid, tokens);
         } catch (llmErr: any) {
-          console.error(`[Cognition] LLM '${provider}/${activeModel}' failed: ${llmErr.message}`);
+          console.error(`[Cognition] LLM '${activeProvider}/${activeModel}' failed: ${llmErr.message}`);
           // Try fallback provider
-          if (llmErr.message?.includes('not configured') && provider !== 'gemini') {
+          if (llmErr.message?.includes('not configured') && activeProvider !== 'gemini') {
             try {
               const fallback = await runWithTools(
                 messages, toolRegistry,
-                { provider: 'gemini', model: personality.fallbackModel || 'gemini-pro', userId: uid },
+                { provider: 'gemini', model: DEFAULT_MODELS.gemini, userId: uid },
                 undefined, 1,
                 llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
               );
@@ -304,7 +318,7 @@ export function registerChatHandler(
         // Auto-summarize long conversations (anti-entropy: prevents context overflow)
         const { needed, recentMessages } = checkAutoSummary(conversationId);
         if (needed && recentMessages.length > 0) {
-          summarizeConversationAsync(conversationId, recentMessages, llmGetters, provider, activeModel).catch(
+          summarizeConversationAsync(conversationId, recentMessages, llmGetters, activeProvider, activeModel).catch(
             () => {} // Non-critical
           );
         }
@@ -329,7 +343,7 @@ export function registerChatHandler(
       const treeBranches = branchNodes.map(b => b.content);
       const locationTag = sensory.locationTag || undefined;
       extractMemories(
-        { userMessage: text, assistantResponse: responseText, existingMemories: relevantMemories.map(m => m.content), provider, model: activeModel, treeBranches, locationTag },
+        { userMessage: text, assistantResponse: responseText, existingMemories: relevantMemories.map(m => m.content), provider: activeProvider, model: activeModel, treeBranches, locationTag },
         llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
       ).then(extracted => {
         for (const mem of extracted.memories) {

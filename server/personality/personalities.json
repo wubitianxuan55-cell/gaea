@@ -31,8 +31,6 @@
       "includeTypes": ["preference", "fact", "habit", "knowledge"],
       "autoExtract": true
     },
-    "defaultModel": "deepseek-v4-pro",
-    "fallbackModel": "qwen-plus",
     "ttsVoiceId": "longxiaochun",
     "voiceInstructions": "Speak warmly and proactively. Be the user's trusted desktop companion — direct, helpful, and slightly playful. When executing actions, announce them briefly.",
     "personalityVector": {

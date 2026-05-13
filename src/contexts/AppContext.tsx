@@ -102,8 +102,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateAIConfig = (newConfig: Partial<AIConfig>) => {
     setAiConfig(prev => {
-      const updated = { ...prev, ...newConfig };
+      // Auto-resolve model from per-provider preferences when provider changes
+      let resolved = { ...newConfig };
+      if (newConfig.provider && !newConfig.model) {
+        const savedModels = (() => {
+          try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+        })();
+        const defaults: Record<string, string> = {
+          qwen: 'qwen-plus', deepseek: 'deepseek-chat', openai: 'gpt-4o',
+          gemini: 'gemini-2.0-flash', anthropic: 'claude-sonnet-4-6',
+        };
+        resolved.model = savedModels[newConfig.provider] || defaults[newConfig.provider] || '';
+      }
+      const updated = { ...prev, ...resolved };
       localStorage.setItem('lumi_ai_config', JSON.stringify(updated));
+
+      // Also sync apiKey to server so LLM/STT/TTS providers can read it
+      if (updated.apiKey && updated.provider) {
+        const KEY_MAP: Record<string, string> = {
+          qwen: 'DASHSCOPE_API_KEY',
+          deepseek: 'DEEPSEEK_API_KEY',
+          openai: 'OPENAI_API_KEY',
+          gemini: 'GEMINI_API_KEY',
+          anthropic: 'ANTHROPIC_API_KEY',
+        };
+        const serverKey = KEY_MAP[updated.provider];
+        if (serverKey) {
+          fetch('/api/settings/keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keys: { [serverKey]: updated.apiKey } }),
+          }).catch(() => {});
+        }
+      }
+
+      // Sync LLM prefs (provider + per-provider models) to server for personality evolution
+      if (updated.provider || updated.model) {
+        const allModels = (() => {
+          try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+        })();
+        if (updated.model && updated.provider) {
+          allModels[updated.provider] = updated.model;
+        }
+        fetch('/api/preferences/llm', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: updated.provider || prev.provider, models: allModels }),
+          credentials: 'include',
+        }).catch(() => {});
+      }
       return updated;
     });
     toast.success('Neural core configuration synchronized');

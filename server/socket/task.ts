@@ -55,9 +55,21 @@ export function registerTaskHandler(
       },
     );
 
-    const provider = personality.defaultModel.startsWith('deepseek') ? 'deepseek' as const
-      : personality.defaultModel.startsWith('qwen') ? 'qwen' as const
-      : 'gemini' as const;
+    // Read user's LLM prefs from settings (synced from API Matrix)
+    const userLLMPrefs = (() => {
+      try {
+        const db = readDB();
+        const setting = (db.settings || []).find((s: any) => s.key === `llm_prefs_${uid}`);
+        if (setting) return JSON.parse(setting.value);
+      } catch {}
+      return { provider: '', models: {} };
+    })();
+    const DEFAULT_MODELS: Record<string, string> = {
+      deepseek: 'deepseek-chat', qwen: 'qwen-plus', openai: 'gpt-4o',
+      gemini: 'gemini-2.0-flash', anthropic: 'claude-sonnet-4-6',
+    };
+    let activeProvider = userLLMPrefs.provider || 'deepseek';
+    let activeModel = (userLLMPrefs.models || {})[activeProvider] || DEFAULT_MODELS[activeProvider] || 'deepseek-chat';
 
     const messages: NormalizedMessage[] = [
       { role: 'system', content: systemInstruction },
@@ -83,8 +95,8 @@ export function registerTaskHandler(
         userId: uid,
         personalityId: personality.id,
         personalityName: personality.name,
-        llmProvider: provider,
-        llmModel: personality.defaultModel,
+        llmProvider: activeProvider,
+        llmModel: activeModel,
         isLLMAvailable: true,
       };
       cognition = await processInput(data.text, cognitiveCtx);
@@ -123,14 +135,14 @@ export function registerTaskHandler(
           if (availableAgents.length >= 1) {
             try {
               socket.emit("agent:status", { status: "thinking", agentName: "Lumi Orchestrator" });
-              const subTasks = await decomposeTask(data.text, { provider, model: personality.defaultModel }, { userId: uid, personalityId: data.personalityId || 'lumi' }, llmGetters);
+              const subTasks = await decomposeTask(data.text, { provider: activeProvider, model: activeModel }, { userId: uid, personalityId: data.personalityId || 'lumi' }, llmGetters);
               socket.emit("task:chunk", { text: `[Orchestrator] Decomposed into ${subTasks.length} sub-tasks\n`, agentName: "Lumi" });
 
               const assignments = matchWorkers(subTasks, availableAgents);
               socket.emit("task:chunk", { text: `[Orchestrator] Assigned to ${assignments.length} worker(s)\n`, agentName: "Lumi" });
 
-              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId: data.personalityId || 'lumi' }, { provider, model: personality.defaultModel }, llmGetters);
-              const aggregated = await aggregateWithLLM(workflowResult, data.text, { provider, model: personality.defaultModel }, llmGetters);
+              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId: data.personalityId || 'lumi' }, { provider: activeProvider, model: activeModel }, llmGetters);
+              const aggregated = await aggregateWithLLM(workflowResult, data.text, { provider: activeProvider, model: activeModel }, llmGetters);
               orchestratedText = aggregated;
 
               const skillTags = subTasks.map(s => s.requiredSkill);
@@ -216,7 +228,7 @@ export function registerTaskHandler(
       const result = await runWithTools(
         messages,
         toolRegistry,
-        { provider, model: personality.defaultModel, userId: uid },
+        { provider: activeProvider, model: activeModel, userId: uid },
         (record) => {
           socket.emit("agent:tool_call", {
             name: record.name,
@@ -279,8 +291,8 @@ export function registerTaskHandler(
           userMessage: data.text,
           assistantResponse: result.text,
           existingMemories: relevantMemories.map(m => m.content),
-          provider,
-          model: personality.defaultModel,
+          provider: activeProvider,
+          model: activeModel,
           userId: uid,
           locationTag,
         },

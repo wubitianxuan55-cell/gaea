@@ -12,6 +12,7 @@ import { FeishuAdapter } from './feishu';
 import type { FeishuConfig } from './feishu';
 import type { IncomingMessage, MessageHandler } from './types';
 import { getMessagingConfig, updateMessagingConfig } from './config';
+import { readDB } from '../../db_layer';
 
 // Dedup cache: prevent duplicate processing when Feishu retries events
 // Feishu retries if no 200 within 1s, but AI reply may take 5-30s
@@ -203,12 +204,28 @@ async function processWithPersonality(
     systemPrompt = `你是一个名为 Lumi 的 AI 助手，通过飞书与用户交流。保持回复简洁、有帮助、自然。`;
   }
 
-  // ── Determine model order from personality config ──
-  const defaultModel = personality?.defaultModel || 'qwen-plus';
-  const fallbackModel = personality?.fallbackModel || 'gemini-2.0-flash';
+  // ── Determine model order from user LLM prefs ──
+  const userLLMPrefs = (() => {
+    try {
+      const db = readDB();
+      const setting = (db.settings || []).find((s: any) => s.key === `llm_prefs_${msg.userId}`);
+      if (setting) return JSON.parse(setting.value);
+    } catch {}
+    return { provider: '', models: {} };
+  })();
+  const DEFAULT_MODELS: Record<string, string> = {
+    deepseek: 'deepseek-chat', qwen: 'qwen-plus', openai: 'gpt-4o',
+    gemini: 'gemini-2.0-flash', anthropic: 'claude-sonnet-4-6',
+  };
+  const activeProvider = userLLMPrefs.provider || 'deepseek';
+  const activeModel = (userLLMPrefs.models || {})[activeProvider] || DEFAULT_MODELS[activeProvider] || 'deepseek-chat';
 
-  // Map model names to provider getters
-  const modelProviders = resolveProviderOrder(defaultModel, fallbackModel, llm);
+  // Build fallback candidates from all user-configured models
+  const fallbackCandidates = Object.entries(userLLMPrefs.models || {})
+    .filter(([p]) => p !== activeProvider)
+    .map(([p, m]) => ({ provider: p, model: m as string }));
+
+  const modelProviders = resolveProviderOrder(activeProvider, activeModel, fallbackCandidates, llm);
 
   for (const { getter, model } of modelProviders) {
     try {
@@ -243,42 +260,42 @@ async function processWithPersonality(
 }
 
 function resolveProviderOrder(
-  primaryModel: string,
-  fallbackModel: string,
+  activeProvider: string,
+  activeModel: string,
+  fallbackCandidates: { provider: string; model: string }[],
   llmGetters?: Record<string, () => any>,
 ): { getter: () => any; model: string }[] {
-  const map: Record<string, { key: string; model: string }> = {
-    qwen: { key: 'getQwen', model: primaryModel },
-    deepseek: { key: 'getDeepSeek', model: primaryModel },
-    gemini: { key: 'getGemini', model: primaryModel },
-    openai: { key: 'getOpenAI', model: primaryModel },
-    anthropic: { key: 'getAnthropic', model: primaryModel },
-    claude: { key: 'getAnthropic', model: primaryModel },
+  const keyMap: Record<string, string> = {
+    qwen: 'getQwen', deepseek: 'getDeepSeek', gemini: 'getGemini',
+    openai: 'getOpenAI', anthropic: 'getAnthropic',
   };
 
   const ordered: { getter: () => any; model: string }[] = [];
   const seen = new Set<string>();
 
-  // Primary model first
-  const primary = Object.entries(map).find(([prefix]) => primaryModel.startsWith(prefix));
-  if (primary && llmGetters?.[primary[1].key]) {
-    const entry = primary[1];
-    ordered.push({ getter: llmGetters[entry.key], model: entry.model });
-    seen.add(entry.key);
+  // Active provider first
+  const getterKey = keyMap[activeProvider];
+  if (getterKey && llmGetters?.[getterKey]) {
+    ordered.push({ getter: llmGetters[getterKey], model: activeModel });
+    seen.add(getterKey);
   }
 
-  // Fallback model second
-  const fallback = Object.entries(map).find(([prefix]) => fallbackModel.startsWith(prefix));
-  if (fallback && llmGetters?.[fallback[1].key] && !seen.has(fallback[1].key)) {
-    const entry = fallback[1];
-    ordered.push({ getter: llmGetters[entry.key], model: fallbackModel });
-    seen.add(entry.key);
+  // User's other configured models as fallbacks
+  for (const { provider, model } of fallbackCandidates) {
+    const gk = keyMap[provider];
+    if (gk && llmGetters?.[gk] && !seen.has(gk)) {
+      ordered.push({ getter: llmGetters[gk], model });
+      seen.add(gk);
+    }
   }
 
-  // Remaining providers as additional fallbacks
-  for (const key of ['getQwen', 'getDeepSeek', 'getGemini'] as const) {
+  // Remaining providers as additional fallbacks with default models
+  const defaults: Record<string, string> = {
+    getQwen: 'qwen-plus', getDeepSeek: 'deepseek-chat', getGemini: 'gemini-2.0-flash',
+    getOpenAI: 'gpt-4o', getAnthropic: 'claude-sonnet-4-6',
+  };
+  for (const [key, model] of Object.entries(defaults)) {
     if (!seen.has(key) && llmGetters?.[key]) {
-      const model = key === 'getQwen' ? 'qwen-plus' : key === 'getDeepSeek' ? 'deepseek-chat' : 'gemini-2.0-flash';
       ordered.push({ getter: llmGetters[key], model });
       seen.add(key);
     }

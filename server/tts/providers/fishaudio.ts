@@ -1,9 +1,10 @@
 import { TTSResult, VoiceListItem } from '../types';
+import { getKey } from '../../config/keys';
 
 const BASE_URL = 'https://api.fish.audio/v1';
 
 function getApiKey(): string {
-  const key = process.env.FISHAUDIO_API_KEY;
+  const key = process.env.FISHAUDIO_API_KEY || getKey('FISHAUDIO_API_KEY');
   if (!key) throw new Error('FISHAUDIO_API_KEY is not configured');
   return key;
 }

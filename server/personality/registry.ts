@@ -70,8 +70,6 @@ class PersonalityRegistry {
       },
       toolPolicy: { allowedTools: ['*'], requireConfirmation: ['desktop_run_command', 'desktop_open', 'write_file', 'url_fetch', 'code_execution'], forbiddenTools: [], maxIterations: 10 },
       memoryPolicy: { retrieveLimit: 5, minConfidence: 0.4, includeTypes: ['preference', 'fact', 'habit', 'knowledge'], autoExtract: true },
-      defaultModel: 'deepseek-v4-pro',
-      fallbackModel: 'qwen-plus',
       ttsVoiceId: 'longxiaochun',
       voiceInstructions: 'Speak warmly and proactively. Be the user\'s trusted desktop companion.',
       personalityVector: {

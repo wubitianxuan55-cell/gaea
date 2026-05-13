@@ -17,6 +17,24 @@ import { PersonalityConfig, ExpressionStyle } from './types';
 import { Memory } from '../memory/types';
 import { queryMemories } from '../memory/store';
 import { NormalizedMessage, makeLLMCall } from '../llm/providers';
+import { readDB } from '../../db_layer';
+
+const DEFAULT_MODELS: Record<string, string> = {
+  deepseek: 'deepseek-chat',
+  qwen: 'qwen-plus',
+  openai: 'gpt-4o',
+  gemini: 'gemini-2.0-flash',
+  anthropic: 'claude-sonnet-4-6',
+};
+
+function getUserLLMPrefs(userId: string): { provider: string; models: Record<string, string> } {
+  try {
+    const db = readDB();
+    const setting = (db.settings || []).find((s: any) => s.key === `llm_prefs_${userId}`);
+    if (setting) return JSON.parse(setting.value);
+  } catch {}
+  return { provider: '', models: {} };
+}
 
 // ── Types ──
 
@@ -93,6 +111,8 @@ export async function synthesizeOwnerProfile(
   userId: string,
   getDeepSeek: () => any,
   getGemini: () => any,
+  getOpenAI: () => any,
+  getAnthropic: () => any,
   getQwen: () => any,
 ): Promise<OwnerProfile | null> {
   const memories = queryMemories({
@@ -132,19 +152,47 @@ ${memoryTexts}`;
       { role: 'user', content: synthesisPrompt },
     ];
 
-    // Try deepseek-chat first (lighter, faster), fall back to qwen
-    let result: { text?: string } = { text: '' };
-    try {
-      result = await makeLLMCall(
-        messages, [], { provider: 'deepseek', model: 'deepseek-chat' },
-        getDeepSeek, getGemini, () => null, () => null, getQwen,
-      );
-    } catch {
-      result = await makeLLMCall(
-        messages, [], { provider: 'qwen', model: 'qwen-plus' },
-        getDeepSeek, getGemini, () => null, () => null, getQwen,
-      );
+    // Build provider order from user's LLM prefs: active provider first, then configured fallbacks
+    const prefs = getUserLLMPrefs(userId);
+    const activeProvider = prefs.provider || '';
+    const userModels = prefs.models || {};
+
+    // Priority: active provider → others with keys configured → hardcoded fallbacks
+    const VALID_PROVIDERS = ['deepseek', 'qwen', 'gemini', 'openai', 'anthropic'] as const;
+    type ValidProvider = typeof VALID_PROVIDERS[number];
+    const candidates: { provider: ValidProvider; model: string }[] = [];
+    if (activeProvider && VALID_PROVIDERS.includes(activeProvider as ValidProvider)) {
+      const ap = activeProvider as ValidProvider;
+      candidates.push({
+        provider: ap,
+        model: userModels[ap] || DEFAULT_MODELS[ap] || '',
+      });
     }
+    // Add remaining providers that have keys, using their saved models
+    for (const p of VALID_PROVIDERS) {
+      if (p === activeProvider) continue;
+      candidates.push({
+        provider: p,
+        model: userModels[p] || DEFAULT_MODELS[p] || '',
+      });
+    }
+
+    let result: { text?: string } = { text: '' };
+    let succeeded = false;
+    for (const { provider, model } of candidates) {
+      if (!model) continue;
+      try {
+        result = await makeLLMCall(
+          messages, [], { provider, model },
+          getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen,
+        );
+        succeeded = true;
+        break;
+      } catch {
+        continue;
+      }
+    }
+    if (!succeeded) return null;
 
     let text = result.text || '';
     // Strip markdown code fences if present
@@ -437,6 +485,8 @@ export async function evolvePersonality(
   connectionScore: number,
   getDeepSeek: () => any,
   getGemini: () => any,
+  getOpenAI: () => any,
+  getAnthropic: () => any,
   getQwen: () => any,
   evolutionConfig: EvolutionConfig = DEFAULT_EVOLUTION_CONFIG,
 ): Promise<EvolutionStep | null> {
@@ -454,7 +504,7 @@ export async function evolvePersonality(
   }
 
   // Synthesize owner profile
-  const profile = await synthesizeOwnerProfile(userId, getDeepSeek, getGemini, getQwen);
+  const profile = await synthesizeOwnerProfile(userId, getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen);
   if (!profile) {
     console.log(`[Evolution] Insufficient owner_trait memories for ${userId}`);
     return null;

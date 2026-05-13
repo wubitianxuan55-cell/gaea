@@ -118,15 +118,15 @@ export function mountSystemRoutes(router: Router, jwtSecret: string) {
 
   // LLM connection test
   router.post("/llm/test", async (req, res) => {
-    const { provider } = req.body || {};
+    const { provider, apiKey } = req.body || {};
     try {
       const stored = loadKeys();
       const keyMap: Record<string, string | undefined> = {
-        deepseek: process.env.DEEPSEEK_API_KEY || stored.DEEPSEEK_API_KEY,
-        gemini: process.env.GEMINI_API_KEY || stored.GEMINI_API_KEY,
-        openai: process.env.OPENAI_API_KEY || stored.OPENAI_API_KEY,
-        anthropic: process.env.ANTHROPIC_API_KEY || stored.ANTHROPIC_API_KEY,
-        qwen: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || stored.QWEN_API_KEY || stored.DASHSCOPE_API_KEY,
+        deepseek: apiKey || process.env.DEEPSEEK_API_KEY || stored.DEEPSEEK_API_KEY,
+        gemini: apiKey || process.env.GEMINI_API_KEY || stored.GEMINI_API_KEY,
+        openai: apiKey || process.env.OPENAI_API_KEY || stored.OPENAI_API_KEY,
+        anthropic: apiKey || process.env.ANTHROPIC_API_KEY || stored.ANTHROPIC_API_KEY,
+        qwen: apiKey || process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || stored.QWEN_API_KEY || stored.DASHSCOPE_API_KEY,
       };
       const key = keyMap[provider];
       if (!key) {

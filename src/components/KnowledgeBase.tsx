@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2, Search, Sparkles, TrendingUp, Network, GitMerge, Upload } from 'lucide-react';
+import { X, Loader2, Search, Sparkles, TrendingUp, Network, GitMerge, Upload, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSocket } from '@/hooks/useSocket';
 import { NodeDetailPanel } from './NodeDetailPanel';
-import { MemoryTreeScene, TimelineTransitionController, layoutTree3D, useMemoryFilter } from './MemoryTree';
-import type { TreeNode3D, BranchCurve3D, TimelineState, MemoryNode as MemNode, FileEntry, ConversationEntry } from './MemoryTree';
+import { MemoryTreeScene, layoutTree3D } from './MemoryTree';
+import type { TreeNode3D, BranchCurve3D, MemoryNode as MemNode, FileEntry } from './MemoryTree';
 
 interface MemoryTree { node: MemNode; children: MemoryTree[]; }
 
@@ -20,7 +20,6 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
 
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [memories, setMemories] = useState<MemNode[]>([]);
-  const [conversations, setConversations] = useState<ConversationEntry[]>([]);
   const [treeNodes, setTreeNodes] = useState<TreeNode3D[]>([]);
   const [branchCurves, setBranchCurves] = useState<BranchCurve3D[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,16 +33,8 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const [timeline, setTimeline] = useState<TimelineState>({
-    before: null,
-    playing: false,
-    speed: 1,
-    earliest: null,
-    latest: null,
-  });
-
   // Fetch data
-  const fetchAll = useCallback(async (before?: string) => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/files/list');
@@ -54,10 +45,7 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
     } catch (err) { console.warn('[KnowledgeBase] files fetch failed:', err); }
 
     try {
-      const params = new URLSearchParams();
-      if (before) params.set('before', before);
-      const qs = params.toString();
-      const res = await fetch(`/api/memory/tree${qs ? `?${qs}` : ''}`);
+      const res = await fetch('/api/memory/tree');
       if (res.ok) {
         const d = await res.json();
         const flat: MemNode[] = [];
@@ -69,54 +57,39 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
       }
     } catch (err) { console.warn('[KnowledgeBase] memories fetch failed:', err); }
 
-    try {
-      const res = await fetch('/api/conversations?limit=50', { credentials: 'include' });
-      if (res.ok) {
-        const d = await res.json();
-        setConversations(d.conversations || []);
-      }
-    } catch (err) { console.warn('[KnowledgeBase] conversations fetch failed:', err); }
-
     setLoading(false);
   }, []);
 
-  useEffect(() => { if (isOpen) fetchAll(timeline.before ?? undefined); }, [isOpen, fetchAll, timeline.before]);
+  useEffect(() => { if (isOpen) fetchAll(); }, [isOpen, fetchAll]);
 
   // Socket
   useEffect(() => {
     if (!socket || !isOpen) return;
-    const handler = () => fetchAll(timeline.before ?? undefined);
-    socket.on('memories:changed', handler);
-    return () => { socket.off('memories:changed', handler); };
-  }, [socket, isOpen, fetchAll, timeline.before]);
+    socket.on('memories:changed', fetchAll);
+    return () => { socket.off('memories:changed', fetchAll); };
+  }, [socket, isOpen, fetchAll]);
 
   // Build tree
   useEffect(() => {
     if (!isOpen) return;
-    const { nodes, curves } = layoutTree3D(memories, files, conversations);
+    const { nodes, curves } = layoutTree3D(memories, files);
     setTreeNodes(nodes);
     setBranchCurves(curves);
-
-    // Compute earliest/latest dates from memories + conversations
-    const memsWithDates = memories.filter(m => m.nodeType !== 'branch' && m.createdAt);
-    const allWithDates = [
-      ...memsWithDates.map(m => m.createdAt!),
-      ...conversations.filter(c => c.createdAt).map(c => c.createdAt),
-    ];
-    if (allWithDates.length > 0) {
-      const sorted = allWithDates.sort();
-      setTimeline(prev => ({ ...prev, earliest: sorted[0], latest: sorted[sorted.length - 1] }));
-    }
-  }, [memories, files, conversations, isOpen]);
+  }, [memories, files, isOpen]);
 
   // Find selected node data
   const selectedNode = selectedId ? treeNodes.find(n => n.id === selectedId) : null;
   const selectedFileData = selectedId ? files.find(f => f.id === selectedId) : undefined;
   const selectedMemoryData = selectedId ? memories.find(m => m.id === selectedId) : undefined;
-  const selectedConversationData = selectedId ? conversations.find(c => c.id === selectedId) : undefined;
 
-  // Filtered data for rendering (timeline only; search dimming in scene)
-  const filtered = useMemoryFilter(treeNodes, branchCurves, timeline);
+  // Search: text results from memories
+  const searchResults = useMemo(() => {
+    if (!search.trim()) return [];
+    const q = search.toLowerCase();
+    return memories
+      .filter(m => m.nodeType !== 'branch' && m.content.toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [memories, search]);
 
   // Actions
   const handleDelete = async (id: string) => {
@@ -268,7 +241,6 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
   const totalFiles = files.length;
   const totalMemories = memories.filter(m => m.nodeType !== 'branch').length;
   const totalBranches = memories.filter(m => m.nodeType === 'branch').length;
-  const totalConversations = conversations.length;
 
   return (
     <AnimatePresence>
@@ -285,8 +257,8 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
         >
           {/* 3D Memory Tree Scene */}
           <MemoryTreeScene
-            nodes={filtered.nodes}
-            curves={filtered.curves}
+            nodes={treeNodes}
+            curves={branchCurves}
             searchQuery={search}
             highlightedNodeId={selectedId}
             onNodeClick={(id, sx, sy) => {
@@ -322,14 +294,41 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
               </div>
 
               {/* Search */}
-              <div className="flex items-center gap-2 bg-black/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl px-4 py-2 flex-1 max-w-[280px]">
+              <div className="relative flex items-center gap-2 bg-black/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl px-4 py-2 flex-1 max-w-[320px]">
                 <Search size={13} className="text-white/20 shrink-0" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search nodes..."
+                  placeholder="Search memories..."
                   className="bg-transparent text-[11px] text-white/70 placeholder:text-white/20 outline-none flex-1 min-w-0"
                 />
+                <AnimatePresence>
+                  {search.trim() && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+                    >
+                      {searchResults.length === 0 ? (
+                        <div className="px-4 py-3 text-[10px] text-white/30">No matches found</div>
+                      ) : (
+                        searchResults.map(m => (
+                          <button
+                            key={m.id}
+                            onClick={() => setSelectedId(m.id)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-white/5 transition-colors group"
+                          >
+                            <ArrowRight size={12} className="text-amber-400/50 shrink-0 group-hover:text-amber-400 transition-colors" />
+                            <span className="text-[11px] text-white/60 group-hover:text-white/80 transition-colors truncate">
+                              {m.content.slice(0, 60)}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Center: actions */}
@@ -392,8 +391,6 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
                   <span className="text-[9px] font-bold text-amber-400/60">{totalMemories} mem</span>
                   <span className="w-px h-3 bg-white/[0.08]" />
                   <span className="text-[9px] font-bold text-cyan-400/60">{totalBranches} branches</span>
-                  <span className="w-px h-3 bg-white/[0.08]" />
-                  <span className="text-[9px] font-bold text-yellow-400/60">{totalConversations} chats</span>
                 </div>
                 <button
                   onClick={onClose}
@@ -414,7 +411,6 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
               hue: selectedNode.hue,
               fileData: selectedFileData,
               memoryData: selectedMemoryData,
-              conversationData: selectedConversationData,
               isCore: selectedNode.tier === 'core_identity',
               isBranch: selectedNode.type === 'branch',
             } : null}
@@ -426,14 +422,6 @@ export function KnowledgeBase({ t, isOpen, onClose }: KnowledgeBaseProps) {
             onToggleProtect={handleToggleProtect}
             onChangeTier={handleChangeTier}
             onEdit={handleEdit}
-          />
-
-          {/* Timeline controller */}
-          <TimelineTransitionController
-            timeline={timeline}
-            onChangeTimeline={setTimeline}
-            earliestDate={timeline.earliest}
-            latestDate={timeline.latest}
           />
 
           {/* Bottom hint */}

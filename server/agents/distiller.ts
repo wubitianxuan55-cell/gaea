@@ -434,8 +434,6 @@ function profileToPersonalityConfig(
       includeTypes: ['preference', 'fact', 'habit', 'knowledge'],
       autoExtract: true,
     },
-    defaultModel: 'deepseek-chat',
-    fallbackModel: 'qwen-plus',
     personalityVector,
   };
 }

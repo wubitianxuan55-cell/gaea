@@ -1,7 +1,8 @@
 import { STTResult } from '../types';
+import { getKey } from '../../config/keys';
 
 function getApiKey(): string {
-  return process.env.OPENAI_API_KEY || '';
+  return process.env.OPENAI_API_KEY || getKey('OPENAI_API_KEY') || '';
 }
 
 export async function transcribe(

@@ -98,12 +98,6 @@ export interface PersonalityConfig {
   /** Memory behaviour */
   memoryPolicy: MemoryPolicy;
 
-  /** Default model for this personality */
-  defaultModel: string;
-
-  /** Fallback model if the default is unavailable */
-  fallbackModel: string;
-
   /** TTS voice ID for voice mode — maps to CosyVoice/GPT-SoVITS voice */
   ttsVoiceId?: string;
 

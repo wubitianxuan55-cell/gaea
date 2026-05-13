@@ -37,7 +37,9 @@ function SceneContent({
     const q = searchQuery.toLowerCase();
     const set = new Set<string>();
     for (const n of nodes) {
-      if (!n.title.toLowerCase().includes(q)) set.add(n.id);
+      const titleMatch = n.title.toLowerCase().includes(q);
+      const contentMatch = n.memoryData?.content?.toLowerCase().includes(q);
+      if (!titleMatch && !contentMatch) set.add(n.id);
     }
     return set;
   }, [nodes, searchQuery]);
