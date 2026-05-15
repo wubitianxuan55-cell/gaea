@@ -577,23 +577,44 @@ export async function makeLLMCallStreaming(
 
     const textParts: string[] = [];
     const toolCalls: ParsedToolCall[] = [];
+    // Accumulate tool_use blocks during stream (not just from finalMessage)
+    const toolUseAccumulators: Map<string, { id: string; name: string; args: Record<string, any> }> = new Map();
 
     for await (const event of stream) {
       if (event.type === 'text' && event.text) {
         textParts.push(event.text);
         onChunk(event.text);
       }
+      if (event.type === 'content_block_start' && (event as any).content_block?.type === 'tool_use') {
+        const block = (event as any).content_block;
+        toolUseAccumulators.set(block.id, { id: block.id, name: block.name, args: {} });
+      }
+      if (event.type === 'content_block_delta' && (event as any).delta?.type === 'input_json_delta') {
+        const delta = (event as any).delta;
+        // Partial JSON — accumulate for complete parse at end
+        const acc = [...toolUseAccumulators.values()].find(a => !a.name || Object.keys(a.args).length === 0);
+        if (acc) {
+          try { acc.args = { ...acc.args, ...JSON.parse(delta.partial_json || '{}') }; } catch {}
+        }
+      }
     }
 
-    // Get final message for tool use blocks + usage
+    // Get final message for complete tool use blocks + usage
     const finalMessage = await stream.finalMessage();
-    for (const block of finalMessage.content) {
-      if (block.type === 'tool_use') {
-        toolCalls.push({
-          id: block.id,
-          name: block.name,
-          arguments: block.input || {},
-        });
+    // Prefer stream-accumulated tool calls; fall back to finalMessage blocks
+    if (toolUseAccumulators.size > 0) {
+      for (const acc of toolUseAccumulators.values()) {
+        toolCalls.push({ id: acc.id, name: acc.name, arguments: acc.args });
+      }
+    } else {
+      for (const block of finalMessage.content) {
+        if (block.type === 'tool_use') {
+          toolCalls.push({
+            id: block.id,
+            name: block.name,
+            arguments: block.input || {},
+          });
+        }
       }
     }
 

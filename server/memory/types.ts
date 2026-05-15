@@ -49,6 +49,8 @@ export interface Memory {
   sharedToAgentIds?: string[];
   /** Location where this memory was formed (e.g. 'home', 'office', 'cafe', 'mobile') */
   location?: string;
+  /** 1536-dimension embedding vector from text-embedding-3-small for semantic search */
+  embedding?: number[];
 }
 
 export interface MemoryTree {
@@ -86,6 +88,8 @@ export interface MemoryQuery {
   retrievalTypeWeights?: Record<string, number>;
   /** Pre-computed perspective weights from vectorMemoryBias() */
   retrievalPerspectiveWeights?: Record<string, number>;
+  /** Enable vector semantic search via embedding cosine similarity */
+  useVector?: boolean;
 }
 
 export interface ExtractedMemory {

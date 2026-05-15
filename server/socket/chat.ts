@@ -7,10 +7,10 @@ import { NormalizedMessage, makeLLMCall, StreamCallback } from "../llm/providers
 import { LLMUsage } from "../tools/types";
 import { toolRegistry } from "../tools/registry";
 import { runWithTools } from "../llm/adapter";
-import { queryMemories, addMemory, addReminder, extractMemories } from "../memory";
+import { queryMemories, queryMemoriesVector, addMemory, addReminder, extractMemories } from "../memory";
 import { loadEmotionalState, saveEmotionalState, updateEmotionalState, generateContextualGreeting, vectorMemoryBias } from "../personality/state";
 import { personalityRegistry } from "../personality";
-import { getOrCreateActiveConversation, addMessage, getMessages, checkAutoSummary, setConversationSummary } from "../conversation/manager";
+import { getOrCreateActiveConversation, addMessage, getMessages, checkAutoSummary, setConversationSummary, getConversationSummary } from "../conversation/manager";
 import { ensureBranch } from "../memory/tree";
 import { retrieveChunks } from "../agents/rag";
 import { getSensory } from "./shared";
@@ -53,12 +53,14 @@ export function registerChatHandler(
         ? vectorMemoryBias(personalityConfig.personalityVector)
         : { typeWeights: {}, perspectiveWeights: {} };
 
-      const relevantMemories = queryMemories({
+      // Vector semantic search with keyword fallback
+      const relevantMemories = await queryMemoriesVector({
         userId: uid, query: text, limit: 5, minConfidence: 0.4, agentId: agentMemoryFilter,
         retrievalTypeWeights: retrievalBiases.typeWeights,
         retrievalPerspectiveWeights: retrievalBiases.perspectiveWeights,
+        useVector: true,
       });
-      console.log('[ChatHandler] relevantMemories:', relevantMemories.length);
+      console.log('[ChatHandler] relevantMemories (vector):', relevantMemories.length);
 
       // RAG: retrieve relevant knowledge chunks from agent's ingested documents
       let ragChunks: string[] = [];
@@ -85,16 +87,16 @@ export function registerChatHandler(
       );
       console.log('[ChatHandler] systemPrompt built, personality name:', personality?.name);
 
-      // Inject conversation summary for long-running conversations (anti-entropy)
+      // Inject conversation summary chain for long-running conversations (anti-entropy)
       let effectiveSystemPrompt = systemInstruction;
       const conversationId = agentId
         ? getOrCreateActiveConversation(uid, agentId).id
         : undefined;
       console.log('[ChatHandler] conversationId:', conversationId);
       if (conversationId) {
-        const { conversation } = checkAutoSummary(conversationId);
-        if (conversation?.summary) {
-          effectiveSystemPrompt += `\n\n## Conversation Context\nPrevious conversation summary: ${conversation.summary}`;
+        const summaryContext = getConversationSummary(conversationId);
+        if (summaryContext) {
+          effectiveSystemPrompt += `\n\n## Conversation Context\n${summaryContext}`;
         }
       }
 
@@ -167,12 +169,19 @@ export function registerChatHandler(
       const cognition = await processInput(text, cognitiveCtx);
       console.log('[ChatHandler] cognition result:', cognition.intent.category, 'directToolExecuted:', cognition.directToolExecuted, 'responseText:', cognition.responseText?.slice(0, 100));
 
-      // Auto-select model: flash for simple chat, pro for complex/command/code
+      // Auto-select model: flash for simple chat, pro for complex tasks
+      const complexCategories = ['command', 'code', 'question', 'analysis'];
+      const isComplex = complexCategories.includes(cognition.intent.category);
       if (activeProvider === 'deepseek') {
-        const complexCategories = ['command', 'code', 'question', 'analysis'];
-        activeModel = complexCategories.includes(cognition.intent.category) ? 'deepseek-v4-pro' : 'deepseek-v4-flash';
-        console.log('[ChatHandler] DeepSeek model auto-selected:', activeModel, 'for category:', cognition.intent.category);
+        activeModel = isComplex ? 'deepseek-v4-pro' : 'deepseek-v4-flash';
+      } else if (activeProvider === 'qwen') {
+        activeModel = isComplex ? 'qwen-max' : 'qwen-plus';
+      } else if (activeProvider === 'gemini') {
+        activeModel = isComplex ? 'gemini-2.5-pro' : 'gemini-2.0-flash';
+      } else if (activeProvider === 'openai') {
+        activeModel = isComplex ? 'gpt-4o' : 'gpt-4o-mini';
       }
+      console.log('[ChatHandler] Model auto-selected:', activeProvider, '/', activeModel, 'for category:', cognition.intent.category);
 
       let responseText = '';
       let llmWasCalled = false;
@@ -356,7 +365,9 @@ export function registerChatHandler(
       socket.emit("agent:response", { text: responseText, agentName: personality.name, source: "chat" });
       socket.emit("agent:status", { status: "idle" });
 
-      // Async memory extraction
+      // Async memory extraction — skip trivial/command messages to reduce noise
+      const skipExtractionCategories = ['command', 'file', 'unknown'];
+      if (text.length >= 10 && !skipExtractionCategories.includes(cognition.intent.category)) {
       const branchNodes = queryMemories({ userId: uid, nodeType: 'branch', limit: 50 });
       const treeBranches = branchNodes.map(b => b.content);
       const locationTag = sensory.locationTag || undefined;
@@ -380,6 +391,7 @@ export function registerChatHandler(
           addReminder({ userId: uid, content: rem.content, dueAt: rem.dueAt, sourceInteractionId: interactionId });
         }
       }).catch(err => console.error('[Memory] Extraction failed:', err));
+      }
 
       // Update emotional state — reconnect if user was away for a while
       const hoursSinceLast = emotionalState.lastInteractionAt

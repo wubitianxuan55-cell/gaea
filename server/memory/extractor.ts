@@ -135,6 +135,14 @@ export async function extractMemories(
         item.content.length > 0 &&
         Array.isArray(item.keywords),
       )
+      .filter((item: any) => {
+        const conf = Number(item.confidence) || 0.5;
+        if (conf < 0.5) return false;
+        const content = item.content.trim();
+        if (content.length < 5) return false;
+        if (/^[\d\s.,;:!?，。；：！？、""''「」『』【】（）()\[\]{}<>%$#@&*+\-/=~^`|]+$/.test(content)) return false;
+        return true;
+      })
       .map((item: any) => ({
         type: item.type as ExtractedMemory['type'],
         content: item.content.trim().slice(0, 500),

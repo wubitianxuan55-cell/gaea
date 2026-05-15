@@ -13,6 +13,7 @@ import { registerCalendarTools } from './calendar_tools';
 import { registerAgentTools } from './agent_tools';
 import { registerScreenMonitorTools } from './screen_monitor';
 import { registerImageTools } from './image_tools';
+import { registerUpgradeTools } from './upgrade_tools';
 
 export function registerAllTools(
   registry: ToolRegistry,
@@ -38,6 +39,7 @@ export function registerAllTools(
   registerAgentTools(registry);
   registerScreenMonitorTools(registry);
   registerImageTools(registry);
+  registerUpgradeTools(registry);
   if (llmGetters) {
     setSkillLLMGetters(llmGetters);
   }

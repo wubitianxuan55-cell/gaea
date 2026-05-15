@@ -706,52 +706,31 @@ Write in first-person as Lumi, warm and introspective tone. Keep it under 150 Ch
 
           if (recentMemories.length < 3 && recentInteractions.length < 3) continue;
 
-          // Build analysis context
-          const memoryHints = recentMemories.slice(0, 10)
-            .map(m => `- [${m.type}/${m.tier}] ${m.content.slice(0, 100)}`)
-            .join('\n');
-          const interactionHints = recentInteractions.slice(0, 5)
-            .map((i: any) => `- ${i.timestamp}: ${(i.message || i.content || '').slice(0, 80)}`)
-            .join('\n');
+          // Use AgentRuntime for unified tick logic
+          const { AgentRuntime } = await import('./agents/runtime');
+          const runtime = new AgentRuntime(agentRecord, personality);
+          runtime.loadState(userId);
 
-          const analysisPrompt = `You are Lumi's introspective analysis module. Review the following recent data and generate ONE brief, warm, insightful reflection in Chinese (under 100 characters).
+          const analyze = async (prompt: string): Promise<string> => {
+            const result = await makeLLMCall(
+              [{ role: 'user', content: prompt }],
+              [],
+              { provider: 'qwen', model: 'qwen-plus', maxTokens: 200 },
+              getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen,
+            );
+            return result.text?.trim() || '';
+          };
 
-Focus on:
-- What the user has been focused on or thinking about
-- Any emotional or behavioral patterns you notice
-- A thoughtful, caring observation — not just a data summary
+          const tickResult = await runtime.autonomousTick(userId, recentMemories, recentInteractions, analyze);
 
-Recent memories:
-${memoryHints || '(none)'}
+          // Store reflection via runtime's addMemory (with proper scoping)
+          if (tickResult.memoryUpdate) {
+            // Memory already stored inside autonomousTick() via runtime.addMemory()
+          }
 
-Recent interactions:
-${interactionHints || '(none)'}
-
-Return ONLY the reflection text — no preamble, no labels, no markdown.`;
-
-          const analysisResult = await makeLLMCall(
-            [{ role: 'user', content: analysisPrompt }],
-            [],
-            { provider: 'qwen', model: 'qwen-plus', maxTokens: 200 },
-            getDeepSeek, getGemini, getOpenAI, getAnthropic, getQwen,
-          );
-
-          const reflection = analysisResult.text?.trim();
-          if (!reflection || reflection.length < 5) continue;
-
-          messages.push(`[${agentRecord.name}] ${reflection}`);
-
-          // Store reflection as growth memory for future context
-          const { addMemory } = await import('./memory');
-          addMemory({
-            userId,
-            type: 'knowledge',
-            content: `[Autonomous Reflection] ${reflection}`,
-            keywords: ['autonomous_reflection', 'introspection', 'lumi_growth'],
-            confidence: 0.7,
-            sourceInteractionId: 'autonomous_tick_scheduler',
-            agentId: undefined,
-          } as any, { tier: 'growth', perspective: 'lumi_self', importance: 0.5 });
+          if (tickResult.message) {
+            messages.push(`[${agentRecord.name}] ${tickResult.message}`);
+          }
         } catch (err: any) {
           // Skip agents that fail to tick
         }

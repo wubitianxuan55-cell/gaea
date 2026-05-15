@@ -7,6 +7,8 @@ export interface Conversation {
   title: string;
   status: 'active' | 'paused' | 'closed';
   summary: string;
+  /** Multi-level summary chain: [oldest, middle, newest]. Max 3 entries. */
+  summaryChain?: string[];
   messageCount: number;
   lastActiveAt: string;
   createdAt: string;
@@ -170,15 +172,45 @@ export function checkAutoSummary(
 }
 
 /**
- * Store a conversation summary (replaces existing).
+ * Store a conversation summary. Maintains a multi-level chain (max 3).
+ * Newest summary becomes conv.summary; older ones move into summaryChain.
  */
 export function setConversationSummary(conversationId: string, summary: string): void {
   const db = readDB();
   if (!db.conversations) return;
   const conv = db.conversations.find((c: Conversation) => c.id === conversationId);
   if (!conv) return;
+
+  // Push current summary into chain before overwriting
+  if (conv.summary && conv.summary !== summary) {
+    if (!conv.summaryChain) conv.summaryChain = [];
+    conv.summaryChain.push(conv.summary);
+    // Keep max 2 in chain (plus current summary = 3 total layers)
+    if (conv.summaryChain.length > 2) {
+      // Merge oldest two into one to keep chain bounded
+      conv.summaryChain = [conv.summaryChain.slice(0, 2).join(' | ')];
+    }
+  }
+
   conv.summary = summary;
   writeDB(db);
+}
+
+/**
+ * Get full conversation context: recent summary + older layers.
+ * Returns formatted string suitable for system prompt injection.
+ */
+export function getConversationSummary(conversationId: string): string | null {
+  const db = readDB();
+  if (!db.conversations) return null;
+  const conv = db.conversations.find((c: Conversation) => c.id === conversationId);
+  if (!conv || !conv.summary) return null;
+
+  const parts: string[] = [conv.summary];
+  if (conv.summaryChain && conv.summaryChain.length > 0) {
+    parts.push('Earlier: ' + conv.summaryChain.join(' | '));
+  }
+  return parts.join('\n');
 }
 
 export function getUnclosedConversation(userId: string): Conversation | null {

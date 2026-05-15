@@ -7,6 +7,93 @@ function getMemoryStore(): Memory[] {
   return db.memories;
 }
 
+// ── Embedding / Vector Search ──
+
+/** LRU cache for embeddings: text → vector. Avoids re-embedding the same content. */
+const embeddingCache = new Map<string, number[]>();
+const EMBEDDING_CACHE_MAX = 500;
+
+function cacheEmbedding(text: string, vec: number[]) {
+  if (embeddingCache.size >= EMBEDDING_CACHE_MAX) {
+    const first = embeddingCache.keys().next().value;
+    if (first) embeddingCache.delete(first);
+  }
+  embeddingCache.set(text, vec);
+}
+
+function getCachedEmbedding(text: string): number[] | undefined {
+  return embeddingCache.get(text);
+}
+
+/** Cosine similarity between two vectors */
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+/** Generate embedding vector via OpenAI text-embedding-3-small. Returns null if API unavailable. */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  // Check cache first
+  const cached = getCachedEmbedding(text);
+  if (cached) return cached;
+
+  const apiKey = process.env.OPENAI_API_KEY || '';
+  if (!apiKey) return null;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: text.slice(0, 8000) }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+
+    const json = await res.json() as any;
+    const vec = json.data?.[0]?.embedding;
+    if (vec && Array.isArray(vec) && vec.length > 0) {
+      cacheEmbedding(text, vec);
+      return vec;
+    }
+    return null;
+  } catch {
+    return null; // API unavailable — silent fallback to keyword search
+  }
+}
+
+/** Async background embedding generation — updates memory in-place */
+async function attachEmbedding(memory: Memory): Promise<void> {
+  if (memory.embedding && memory.embedding.length > 0) return;
+  const text = `${memory.type}: ${memory.content} ${memory.keywords.join(' ')}`;
+  const vec = await generateEmbedding(text);
+  if (vec) {
+    memory.embedding = vec;
+    try {
+      const all = getMemoryStore();
+      const existing = all.find(m => m.id === memory.id);
+      if (existing) {
+        existing.embedding = vec;
+        saveMemoryStore(all);
+      }
+    } catch {}
+  }
+}
+
 // ── Hebbian Co-Retrieval Map — "cells that fire together, wire together" ──
 // When memories are retrieved in the same query, their pairwise association strengthens.
 // Over time, this builds an organic associative network that mirrors the user's mental model.
@@ -336,6 +423,56 @@ export function queryMemories(q: MemoryQuery): Memory[] {
   return result;
 }
 
+/** Async vector-based semantic search. Falls back to keyword search if embeddings unavailable. */
+export async function queryMemoriesVector(q: MemoryQuery): Promise<Memory[]> {
+  if (!q.query || !q.useVector) {
+    return queryMemories(q);
+  }
+
+  // Generate query embedding
+  const queryVec = await generateEmbedding(q.query);
+  if (!queryVec) {
+    // Embeddings unavailable — fall back to keyword search
+    return queryMemories({ ...q, useVector: false });
+  }
+
+  // Score all keyword-filtered results with cosine similarity
+  const keywordResults = queryMemories({ ...q, useVector: false });
+  const scored = keywordResults
+    .map(m => {
+      if (!m.embedding || m.embedding.length === 0) {
+        return { m, score: relevanceScore(q.query!, m) }; // fallback for unembedded memories
+      }
+      const cos = cosineSimilarity(queryVec, m.embedding);
+      return { m, score: +(cos * m.confidence).toFixed(4) };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const limit = q.limit || 5;
+  return scored.slice(0, limit).map(({ m }) => m);
+}
+
+/** Pre-generate embeddings for all existing memories that lack them. One-time migration. */
+export async function backfillEmbeddings(userId?: string): Promise<number> {
+  const all = getMemoryStore();
+  const targets = all.filter(m => !m.embedding && (!userId || m.userId === userId));
+  let count = 0;
+  for (const m of targets) {
+    const vec = await generateEmbedding(`${m.type}: ${m.content} ${m.keywords.join(' ')}`);
+    if (vec) {
+      m.embedding = vec;
+      count++;
+    }
+    // Small delay to avoid rate limits
+    if (count % 10 === 0 && count > 0) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+  if (count > 0) saveMemoryStore(all);
+  return count;
+}
+
 // ── Reminders ──
 
 export interface Reminder {
@@ -453,6 +590,10 @@ export function addMemory(
 
   all.push(newMemory);
   saveMemoryStore(all);
+
+  // Background: generate embedding for semantic search
+  attachEmbedding(newMemory).catch(() => {});
+
   return newMemory;
 }
 

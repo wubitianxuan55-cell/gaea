@@ -7,13 +7,14 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx launcher.ts",
+    "dev:direct": "tsx server.ts",
     "serve": "node dist-server/entry.cjs",
     "build": "vite build",
     "build:server": "node scripts/build-server.mjs",
     "prepare:desktop": "node scripts/prepare-desktop-resources.mjs",
     "build:desktop": "npm run build && npm run build:server && npm run prepare:desktop",
-    "start": "tsx server.ts",
+    "start": "tsx launcher.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-electron",
     "lint": "tsc --noEmit",

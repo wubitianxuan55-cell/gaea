@@ -40,6 +40,7 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
   const [loaded, setLoaded] = useState(false);
   const [connected, setConnected] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [installedSkillNames, setInstalledSkillNames] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeConvIdRef = useRef<string | null>(null);
@@ -52,6 +53,25 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  // Fetch installed skills for dynamic suggestions
+  useEffect(() => {
+    fetch('/api/skills').then(r => r.json()).then(data => {
+      setInstalledSkillNames((data.skills || []).map((s: any) => s.name?.toLowerCase?.() || ''));
+    }).catch(() => {});
+  }, []);
+
+  const hasCreativeSkill = installedSkillNames.some((n: string) => ['minimax', 'pixelle', 'video-editor', 'video editor'].some(k => n.includes(k)));
+  const hasFetcher = installedSkillNames.some((n: string) => ['fetcher', 'web'].some(k => n.includes(k)));
+  const hasDesktop = installedSkillNames.some((n: string) => ['desktop', 'commander'].some(k => n.includes(k)));
+
+  const quickSuggestions = [
+    { label: '随便聊聊', prompt: '你好Lumi，今天有什么有趣的发现吗？', show: true },
+    { label: '生成图片', prompt: '帮我生成一张星空下的赛博朋克城市图片', show: hasCreativeSkill },
+    { label: '总结网页', prompt: '帮我抓取这篇文章的内容并总结要点', show: hasFetcher },
+    { label: '桌面整理', prompt: '帮我把桌面上的文件按日期整理一下', show: hasDesktop },
+  ];
+  const visibleSuggestions = quickSuggestions.filter(s => s.show).slice(0, 4);
 
   // Track connection status
   useEffect(() => {
@@ -387,12 +407,7 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                 <p className="text-[11px]">{activeConvId ? (t?.chatPanelEmpty || 'Type a message or use voice to start') : (t?.newConversationHint || 'Start a new conversation')}</p>
               </div>
               <div className="grid gap-1.5 px-2">
-                {[
-                  { label: '随便聊聊', prompt: '你好Lumi，今天有什么有趣的发现吗？' },
-                  { label: '生成图片', prompt: '帮我生成一张星空下的赛博朋克城市图片' },
-                  { label: '总结网页', prompt: '帮我抓取这篇文章并总结要点' },
-                  { label: '桌面整理', prompt: '帮我把桌面上的文件按日期整理一下' },
-                ].map((s, i) => (
+                {visibleSuggestions.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => handleSend(s.prompt)}
@@ -518,6 +533,18 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
 
         {/* Input area */}
         <div className="border-t border-white/10 px-3 py-2 flex-shrink-0">
+          {/* Quick suggestion chips above input */}
+          <div className="flex gap-1 mb-2 flex-wrap">
+            {visibleSuggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => { setInput(s.prompt); inputRef.current?.focus(); }}
+                className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] text-white/30 hover:text-white/60 hover:border-white/10 hover:bg-white/10 transition-all"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
           {isVoiceActive && transcript && (
             <div className="text-[10px] text-purple-300/50 mb-1 flex items-center gap-1">
               <Mic size={10} className="text-purple-400 animate-pulse" />

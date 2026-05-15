@@ -36,7 +36,7 @@ async function generateImage(args: Record<string, any>): Promise<string> {
 
   // Poll up to 60 seconds
   for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1000));
     const pollRes = await fetch(
       `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
       { headers: { 'Authorization': `Bearer ${apiKey}` } },

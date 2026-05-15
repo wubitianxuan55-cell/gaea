@@ -120,12 +120,19 @@ export class AgentRuntime {
   }
 
   /**
-   * Autonomous tick — generates a proactive message if the agent's autonomy
-   * level allows and the emotional/context state warrants it.
+   * Autonomous tick — generates proactive reflection or message.
+   *
+   * - 'reactive': no action.
+   * - 'scheduled': runs LLM reflection, stores as internal growth memory.
+   * - 'autonomous': runs LLM reflection + generates a proactive user message.
+   *
+   * @param analyze Async callback for LLM reflection — takes prompt, returns text.
    */
   async autonomousTick(
     userId: string,
     recentMemories: Memory[],
+    recentInteractions: any[],
+    analyze?: (prompt: string) => Promise<string>,
   ): Promise<AgentTickResult> {
     if (this.agentRecord.autonomyLevel === 'reactive') {
       return { message: null, memoryUpdate: false, emotionUpdate: false };
@@ -136,27 +143,86 @@ export class AgentRuntime {
       type: 'idle_recovery',
     });
 
-    // Only generate proactive messages if curiosity + energy are high enough
-    const shouldSpeak =
-      this.agentRecord.autonomyLevel === 'autonomous' ||
-      (this.emotionalState.curiosity > 0.6 && this.emotionalState.energy > 0.4);
-
-    if (!shouldSpeak || recentMemories.length === 0) {
+    const hasData = recentMemories.length >= 3 || recentInteractions.length >= 3;
+    if (!hasData) {
       this.saveState(userId);
       return { message: null, memoryUpdate: false, emotionUpdate: true };
     }
 
-    // Build a reflective prompt from recent memories
-    const memoryHints = recentMemories.slice(0, 3)
-      .map(m => `- ${m.content.slice(0, 150)}`)
-      .join('\n');
+    let reflection: string | null = null;
 
-    const message = `I've been reflecting on recent events and wanted to check in. Here's what's on my mind:\n\n${memoryHints}\n\nHow are things going on your end?`;
+    if (analyze) {
+      try {
+        const memoryHints = recentMemories.slice(0, 10)
+          .map(m => `- [${m.type}/${m.tier}] ${m.content.slice(0, 100)}`)
+          .join('\n');
+        const interactionHints = recentInteractions.slice(0, 5)
+          .map((i: any) => `- ${i.timestamp}: ${(i.message || i.content || '').slice(0, 80)}`)
+          .join('\n');
 
-    this.emotionalState.curiosity = Math.max(0.1, this.emotionalState.curiosity - 0.1);
+        const analysisPrompt = `You are Lumi's introspective analysis module. Review the following recent data and generate ONE brief, warm, insightful reflection in Chinese (under 100 characters).
+
+Focus on:
+- What the user has been focused on or thinking about
+- Any emotional or behavioral patterns you notice
+- A thoughtful, caring observation — not just a data summary
+
+Recent memories:
+${memoryHints || '(none)'}
+
+Recent interactions:
+${interactionHints || '(none)'}
+
+Return ONLY the reflection text — no preamble, no labels, no markdown.`;
+
+        reflection = await analyze(analysisPrompt);
+        if (reflection && reflection.length < 5) reflection = null;
+      } catch {
+        // LLM reflection is best-effort
+      }
+    }
+
+    // Store internal reflection as growth memory (for both scheduled & autonomous)
+    if (reflection) {
+      try {
+        this.addMemory({
+          userId,
+          type: 'knowledge',
+          content: `[Autonomous Reflection] ${reflection}`,
+          keywords: ['autonomous_reflection', 'introspection', 'lumi_growth'],
+          confidence: 0.7,
+          sourceInteractionId: 'autonomous_tick',
+          tier: 'growth',
+          perspective: 'lumi_self',
+          importance: 0.5,
+        } as any);
+      } catch { /* best-effort */ }
+    }
+
+    // Autonomous agents can proactively message the user
+    let message: string | null = null;
+    if (
+      this.agentRecord.autonomyLevel === 'autonomous' &&
+      this.emotionalState.curiosity > 0.6 &&
+      this.emotionalState.energy > 0.4 &&
+      reflection
+    ) {
+      message = reflection;
+      this.emotionalState.curiosity = Math.max(0.1, this.emotionalState.curiosity - 0.1);
+    }
+
+    this.emotionalState = updateEmotionalState(this.emotionalState, {
+      type: 'interaction',
+      userId,
+      timestamp: new Date().toISOString(),
+    });
     this.saveState(userId);
 
-    return { message, memoryUpdate: false, emotionUpdate: true };
+    return {
+      message,
+      memoryUpdate: !!reflection,
+      emotionUpdate: true,
+    };
   }
 
   /** Export the current runtime config for persistence */

@@ -15,6 +15,7 @@ export type IntentCategory =
   | 'file'          // File operations: read, list, find
   | 'system'        // System info, status
   | 'agent'         // Agent management: create, configure, list
+  | 'analysis'      // Deep analysis: compare, evaluate, summarize, research
   | 'unknown';      // Fallback — needs LLM
 
 export interface IntentResult {
@@ -230,14 +231,29 @@ export function classifyIntent(input: string): IntentResult {
     }
   }
 
-  // 9. Questions
+  // 9. Analysis — deep reasoning tasks
+  const ANALYSIS_PATTERNS = [
+    /(分析|对比|评估|总结|归纳|调研|复盘|深入|思考|权衡|比较|解析)/,
+  ];
+  for (const pattern of ANALYSIS_PATTERNS) {
+    if (pattern.test(text)) {
+      return {
+        category: 'analysis',
+        confidence: 0.7,
+        entities: {},
+        needsLLM: true,
+      };
+    }
+  }
+
+  // 10. Questions
   for (const pattern of QUESTION_PATTERNS) {
     if (pattern.test(text)) {
       return { category: 'question', confidence: 0.6, entities: {}, needsLLM: true };
     }
   }
 
-  // 10. Default: unknown, needs LLM
+  // 11. Default: unknown, needs LLM
   // Short messages are likely conversational
   if (text.length < 20) {
     return { category: 'conversation', confidence: 0.4, entities: {}, needsLLM: true };
