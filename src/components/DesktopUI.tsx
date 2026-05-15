@@ -70,6 +70,7 @@ import { NeuralSynthesisMonitor } from './NeuralSynthesisMonitor';
 import { ContributorNodePanel } from './ContributorNodePanel';
 import { MeshSyncSelector } from './MeshSyncSelector';
 import { useSocket } from '@/hooks/useSocket';
+import { useAmbientPoller } from '@/hooks/useAmbientPoller';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useApp } from '@/contexts/AppContext';
 const NexusGlobe = lazy(() => import('./NexusGlobe/NexusGlobe').then(m => ({ default: m.NexusGlobe })));
@@ -893,6 +894,7 @@ export function DesktopUI({
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
 
   const socket = useSocket();
+  useAmbientPoller(socket); // Ambient awareness: polls window, clipboard, idle state
   const { callState, audioLevel, startCall, startCallRef, endCall, error: callError, transcript, responseText, interrupt, toggleMute } = useVoiceCall({
     socket,
   });

@@ -15,13 +15,15 @@
  * and tool routing all work independently of it.
  */
 
-import { classifyIntent, IntentResult } from './intent';
+import { classifyIntent, classifyIntentLLM, extractSentiment, IntentResult, SentimentResult } from './intent';
 import { generateFallback, isLLMDown } from './fallback';
 import { toolRegistry } from '../tools/registry';
+import { getModeConfig, ConversationMode, ModeConfig } from './modes';
 
-export { classifyIntent, generateFallback, isLLMDown };
-export type { IntentResult } from './intent';
+export { classifyIntent, classifyIntentLLM, extractSentiment, generateFallback, isLLMDown, getModeConfig };
+export type { IntentResult, SentimentResult } from './intent';
 export type { FallbackResponse } from './fallback';
+export type { ConversationMode, ModeConfig } from './modes';
 
 export interface CognitiveContext {
   userId: string;
@@ -62,8 +64,15 @@ export interface CognitiveResult {
 export async function processInput(
   input: string,
   ctx: CognitiveContext,
+  llmClassifier?: (prompt: string, userText: string) => Promise<string>,
 ): Promise<CognitiveResult> {
-  const intent = classifyIntent(input);
+  const regexIntent = classifyIntent(input);
+
+  // Second-stage LLM classification for ambiguous inputs
+  let intent: IntentResult = regexIntent;
+  if (llmClassifier && regexIntent.confidence < 0.65) {
+    intent = await classifyIntentLLM(input, regexIntent, llmClassifier);
+  }
 
   // ── Path A: Direct tool call (skip LLM entirely) ──
   if (intent.directToolCall && intent.confidence >= 0.75 && !intent.needsLLM) {

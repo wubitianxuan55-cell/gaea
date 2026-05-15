@@ -22,10 +22,11 @@ export interface EmotionalState {
 }
 
 export interface EmotionEvent {
-  type: 'interaction' | 'novel_topic' | 'positive_feedback' | 'negative_feedback' | 'idle_recovery' | 'self_reflection' | 'reconnect';
+  type: 'interaction' | 'novel_topic' | 'positive_feedback' | 'negative_feedback' | 'idle_recovery' | 'self_reflection' | 'reconnect' | 'sentiment_analysis';
   intensity?: number;   // 0-1 override for event strength
   timestamp?: string;
   userId?: string;
+  sentiment?: { valence: number; frustration: number; urgency: number };
 }
 
 export function createDefaultEmotionalState(): EmotionalState {
@@ -138,6 +139,21 @@ export function updateEmotionalState(state: EmotionalState, event: EmotionEvent)
       updated.connection = Math.min(1, updated.connection + 0.02 * intensity);
       updated.arousal = Math.min(1, updated.arousal + 0.04);
       updated.initiative = Math.min(1, updated.initiative + 0.01 * intensity);
+      break;
+
+    case 'sentiment_analysis':
+      // User's message carries emotional charge — Lumi absorbs it
+      if (event.sentiment) {
+        updated.valence = updated.valence * 0.85 + (event.sentiment.valence || 0) * 0.15;
+        if (event.sentiment.frustration > 0.5) {
+          updated.energy = Math.max(0, updated.energy - 0.04);
+          updated.connection = Math.max(0, updated.connection - 0.01);
+        }
+        if (event.sentiment.urgency > 0.5) {
+          updated.arousal = Math.min(1, updated.arousal + 0.08);
+          updated.energy = Math.min(1, updated.energy + 0.05);
+        }
+      }
       break;
   }
 

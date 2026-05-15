@@ -9,12 +9,13 @@ import { toolRegistry } from "../tools/registry";
 import { runWithTools } from "../llm/adapter";
 import { queryMemories, queryMemoriesVector, addMemory, addReminder, extractMemories } from "../memory";
 import { loadEmotionalState, saveEmotionalState, updateEmotionalState, generateContextualGreeting, vectorMemoryBias } from "../personality/state";
+import { buildModeOverlay } from "../personality/engine";
 import { personalityRegistry } from "../personality";
-import { getOrCreateActiveConversation, addMessage, getMessages, checkAutoSummary, setConversationSummary, getConversationSummary } from "../conversation/manager";
+import { getOrCreateActiveConversation, addMessage, getMessages, getMessagesByTokenBudget, checkAutoSummary, setConversationSummary, getConversationSummary, setConversationMode } from "../conversation/manager";
 import { ensureBranch } from "../memory/tree";
 import { retrieveChunks } from "../agents/rag";
 import { getSensory } from "./shared";
-import { processInput, handleLLMFailure, CognitiveContext } from "../cognition";
+import { processInput, handleLLMFailure, extractSentiment, CognitiveContext } from "../cognition";
 import { checkLLMAccess, recordUsage, estimateTokens } from "../subscription/proxy";
 import { classifyComplexity, decomposeTask, matchWorkers, executeWorkflow, aggregateWithLLM, recordWorkflowPattern, shouldDistillSkill, buildSkillDescription } from "../agents/orchestrator";
 import { searchKnowledgeBase } from "../enterprise/kb";
@@ -31,11 +32,31 @@ export function registerChatHandler(
   sensoryFn: (uid: string) => any,
   userIdFn: (s: Socket) => string,
 ) {
-  socket.on("agent:chat", async (data: { text: string; history: any[]; personalityId?: string; category?: string; agentId?: string; domain?: string; orgId?: string | null }) => {
+  const chatSessionMap = new Map<string, AbortController>();
+
+  // Handle abort requests
+  socket.on("agent:abort_chat", () => {
+    const uid = userIdFn(socket);
+    const controller = chatSessionMap.get(uid);
+    if (controller) {
+      controller.abort();
+      chatSessionMap.delete(uid);
+      socket.emit("agent:status", { status: "idle" });
+      socket.emit("agent:response", { text: "[Cancelled]", agentName: "Lumi", source: "chat" });
+    }
+  });
+
+  socket.on("agent:chat", async (data: { text: string; history: any[]; personalityId?: string; category?: string; agentId?: string; domain?: string; orgId?: string | null; mode?: string }) => {
     console.log('[ChatHandler] agent:chat RECEIVED:', JSON.stringify(data).slice(0, 300));
-    const { text, history, personalityId = "lumi", category, agentId, domain, orgId } = data;
+    const { text, history, personalityId = "lumi", category, agentId, domain, orgId, mode: payloadMode } = data;
     const uid = userIdFn(socket);
     console.log('[ChatHandler] uid:', uid, 'agentId:', agentId);
+
+    // Abort any previous chat session for this user
+    const prevController = chatSessionMap.get(uid);
+    if (prevController) prevController.abort();
+    const abortController = new AbortController();
+    chatSessionMap.set(uid, abortController);
 
     try {
       // Look up agent record for memory/emotion isolation
@@ -91,6 +112,17 @@ export function registerChatHandler(
       console.log('[ChatHandler] emotionalState loaded');
       const isNovel = relevantMemories.length < 2;
 
+      // ── Conversation mode: get/create conversation, apply mode from payload ──
+      const conversation = agentId
+        ? getOrCreateActiveConversation(uid, agentId)
+        : null;
+      const conversationId = conversation?.id;
+      const conversationMode = payloadMode || conversation?.mode || undefined;
+      if (conversation && payloadMode && payloadMode !== conversation.mode) {
+        setConversationMode(conversation.id, payloadMode);
+      }
+      console.log('[ChatHandler] conversationId:', conversationId, 'mode:', conversationMode);
+
       const sensory = sensoryFn(uid);
       console.log('[ChatHandler] sensory loaded');
       const { config: personality, systemPrompt: systemInstruction } = personalityRegistry.buildSystemPrompt(
@@ -106,14 +138,18 @@ export function registerChatHandler(
 
       // Inject conversation summary chain for long-running conversations (anti-entropy)
       let effectiveSystemPrompt = systemInstruction;
-      const conversationId = agentId
-        ? getOrCreateActiveConversation(uid, agentId).id
-        : undefined;
-      console.log('[ChatHandler] conversationId:', conversationId);
       if (conversationId) {
         const summaryContext = getConversationSummary(conversationId);
         if (summaryContext) {
           effectiveSystemPrompt += `\n\n## Conversation Context\n${summaryContext}`;
+        }
+      }
+
+      // Inject conversation mode overlay (shapes interaction style without changing personality)
+      if (conversationMode) {
+        const modeOverlay = buildModeOverlay(conversationMode);
+        if (modeOverlay) {
+          effectiveSystemPrompt += '\n\n' + modeOverlay;
         }
       }
 
@@ -188,8 +224,29 @@ export function registerChatHandler(
         llmModel: activeModel,
         isLLMAvailable: true,
       };
-      const cognition = await processInput(text, cognitiveCtx);
+      // LLM classifier for ambiguous intents — fast tiny call (50 tokens max)
+      const llmClassifier = async (prompt: string, userText: string): Promise<string> => {
+        const messages: NormalizedMessage[] = [
+          { role: 'system', content: prompt },
+          { role: 'user', content: userText },
+        ];
+        const result = await makeLLMCall(
+          messages,
+          [],
+          { provider: activeProvider, model: activeProvider === 'deepseek' ? 'deepseek-v4-flash' : activeModel, userId: uid, maxTokens: 60 },
+          llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
+        );
+        return result.text || '{"category":"unknown","confidence":0.5,"entities":{}}';
+      };
+
+      const cognition = await processInput(text, cognitiveCtx, llmClassifier);
       console.log('[ChatHandler] cognition result:', cognition.intent.category, 'directToolExecuted:', cognition.directToolExecuted, 'responseText:', cognition.responseText?.slice(0, 100));
+
+      // ── Sentiment analysis: detect emotional charge in user input ──
+      const sentiment = extractSentiment(text);
+      if (sentiment.valence !== 0 || sentiment.urgency > 0 || sentiment.frustration > 0) {
+        console.log('[ChatHandler] sentiment:', sentiment);
+      }
 
       // Auto-select model: flash for simple chat, pro for complex tasks
       const complexCategories = ['command', 'code', 'question', 'analysis'];
@@ -274,7 +331,7 @@ export function registerChatHandler(
         let persistedHistory: NormalizedMessage[] = [];
         if (agentId) {
           const conv = getOrCreateActiveConversation(uid, agentId);
-          const msgs = getMessages(conv.id, 30);
+          const msgs = getMessagesByTokenBudget(conv.id, 6000);
           persistedHistory = msgs
             .filter((m: any) => m.message || m.response)
             .flatMap((m: any) => {
@@ -318,7 +375,7 @@ export function registerChatHandler(
             maxIterations,
             llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
             onChunk,
-            isSanctuary ? { toolPolicy: { allowedTools: [], requireConfirmation: [], forbiddenTools: ['*'], maxIterations: 0 } } : undefined,
+            { isCancelled: () => abortController.signal.aborted, ...(isSanctuary ? { toolPolicy: { allowedTools: [], requireConfirmation: [], forbiddenTools: ['*'], maxIterations: 0 } } : {}) },
           );
 
           responseText = result.text || '';
@@ -339,6 +396,8 @@ export function registerChatHandler(
                 { provider: 'gemini', model: DEFAULT_MODELS.gemini, userId: uid },
                 undefined, 1,
                 llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
+                undefined,
+                { isCancelled: () => abortController.signal.aborted },
               );
               responseText = fallback.text || '';
               llmWasCalled = true;
@@ -389,6 +448,9 @@ export function registerChatHandler(
       socket.emit("agent:response", { text: responseText, agentName: personality.name, source: "chat" });
       socket.emit("agent:status", { status: "idle" });
 
+      // Clean up abort session
+      chatSessionMap.delete(uid);
+
       // Async memory extraction — skip trivial/command messages to reduce noise
       const skipExtractionCategories = ['command', 'file', 'unknown'];
       if (text.length >= 10 && !skipExtractionCategories.includes(cognition.intent.category)) {
@@ -423,6 +485,10 @@ export function registerChatHandler(
         : 24;
       const isReconnect = hoursSinceLast > 1;
       let updatedState = updateEmotionalState(emotionalState, { type: 'interaction', userId: uid, timestamp: new Date().toISOString() });
+      // Apply sentiment analysis results to emotional state
+      if (sentiment.valence !== 0 || sentiment.frustration > 0 || sentiment.urgency > 0) {
+        updatedState = updateEmotionalState(updatedState, { type: 'sentiment_analysis', sentiment, userId: uid, timestamp: new Date().toISOString() });
+      }
       if (isReconnect) {
         updatedState = updateEmotionalState(updatedState, { type: 'reconnect', intensity: Math.min(1, hoursSinceLast / 72), userId: uid, timestamp: new Date().toISOString() });
       }
@@ -468,6 +534,8 @@ export function registerChatHandler(
       console.error("[Socket Agent Error]:", error);
       socket.emit("agent:error", { message: error.message });
       socket.emit("agent:status", { status: "error" });
+    } finally {
+      chatSessionMap.delete(uid);
     }
   });
 }

@@ -45,6 +45,9 @@ import { getMarketplaceSkills, getSkillById, searchSkills, getCategories, record
 import { scheduler, registerScheduledTasks } from "./server/scheduler";
 import { deviceRegistry } from "./server/devices";
 import { fuseContext, formatContextForPrompt, type RawModalityInput } from "./server/context/fusion";
+import { pushActivityEvent, setIdleState, getLastEvent } from "./server/context/activity_stream";
+import { detectClipboardChange } from "./server/context/clipboard_monitor";
+import { processActivityEvent } from "./server/context/proactive_triggers";
 import { canOutputHolographic, textToHolographicOutput } from "./server/output/holographic";
 import type { SensoryContext } from "./server/personality/types";
 import voiceRoutes from "./routes/voice";
@@ -2030,6 +2033,49 @@ io.on("connection", (socket) => {
     });
     if (events.length > MAX_PERCEPTION_EVENTS) events.shift();
     perceptionEvents.set(uid, events);
+  });
+
+  // ── Ambient awareness handlers ──
+  socket.on("ambient:window_update", (data: { title: string; process_name: string; pid: number }) => {
+    const uid = getUserIdFromSocket(socket);
+    if (!uid) return;
+    const prev = getLastEvent(uid, 'window_changed');
+    const prevTitle = prev?.data?.title || '';
+    const prevProc = prev?.data?.process_name || '';
+    const changed = data.title !== prevTitle || data.process_name !== prevProc;
+    const event = {
+      type: 'window_changed' as const,
+      timestamp: new Date().toISOString(),
+      data,
+    };
+    pushActivityEvent(uid, event);
+    if (changed) {
+      processActivityEvent(event, uid, io);
+    }
+  });
+
+  socket.on("ambient:idle_report", (data: { idle_ms: number; idle_seconds: number }) => {
+    const uid = getUserIdFromSocket(socket);
+    if (!uid) return;
+    const isIdle = data.idle_seconds > 60; // idle threshold: 1 minute
+    setIdleState(uid, isIdle);
+    // Suppress/enable notifications based on idle state
+    if (isIdle) {
+      // User is away — don't send proactive notifications
+      // (proactive triggers handle the idle_greeting when user returns)
+    }
+  });
+
+  socket.on("ambient:clipboard_report", (data: { text: string }) => {
+    const uid = getUserIdFromSocket(socket);
+    if (!uid) return;
+    const result = detectClipboardChange(uid, data.text || '');
+    if (result.changed) {
+      const event = getLastEvent(uid, 'clipboard_changed');
+      if (event) {
+        processActivityEvent(event, uid, io);
+      }
+    }
   });
 
   registerChatHandler(socket, {

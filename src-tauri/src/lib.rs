@@ -464,6 +464,87 @@ fn get_running_processes() -> Vec<ProcessInfo> {
     processes
 }
 
+// ── Clipboard Commands ──
+
+#[tauri::command]
+fn get_clipboard_text() -> String {
+    use arboard::Clipboard;
+    match Clipboard::new() {
+        Ok(mut clipboard) => clipboard.get_text().unwrap_or_default(),
+        Err(_) => String::new(),
+    }
+}
+
+#[tauri::command]
+fn set_clipboard_text(text: String) -> bool {
+    use arboard::Clipboard;
+    match Clipboard::new() {
+        Ok(mut clipboard) => clipboard.set_text(text).is_ok(),
+        Err(_) => false,
+    }
+}
+
+// ── Idle Time ──
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IdleInfo {
+    pub idle_ms: u64,
+    pub idle_seconds: u64,
+}
+
+#[tauri::command]
+fn get_idle_time() -> IdleInfo {
+    #[cfg(target_os = "windows")]
+    {
+        #[repr(C)]
+        struct LastInputInfo {
+            cb_size: u32,
+            tick_count: u32,
+        }
+        extern "system" {
+            fn GetLastInputInfo(plii: *mut LastInputInfo) -> i32;
+            fn GetTickCount() -> u32;
+        }
+        unsafe {
+            let mut lii = LastInputInfo { cb_size: std::mem::size_of::<LastInputInfo>() as u32, tick_count: 0 };
+            if GetLastInputInfo(&mut lii) != 0 {
+                let tick = GetTickCount();
+                let idle_ms = (tick.wrapping_sub(lii.tick_count)) as u64;
+                return IdleInfo {
+                    idle_ms,
+                    idle_seconds: idle_ms / 1000,
+                };
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        IdleInfo { idle_ms: 0, idle_seconds: 0 }
+    }
+    IdleInfo { idle_ms: 0, idle_seconds: 0 }
+}
+
+// ── Activity Polling ──
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ActivitySnapshot {
+    pub window: ActiveWindowInfo,
+    pub idle: IdleInfo,
+    pub running_process_count: usize,
+}
+
+#[tauri::command]
+fn poll_activity() -> ActivitySnapshot {
+    let window = get_active_window_info();
+    let idle = get_idle_time();
+    let processes = get_running_processes();
+    ActivitySnapshot {
+        window,
+        idle,
+        running_process_count: processes.len(),
+    }
+}
+
 #[tauri::command]
 fn capture_screen() -> CaptureResult {
     #[cfg(target_os = "windows")]
@@ -539,6 +620,10 @@ pub fn run() {
             get_active_window_info,
             get_running_processes,
             capture_screen,
+            get_clipboard_text,
+            set_clipboard_text,
+            get_idle_time,
+            poll_activity,
         ])
         .setup(|app| {
             let resource_dir = app

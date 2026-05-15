@@ -3,6 +3,7 @@ import { Memory } from '../memory/types';
 import { formatMemoriesForContext } from '../memory/store';
 import { EmotionalState, formatEmotionalStateForPrompt, resolveVerbosityFromState, applyIntimacyToVector } from './state';
 import { generateSpatiotemporalContext } from '../time/spatiotemporal';
+import { getModeConfig, ConversationMode } from '../cognition/modes';
 
 const VERBOSITY_GUIDE: Record<ExpressionStyle['verbosity'], string> = {
   concise: 'Keep responses short and direct. One or two sentences when possible.',
@@ -474,4 +475,14 @@ function resolveEffectiveConfig(
  */
 export function getStatusText(config: PersonalityConfig): string {
   return `${config.name} is thinking...`;
+}
+
+/**
+ * Build a mode-specific prompt overlay from conversation mode.
+ * Injected into the system prompt to shape interaction style without
+ * modifying the underlying personality config.
+ */
+export function buildModeOverlay(mode?: string): string {
+  const config = getModeConfig(mode);
+  return config?.promptOverlay || '';
 }

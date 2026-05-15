@@ -35,7 +35,7 @@ type LLMGetters = {
 class Scheduler {
   private tasks: ScheduledTask[] = [];
   private timers: Map<string, NodeJS.Timeout> = new Map();
-  private io: SocketIOServer | null = null;
+  io: SocketIOServer | null = null;
   private llmGetters: LLMGetters | null = null;
 
   setIO(io: SocketIOServer) {
@@ -965,4 +965,34 @@ Output ONLY the check-in message — no preamble, no labels.`;
       return null;
     },
   });
+
+  // ── Ambient Awareness Tasks ──
+
+  // Activity poll (every 10s) — requests ambient state from all connected Tauri clients
+  scheduler.register({
+    id: 'ambient_activity_poll',
+    cron: 'every_10s',
+    lastRun: null,
+    handler: async () => {
+      if (scheduler.io) {
+        scheduler.io.emit('ambient:poll_request', { timestamp: new Date().toISOString() });
+      }
+      return null; // Silent — frontend handles the actual work
+    },
+  });
+
+  // Idle check (every 1min) — suppresses notifications during active use
+  scheduler.register({
+    id: 'idle_check',
+    cron: 'every_1m',
+    lastRun: null,
+    handler: async () => {
+      if (scheduler.io) {
+        // Broadcast idle check request; frontend reports back with idle time
+        scheduler.io.emit('ambient:idle_check', { timestamp: new Date().toISOString() });
+      }
+      return null;
+    },
+  });
 }
+

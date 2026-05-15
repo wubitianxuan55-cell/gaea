@@ -975,13 +975,23 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
                   <Mic size={18} />
                 </Button>
               </div>
-              <Button 
-                type="submit" 
-                disabled={isTyping || !newMessage.trim()}
-                className="bg-celestial-saturn text-black rounded-2xl px-6 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
-              >
-                <Send size={20} />
-              </Button>
+              {isTyping ? (
+                <Button
+                  type="button"
+                  onClick={() => { socket?.emit('agent:abort_chat'); setIsTyping(false); }}
+                  className="bg-red-500 text-white rounded-2xl px-6 hover:scale-105 transition-transform"
+                >
+                  <Square size={20} />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={!newMessage.trim()}
+                  className="bg-celestial-saturn text-black rounded-2xl px-6 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  <Send size={20} />
+                </Button>
+              )}
             </form>
           </div>
         </div>

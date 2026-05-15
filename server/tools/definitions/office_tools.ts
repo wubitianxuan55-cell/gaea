@@ -333,6 +333,86 @@ function esc(s: string): string {
   return s.replace(/'/g, "''");
 }
 
+// ── Email with Attachment Handlers ──
+
+async function sendEmailWithAttachments(args: Record<string, any>): Promise<string> {
+  const { to, subject, body, filePaths, smtpHost, smtpPort, smtpUser, smtpPass } = args;
+  if (!to) throw new Error('to (recipient) is required');
+  if (!subject) throw new Error('subject is required');
+
+  // Read SMTP config from args or environment
+  const host = smtpHost || process.env.SMTP_HOST;
+  const port = smtpPort || parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = smtpUser || process.env.SMTP_USER;
+  const pass = smtpPass || process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    throw new Error('SMTP configuration required. Set SMTP_HOST/SMTP_USER/SMTP_PASS env vars or pass smtpHost/smtpUser/smtpPass.');
+  }
+
+  const nodemailer = require('nodemailer');
+  const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+
+  const attachments = (filePaths || []).map((fp: string) => {
+    if (!fs.existsSync(fp)) throw new Error(`Attachment not found: ${fp}`);
+    return { path: fp };
+  });
+
+  await transporter.sendMail({
+    from: user,
+    to,
+    subject,
+    text: body || '',
+    attachments,
+  });
+
+  return `Email sent to ${to}${attachments.length ? ` with ${attachments.length} attachment(s)` : ''}`;
+}
+
+async function readEmailAttachments(args: Record<string, any>): Promise<string> {
+  const { limit } = args;
+  const count = limit || 10;
+
+  // Use Outlook COM on Windows
+  if (process.platform === 'win32') {
+    const { execSync } = require('child_process');
+    const psScript = `
+$outlook = New-Object -ComObject Outlook.Application
+$ns = $outlook.GetNamespace("MAPI")
+$inbox = $ns.GetDefaultFolder(6)
+$items = $inbox.Items | Sort-Object ReceivedTime -Descending | Select-Object -First ${count}
+$results = @()
+foreach ($item in $items) {
+  $attachments = @()
+  foreach ($att in $item.Attachments) {
+    $attachments += "$($att.FileName) ($($att.Size) bytes)"
+  }
+  $results += [PSCustomObject]@{
+    Subject = $item.Subject
+    From = $item.SenderName
+    Received = $item.ReceivedTime.ToString('yyyy-MM-dd HH:mm')
+    HasAttachments = $item.Attachments.Count -gt 0
+    AttachmentCount = $item.Attachments.Count
+    Attachments = $attachments -join '; '
+  }
+}
+$results | ConvertTo-Json -Depth 2
+`.trim();
+
+    try {
+      const output = execSync(`powershell -NoProfile -NonInteractive -Command "${psScript.replace(/"/g, '\\"')}"`, {
+        encoding: 'utf-8', timeout: 30000,
+      });
+      const parsed = JSON.parse(output);
+      return JSON.stringify(parsed, null, 2);
+    } catch (err: any) {
+      return `Outlook access failed: ${err.message}. Try setting up SMTP in Settings > Email.`;
+    }
+  }
+
+  return 'Email reading is currently supported on Windows via Outlook. Configure SMTP for cross-platform email sending.';
+}
+
 export function registerOfficeTools(registry: ToolRegistry): void {
   registry.register({
     name: 'create_ppt',
@@ -379,5 +459,44 @@ IMPORTANT: For visually impressive results, ALWAYS search for relevant images fi
     handler: createPptHandler,
     permission: 'user',
     securityLevel: 'safe',
+  });
+
+  // ── Email Tools ──
+
+  registry.register({
+    name: 'send_email_with_attachments',
+    description: 'Send an email with optional file attachments via SMTP. Configure SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS in environment or pass inline.',
+    parameters: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', description: 'Recipient email address' },
+        subject: { type: 'string', description: 'Email subject line' },
+        body: { type: 'string', description: 'Plain text email body' },
+        filePaths: { type: 'array', items: { type: 'string' }, description: 'Optional: paths to attachment files' },
+        smtpHost: { type: 'string', description: 'Optional: SMTP server hostname' },
+        smtpPort: { type: 'number', description: 'Optional: SMTP port (default 587)' },
+        smtpUser: { type: 'string', description: 'Optional: SMTP username' },
+        smtpPass: { type: 'string', description: 'Optional: SMTP password' },
+      },
+      required: ['to', 'subject'],
+    },
+    handler: sendEmailWithAttachments,
+    permission: 'user',
+    securityLevel: 'confirm',
+  });
+
+  registry.register({
+    name: 'read_email_attachments',
+    description: 'Read recent emails from Outlook inbox (Windows only). Lists subject, sender, time, and attachment details.',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Max emails to list (default 10)' },
+      },
+      required: [],
+    },
+    handler: readEmailAttachments,
+    permission: 'user',
+    securityLevel: 'confirm',
   });
 }

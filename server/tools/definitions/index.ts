@@ -12,6 +12,11 @@ import { registerOfficeTools } from './office_tools';
 import { registerCalendarTools } from './calendar_tools';
 import { registerAgentTools } from './agent_tools';
 import { registerScreenMonitorTools } from './screen_monitor';
+import { registerClipboardTools } from './clipboard_tools';
+import { registerOCRTools } from './ocr_tools';
+import { registerPdfTools } from './pdf_tools';
+import { registerDocumentTools } from './document_tools';
+import { registerWorkflowTools } from './workflow_tools';
 import { registerImageTools } from './image_tools';
 import { registerUpgradeTools } from './upgrade_tools';
 
@@ -38,6 +43,11 @@ export function registerAllTools(
   registerCalendarTools(registry);
   registerAgentTools(registry);
   registerScreenMonitorTools(registry);
+  registerClipboardTools(registry);
+  registerOCRTools(registry);
+  registerPdfTools(registry);
+  registerDocumentTools(registry);
+  registerWorkflowTools(registry);
   registerImageTools(registry);
   registerUpgradeTools(registry);
   if (llmGetters) {

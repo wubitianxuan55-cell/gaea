@@ -1,4 +1,5 @@
 import { readDB, writeDB } from '../../db_layer';
+import { estimateTokenCount } from '../llm/providers';
 
 export interface Conversation {
   id: string;
@@ -6,6 +7,7 @@ export interface Conversation {
   agentId: string;
   title: string;
   status: 'active' | 'paused' | 'closed';
+  mode?: string;  // Conversation mode: casual, teaching, brainstorm, executive
   summary: string;
   /** Multi-level summary chain: [oldest, middle, newest]. Max 3 entries. */
   summaryChain?: string[];
@@ -76,6 +78,16 @@ export function getActiveConversation(userId: string, agentId?: string): Convers
   ) || null;
 }
 
+export function setConversationMode(conversationId: string, mode: string): void {
+  const db = readDB();
+  if (!db.conversations) return;
+  const conv = db.conversations.find((c: Conversation) => c.id === conversationId);
+  if (!conv) return;
+  conv.mode = mode;
+  conv.lastActiveAt = new Date().toISOString();
+  writeDB(db);
+}
+
 export function getUserConversations(userId: string, limit = 20, offset = 0): Conversation[] {
   const db = readDB();
   if (!db.conversations) return [];
@@ -142,6 +154,44 @@ export function getMessages(conversationId: string, limit = 50): MessageRecord[]
     .filter((i: any) => i.conversationId === conversationId)
     .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .slice(-limit);
+}
+
+/**
+ * Get messages trimmed to a token budget rather than a fixed count.
+ * Always keeps the last `keepRecent` messages (default 4).
+ * Trims oldest messages first from the middle.
+ * Target token budget: 6000 tokens.
+ */
+export function getMessagesByTokenBudget(
+  conversationId: string,
+  maxTokens: number = 6000,
+  keepRecent: number = 4,
+): MessageRecord[] {
+  const all = getMessages(conversationId, 200);
+  if (all.length <= keepRecent) return all;
+
+  const keep = all.slice(-keepRecent); // always keep most recent
+  const rest = all.slice(0, -keepRecent);
+
+  let budget = maxTokens;
+  // Count tokens for the kept portion first
+  for (const m of keep) {
+    budget -= estimateTokenCount(m.message + (m.response || ''));
+  }
+
+  // Walk backwards through rest, taking messages that fit
+  const selected: MessageRecord[] = [];
+  for (let i = rest.length - 1; i >= 0; i--) {
+    const cost = estimateTokenCount(rest[i].message + (rest[i].response || ''));
+    if (budget - cost > 0) {
+      selected.unshift(rest[i]);
+      budget -= cost;
+    } else {
+      break; // no more budget for older messages
+    }
+  }
+
+  return [...selected, ...keep];
 }
 
 export function getMessagesForAgent(userId: string, agentId: string, limit = 50): MessageRecord[] {

@@ -184,3 +184,66 @@ function recordWorkflowIfToolsUsed(
     conversationExcerpt: safeMsg.slice(0, 500),
   });
 }
+
+// ── Vision Integration ──
+
+/** Analyze a screenshot with a vision-capable model. */
+export async function analyzeScreen(
+  imageBase64: string,
+  query: string,
+  config: { provider: string; model: string },
+  getDeepSeek?: () => any,
+  getGemini?: () => any,
+  getOpenAI?: () => any,
+  getAnthropic?: () => any,
+  getQwen?: () => any,
+): Promise<string> {
+  // Determine which vision model to use based on provider
+  let provider = config.provider;
+  let model = config.model;
+
+  // Route to best vision-capable provider
+  if (provider === 'deepseek') {
+    // DeepSeek doesn't support vision natively; fall back to OpenAI or Gemini
+    if (getOpenAI?.()) { provider = 'openai'; model = 'gpt-4o'; }
+    else if (getGemini?.()) { provider = 'gemini'; model = 'gemini-2.0-flash'; }
+    else throw new Error('Vision requires OpenAI or Gemini API key');
+  }
+
+  const messages: NormalizedMessage[] = [
+    {
+      role: 'system',
+      content: 'You are a screen reader AI. Analyze the screenshot and answer the user\'s question about what is visible on screen. Describe UI elements, text content, error messages, and anything relevant to the query. Be thorough but concise.',
+    },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: query },
+        { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}`, detail: 'high' } },
+      ],
+    },
+  ];
+
+  const result = await makeLLMCall(
+    messages, [],
+    { provider: provider as any, model, maxTokens: 1000 },
+    getDeepSeek || (() => null), getGemini || (() => null),
+    getOpenAI, getAnthropic, getQwen,
+  );
+
+  return result.text || 'Vision analysis returned no text.';
+}
+
+/** Run a multimodal conversation with vision-capable models. */
+export async function runWithVision(
+  messages: NormalizedMessage[],
+  config: LLMConfig,
+  getDeepSeek?: () => any,
+  getGemini?: () => any,
+  getOpenAI?: () => any,
+  getAnthropic?: () => any,
+  getQwen?: () => any,
+): Promise<string> {
+  const result = await makeLLMCall(messages, [], config, getDeepSeek || (() => null), getGemini || (() => null), getOpenAI, getAnthropic, getQwen);
+  return result.text || '';
+}

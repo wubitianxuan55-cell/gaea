@@ -89,6 +89,28 @@ async function handleDesktopExec(socket: Socket, data: {
         output = JSON.stringify({ width: (capture as any).width, height: (capture as any).height, image_base64_preview: (capture as any).image_base64?.slice(0, 80) + '...' });
         break;
       }
+      case 'desktop_clipboard_read': {
+        const text = await invoke('get_clipboard_text');
+        output = (text as string) || '';
+        break;
+      }
+      case 'desktop_clipboard_write': {
+        const text: string = args.text || '';
+        if (!text) { socket.emit(`tool:desktop_result:${correlationId}`, { error: 'No text provided for clipboard' }); return; }
+        const ok = await invoke('set_clipboard_text', { text });
+        output = ok ? 'Clipboard updated' : 'Failed to set clipboard';
+        break;
+      }
+      case 'desktop_idle_time': {
+        const idle = await invoke('get_idle_time');
+        output = JSON.stringify(idle, null, 2);
+        break;
+      }
+      case 'desktop_poll_activity': {
+        const snap = await invoke('poll_activity');
+        output = JSON.stringify(snap, null, 2);
+        break;
+      }
       default:
         socket.emit(`tool:desktop_result:${correlationId}`, {
           error: `Unknown desktop tool: ${name}`,
