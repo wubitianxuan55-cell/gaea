@@ -70,7 +70,7 @@ class PersonalityRegistry {
       },
       toolPolicy: { allowedTools: ['*'], requireConfirmation: ['desktop_run_command', 'desktop_open', 'write_file', 'url_fetch', 'code_execution'], forbiddenTools: [], maxIterations: 10 },
       memoryPolicy: { retrieveLimit: 5, minConfidence: 0.4, includeTypes: ['preference', 'fact', 'habit', 'knowledge'], autoExtract: true },
-      ttsVoiceId: 'longxiaochun',
+      ttsVoiceId: 'longxiaochun_v3',
       voiceInstructions: 'Speak warmly and proactively. Be the user\'s trusted desktop companion.',
       personalityVector: {
         cognitiveStyle: { analytical: 0.3, intuitive: 0.7, systematic: 0.3, creative: 0.6 },

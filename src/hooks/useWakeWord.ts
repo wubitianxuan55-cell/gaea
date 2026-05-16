@@ -149,7 +149,7 @@ export function useWakeWord({
         if (isCallActive?.()) {
           onInterrupt?.();
         } else {
-          startCallRef.current?.(voiceId, personalityId, agentId);
+          startCallRef.current?.();
         }
       });
 
@@ -200,7 +200,7 @@ export function useWakeWord({
           onInterrupt?.();
           return;
         }
-        startCallRef.current?.(voiceId, personalityId, agentId);
+        startCallRef.current?.();
       };
 
       let engine: any;

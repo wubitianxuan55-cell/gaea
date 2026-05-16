@@ -175,7 +175,7 @@ export function createLumiMcpServer(llmGetters?: {
         let audioFormat: string | undefined;
         try {
           const provider = getActiveProvider();
-          const voiceId = personality.ttsVoiceId || 'longxiaochun';
+          const voiceId = personality.ttsVoiceId || 'longxiaochun_v3';
           const ttsResult = await synthesizeSpeech(response.text, { provider, voiceId });
           audioBase64 = ttsResult.audioBuffer.toString('base64');
           audioFormat = ttsResult.format;
@@ -311,7 +311,7 @@ export function createLumiMcpServer(llmGetters?: {
     async ({ text, voiceId }) => {
       try {
         const provider = getActiveProvider();
-        const vid = voiceId || 'longxiaochun';
+        const vid = voiceId || 'longxiaochun_v3';
         const ttsResult = await synthesizeSpeech(text, { provider, voiceId: vid });
         const audioBase64 = ttsResult.audioBuffer.toString('base64');
         bc('mcp:activity', { device: 'xiaozhi', action: 'speak', text: text.slice(0, 100), bytes: ttsResult.audioBuffer.length });

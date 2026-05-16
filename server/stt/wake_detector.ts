@@ -7,10 +7,14 @@ import { logger } from '../../logger';
 const WAKE_WORDS = [
   'Jarvis', 'jarvis', '贾维斯',
   '计算机', '电脑',
+  'lumi', 'Lumi', 'LUMI',
+  '卢米', '路米', '鲁米', '露米',
   // "嘿 Lumi" + common Qwen ASR misrecognition variants
-  '嘿 Lumi', '嘿lumi', 'hey lumi', 'Hey Lumi', 'Hey lumi',
+  '嘿 Lumi', '嘿 lumi', '嘿lumi', 'hey lumi', 'Hey Lumi', 'Hey lumi',
   '黑卢米', '嘿路米', '黑鲁米', '嘿卢米', '黑路米', '嗨卢米', '嗨路米',
   'hi lumi', 'Hi Lumi', 'hi Lumi', '黑 lumi', '嗨 lumi',
+  'hi 卢米', 'hi 路米', 'hey 卢米', 'hey 路米',
+  '嘿 卢米', '嘿 路米', '嗨 卢米', '嗨 路米',
 ];
 
 export function isWakeWord(text: string): string | null {
@@ -96,6 +100,7 @@ export function createWakeDetector(
         case 'conversation.item.input_audio_transcription.completed': {
           const transcript = msg.transcript || '';
           if (transcript) {
+            logger.info(`[WakeDetector] Transcript: "${transcript}"`);
             const matched = isWakeWord(transcript);
             if (matched) {
               logger.info(`[WakeDetector] WAKE WORD "${matched}" in: "${transcript}"`);
