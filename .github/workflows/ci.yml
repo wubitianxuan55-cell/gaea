@@ -7,39 +7,90 @@ on:
     branches: [main]
 
 jobs:
-  typecheck:
-    name: TypeScript type-check
+  server-typecheck:
+    name: Server type-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - run: npx tsc --noEmit
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/server lint
 
-  rust-build:
-    name: Rust backend build
+  desktop-typecheck:
+    name: Desktop type-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-      - run: npm ci
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/desktop lint
+
+  web-typecheck:
+    name: Web type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/web lint
+
+  mobile-typecheck:
+    name: Mobile type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/mobile lint
+
+  rust-check:
+    name: Rust backend check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
       - name: Build frontend dist
-        run: npx vite build
+        run: pnpm --filter @lumios/desktop build
       - name: Create stub resource dirs for CI
         run: |
-          mkdir -p desktop-resources/dist-server
-          mkdir -p desktop-resources/gpt-sovits-src
-          mkdir -p desktop-resources/data/voice_training
-          touch desktop-resources/dist-server/.gitkeep
-          touch desktop-resources/gpt-sovits-src/.gitkeep
-          touch desktop-resources/data/voice_training/.gitkeep
-          touch desktop-resources/WebView2Loader.dll
+          mkdir -p packages/desktop/desktop-resources/dist-server
+          mkdir -p packages/desktop/desktop-resources/gpt-sovits-src
+          mkdir -p packages/desktop/desktop-resources/data/voice_training
+          touch packages/desktop/desktop-resources/dist-server/.gitkeep
+          touch packages/desktop/desktop-resources/gpt-sovits-src/.gitkeep
+          touch packages/desktop/desktop-resources/data/voice_training/.gitkeep
+          touch packages/desktop/desktop-resources/WebView2Loader.dll
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Tauri system deps
         run: |
@@ -47,28 +98,36 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev librsvg2-dev patchelf libssl-dev libgtk-3-dev libayatana-appindicator3-dev libdbus-1-dev
       - name: Check Rust backend
         run: cargo check --release
-        working-directory: src-tauri
+        working-directory: packages/desktop/src-tauri
 
   test:
-    name: Unit tests (vitest)
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - run: npm test
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/server test
+      - run: pnpm --filter @lumios/web test
 
   frontend-build:
     name: Frontend Vite build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - run: npx vite build
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm --filter @lumios/web build
+      - run: pnpm --filter @lumios/desktop build

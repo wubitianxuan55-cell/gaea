@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 await build({
-  entryPoints: ['server.ts'],
+  entryPoints: ['server/index.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "Lumi OS",
+  "version": "2.0.4",
+  "identifier": "com.lumiai.os",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5174",
+    "beforeDevCommand": "pnpm --filter @lumios/server dev & pnpm --filter @lumios/desktop dev",
+    "beforeBuildCommand": "pnpm --filter @lumios/desktop build && pnpm --filter @lumios/server build && node ../../scripts/prepare-desktop-resources.mjs",
+    "beforeBundleCommand": "node scripts/copy-webview2-dll.mjs"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Lumi OS",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 640,
+        "fullscreen": true,
+        "transparent": true,
+        "decorations": false,
+        "resizable": true,
+        "center": true,
+        "alwaysOnTop": true,
+        "alwaysOnBottom": false,
+        "skipTaskbar": false,
+        "shadow": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "appimage"],
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "resources": [
+      "../desktop-resources/dist-server/**/*"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./includes/include-dll.nsh"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "pulseaudio-utils | pipewire-pulse",
+          "brightnessctl",
+          "xdotool",
+          "xprintidle"
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAqMAUGAytlcAMhACyqJW0ET7JQM/JOZBcB2aygkyW/JQMLLlDwnfY6/SdZ",
+      "endpoints": [
+        "https://github.com/maoxiansheng946-dev/-lumi-OS/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

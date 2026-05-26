@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(__filename), '..');
-const outDir = path.join(root, 'desktop-resources');
+const outDir = path.join(root, 'packages', 'desktop', 'desktop-resources');
+const serverDistDir = path.join(root, 'packages', 'server', 'dist-server');
 const includeLocalVoice = process.env.LUMI_DESKTOP_WITH_LOCAL_VOICE === '1';
 
 const runtimeNodeModules = ['sqlite3', 'bindings', 'file-uri-to-path'];
@@ -44,7 +45,7 @@ async function copyDir(src, dest, filter = shouldCopy) {
 }
 
 async function prepareServer() {
-  const src = path.join(root, 'dist-server');
+  const src = serverDistDir;
   const dest = path.join(outDir, 'dist-server');
 
   await fs.mkdir(dest, { recursive: true });
@@ -94,7 +95,7 @@ async function prepareVoiceTrainingData() {
 async function prepareWebView2Dll() {
   const dllDest = path.join(outDir, 'WebView2Loader.dll');
   await fs.mkdir(outDir, { recursive: true });
-  const dllSrc = path.join(root, 'src-tauri', 'target', 'release', 'WebView2Loader.dll');
+  const dllSrc = path.join(root, 'packages', 'desktop', 'src-tauri', 'target', 'release', 'WebView2Loader.dll');
   if (existsSync(dllSrc)) {
     await fs.copyFile(dllSrc, dllDest);
   } else {

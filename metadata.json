@@ -1,5 +1,0 @@
-{
-  "name": "LumiAI V2.0 - Distributed Intelligence Protocol",
-  "description": "A decentralized AI ecosystem featuring personal digital immortality, B2B collective intelligence solutions, and sovereign edge computing nodes.",
-  "requestFramePermissions": ["camera", "microphone", "geolocation"]
-}
