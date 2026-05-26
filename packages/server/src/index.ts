@@ -247,10 +247,12 @@ const isProduction = process.env.NODE_ENV === "production" ||
                       isBundledServer ||
                       (!isSourceServer && process.env.NODE_ENV !== "development" && fs.existsSync(path.join(process.cwd(), "dist")));
 
-// Serve landing page (download page etc.) before web app SPA
+// Serve landing download page at /download
 const landingDist = path.join(repoRoot, 'packages', 'landing', 'dist');
-if (fs.existsSync(landingDist)) {
-  app.use(express.static(landingDist));
+const downloadPage = path.join(landingDist, 'download', 'index.html');
+if (fs.existsSync(downloadPage)) {
+  app.get('/download', (_req, res) => res.sendFile(downloadPage));
+  app.use('/download', express.static(path.join(landingDist, 'download')));
 }
 
 if (!isProduction) {
