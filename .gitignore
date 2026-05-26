@@ -11,6 +11,7 @@ coverage/
 *.tar.gz
 # Runtime data (auto-created by the application)
 data/
+!packages/server/src/data/
 gpt-sovits-src/
 **/src-tauri/target/
 .claude/
@@ -18,6 +19,7 @@ gpt-sovits-src/
 docs/
 gen_landing.py
 tools/
+!packages/server/src/tools/
 $null
 packages/server/packages/
 ci_log.zip

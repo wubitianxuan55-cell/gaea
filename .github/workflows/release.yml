@@ -14,13 +14,16 @@ jobs:
         include:
           - target: windows
             os: windows-latest
-            artifact: msi
+            bundles: nsis
+            ext: exe
           - target: macos
             os: macos-latest
-            artifact: dmg
+            bundles: dmg
+            ext: dmg
           - target: linux
             os: ubuntu-latest
-            artifact: deb
+            bundles: deb
+            ext: deb
 
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +36,37 @@ jobs:
 
       - run: pnpm install --ignore-scripts
 
+      - name: Build desktop frontend
+        run: pnpm --filter @lumios/desktop build
+
       - name: Build server dist
         run: pnpm --filter @lumios/server build
+
+      - name: Bundle Node.js runtime
+        run: |
+          node -e "
+            const fs = require('fs');
+            const dest = 'packages/server/dist-server/' + (process.platform === 'win32' ? 'node.exe' : 'node');
+            fs.copyFileSync(process.execPath, dest);
+            if (process.platform !== 'win32') fs.chmodSync(dest, 0o755);
+            console.log('Bundled Node.js', process.version, '->', dest);
+          "
+
+      - name: Prepare desktop resources
+        run: node scripts/prepare-desktop-resources.mjs
+
+      - name: Ensure .env stub exists (required by tauri bundle.resources)
+        run: node -e "require('fs').writeFileSync('packages/desktop/desktop-resources/dist-server/.env','')"
+
+      - name: Skip beforeBuildCommand (already done above)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'packages/desktop/src-tauri/tauri.conf.json';
+            const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            cfg.build.beforeBuildCommand = 'echo tauri-build-already-done';
+            fs.writeFileSync(path, JSON.stringify(cfg, null, 2));
+          "
 
       - name: Install Linux system deps
         if: matrix.target == 'linux'
@@ -44,30 +76,20 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Tauri app
-        id: tauri-build
+      - name: Tauri bundle
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: |
-          case "${{ matrix.target }}" in
-            windows) bundles="msi" ;;
-            macos)   bundles="dmg" ;;
-            linux)   bundles="deb" ;;
-          esac
           cd packages/desktop
-          npx tauri build --bundles "$bundles" -c src-tauri/tauri.conf.json 2>&1 | tee /tmp/tauri-build.log
-          exit ${PIPESTATUS[0]}
-
-      - name: Show build error
-        if: failure() && steps.tauri-build.outcome == 'failure'
-        run: tail -40 /tmp/tauri-build.log | while IFS= read -r line; do echo "::error::${line}"; done
+          pnpm exec tauri build --bundles "${{ matrix.bundles }}" -c src-tauri/tauri.conf.json
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lumi-os-${{ matrix.target }}
           path: |
+            packages/desktop/src-tauri/target/release/bundle/nsis/*.exe
             packages/desktop/src-tauri/target/release/bundle/msi/*.msi
             packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg
             packages/desktop/src-tauri/target/release/bundle/deb/*.deb
