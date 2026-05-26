@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g pnpm@latest
+      - run: corepack enable pnpm
       - run: pnpm install
       - uses: dtolnay/rust-toolchain@stable
       - name: Build Tauri (Windows)
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g pnpm@latest
+      - run: corepack enable pnpm
       - run: pnpm install
       - name: Install system dependencies
         run: |
