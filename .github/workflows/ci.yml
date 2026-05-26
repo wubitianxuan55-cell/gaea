@@ -16,6 +16,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/server lint
 
@@ -28,6 +30,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/desktop lint
 
@@ -40,6 +44,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/web lint
 
@@ -52,6 +58,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/mobile lint
 
@@ -64,6 +72,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - name: Build frontend dist
         run: pnpm --filter @lumios/desktop build
@@ -94,6 +104,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/server test
       - run: pnpm --filter @lumios/web test
@@ -107,6 +119,8 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: pnpm install
       - run: pnpm --filter @lumios/web build
       - run: pnpm --filter @lumios/desktop build
