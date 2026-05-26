@@ -5,6 +5,7 @@ import { Settings } from './components/Settings';
 import { AgentChatPage } from './components/AgentChatPage';
 import { SkillMarketplace } from './components/SkillMarketplace';
 import { LumiEcosystem } from './components/LumiEcosystem';
+import { AgentGenerator } from './components/AgentGenerator';
 import { EnterpriseHub } from './components/enterprise/EnterpriseHub';
 import { Profile } from './components/Profile';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -75,6 +76,9 @@ export default function App() {
             <SkillMarketplace t={t} lang={lang} />
           </div>
         );
+      case 'agent-gen':
+      case 'generate':
+        return !user ? <LoginRequired t={t} onLogin={() => setIsLoginModalOpen(true)} /> : <AgentGenerator t={t} onChatAgent={(agent: any) => { setSelectedAgent(agent); setActiveTab('agent-chat'); }} />;
       case 'agent-chat':
         return !user ? <LoginRequired t={t} onLogin={() => setIsLoginModalOpen(true)} /> : <AgentChatPage t={t} user={user} agent={selectedAgent} isOpen={true} onClose={() => setActiveTab('ecosystem')} />;
       case 'enterprise':

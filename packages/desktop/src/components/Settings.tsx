@@ -32,6 +32,9 @@ import { VoiceForge } from './VoiceForge';
 import { MCPSettings } from './MCPSettings';
 import { RemoteMCPSettings } from './RemoteMCPSettings';
 import { FeishuSettings } from './FeishuSettings';
+import { MemoryExplorer } from './MemoryExplorer';
+import { PersonalityEditor } from './PersonalityEditor';
+import { PersonalityMarketplace } from './PersonalityMarketplace';
 
 function buildSidebarGroups(t: any) {
   return [
@@ -47,6 +50,9 @@ function buildSidebarGroups(t: any) {
       items: [
         { id: 'neural', label: t.neuralEngine || 'Neural Engine', icon: <BrainCircuit size={16} /> },
         { id: 'api', label: t.sidebarApiMatrix || 'API Matrix', icon: <Key size={16} /> },
+        { id: 'personality', label: t.personality || 'Personality', icon: <Sparkle size={16} /> },
+        { id: 'market', label: t.personalityMarket || 'Personality Market', icon: <Globe size={16} /> },
+        { id: 'memory', label: t.memoryExplorer || 'Memory Explorer', icon: <Database size={16} /> },
       ],
     },
     {
@@ -264,6 +270,12 @@ export function Settings({
             )}
           </div>
         );
+      case 'personality':
+        return <PersonalityEditor t={t} />;
+      case 'market':
+        return <PersonalityMarketplace t={t} />;
+      case 'memory':
+        return <MemoryExplorer t={t} />;
       case 'hardware':
         return <HardwareSettings t={t} />;
       case 'mcp':

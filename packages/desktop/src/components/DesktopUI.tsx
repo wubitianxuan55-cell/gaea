@@ -83,6 +83,11 @@ import { useGestureDetector } from '../hooks/useGestureDetector';
 import { VoiceSubtitle } from './VoiceSubtitle';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ToolConfirmDialog } from './ToolConfirmDialog';
+import { PersonalityQuickSwitch } from './PersonalityQuickSwitch';
+import { LLMConfigPanel } from './LLMConfigPanel';
+import { PersonalityDashboard } from './PersonalityDashboard';
+import { NeuralFileManager } from './NeuralFileManager';
+import { MemoryExplorer } from './MemoryExplorer';
 
 const KnowledgeBase = lazy(() => import('./KnowledgeBase').then(m => ({ default: m.KnowledgeBase })));
 import { PersonalityEditor } from './PersonalityEditor';
@@ -1888,6 +1893,7 @@ export function DesktopUI({
             <div className={`flex flex-col items-center gap-4 mt-8 transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 blur-sm pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-3">
                 <VoicePicker t={t} />
+                <PersonalityQuickSwitch t={t} callActive={callState !== 'idle'} />
                 <div className="flex gap-2">
                   <button
                     onClick={toggleWallpaperMode}
@@ -2181,6 +2187,14 @@ export function DesktopUI({
                     </div>
                   ) : windowId === 'personality' ? (
                     <PersonalityEditor t={t} />
+                  ) : windowId === 'memory' ? (
+                    <MemoryExplorer t={t} />
+                  ) : windowId === 'llm' ? (
+                    <LLMConfigPanel />
+                  ) : windowId === 'persona-stats' ? (
+                    <PersonalityDashboard />
+                  ) : windowId === 'fs' ? (
+                    <NeuralFileManager t={t} />
                   ) : windowId === 'tools' ? (
                     <ToolPanel />
                   ) : windowId === 'github-mcp' ? (
