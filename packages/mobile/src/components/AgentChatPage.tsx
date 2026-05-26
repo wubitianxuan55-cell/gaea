@@ -20,7 +20,7 @@ import { listVoices } from '@/services/voiceService';
 export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; user: any; agent?: any; isOpen: boolean; onClose: () => void }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [agentMetadata, setAgentMetadata] = useState<Partial<AgentResponse>>({});
-  const { platform, isElectron } = usePlatform();
+  const { platform } = usePlatform();
   const { aiConfig, orgConnection, workDomain } = useApp();
   const socket = useSocket();
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>();
@@ -1009,9 +1009,6 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
           <GlassCard className="p-6 rounded-[2.5rem] space-y-4 border-celestial-saturn/20" hoverEffect={false}>
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-widest text-white/40">{t.activeCapabilities || 'Active Capabilities'}</h4>
-              {isElectron && (
-                <div className="px-2 py-0.5 rounded-full bg-celestial-saturn/20 text-[8px] text-celestial-saturn font-black">NODE_NATIVE</div>
-              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {(agentMetadata.capabilities || [t.neuralCore || 'Neural Core', t.webMesh || 'Web Mesh']).map((cap, i) => (

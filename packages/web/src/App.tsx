@@ -141,8 +141,6 @@ export default function App() {
               onLogin={() => setIsLoginModalOpen(true)}
               onLogout={appLogout}
               renderTabContent={renderTabContent}
-              isDesktop={false}
-              setUiMode={() => {}}
             />
           </AnimatePresence>
         </Suspense>

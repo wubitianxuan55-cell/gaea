@@ -10,7 +10,7 @@ import { usePlatform } from '@/hooks/usePlatform';
 export function Navbar({ t }: { t: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const { user, login, logout, loading } = useApp();
-  const { platform, isElectron, isMobile } = usePlatform();
+  const {} = usePlatform();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
@@ -27,11 +27,6 @@ export function Navbar({ t }: { t: any }) {
           </div>
           <div className="flex flex-col -space-y-1">
             <span className="text-2xl font-black tracking-tighter glow-text">LUMIAI</span>
-            {(isElectron || isMobile) && (
-              <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-celestial-saturn opacity-80">
-                {isElectron ? 'Desktop Node' : `${platform} client`}
-              </span>
-            )}
           </div>
         </motion.div>
 
@@ -41,15 +36,8 @@ export function Navbar({ t }: { t: any }) {
           <NavLink href="#multimodal">{t.multimodal}</NavLink>
           <NavLink href="#generator">{t.generator}</NavLink>
           <NavLink href="#ecosystem">{t.ecosystem}</NavLink>
-          
-          <div className="h-6 w-px bg-white/10 mx-2" />
 
-          {isElectron && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-celestial-saturn/10 border border-celestial-saturn/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-celestial-saturn animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-celestial-saturn">Vault Synced</span>
-            </div>
-          )}
+          <div className="h-6 w-px bg-white/10 mx-2" />
 
           {loading ? (
             <div className="w-32 h-10 rounded-full bg-white/5 animate-pulse" />
@@ -163,7 +151,7 @@ function MobileNavLink({ href, children, onClick }: { href: string; children: Re
 }
 
 export function Footer({ t }: { t: any }) {
-  const { isWeb, isElectron, isMobile } = usePlatform();
+  usePlatform();
 
   return (
     <footer className="py-20 px-6 border-t border-white/5 relative overflow-hidden">
@@ -228,16 +216,8 @@ export function Footer({ t }: { t: any }) {
           
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5">
-              <Globe size={10} className={isWeb ? 'text-celestial-saturn' : ''} />
-              <span className={isWeb ? 'text-white' : ''}>Web Portal</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5">
-              <Cpu size={10} className={isElectron ? 'text-celestial-saturn' : ''} />
-              <span className={isElectron ? 'text-white' : ''}>Desktop Node</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5">
-              <Shield size={10} className={isMobile ? 'text-celestial-saturn' : ''} />
-              <span className={isMobile ? 'text-white' : ''}>Mobile Sense</span>
+              <Globe size={10} className="text-celestial-saturn" />
+              <span className="text-white">Web Portal</span>
             </div>
           </div>
 

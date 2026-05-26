@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type Platform = 'web' | 'electron' | 'tauri' | 'ios' | 'android';
+export type Platform = 'web' | 'ios' | 'android';
 
 export interface SensorData {
   latitude?: number;
@@ -12,11 +12,9 @@ export interface SensorData {
 export function usePlatform() {
   const [platform, setPlatform] = useState<Platform>(() => {
     if (typeof window !== 'undefined') {
-      if ((window as any).lumiElectron || navigator.userAgent.toLowerCase().includes('electron')) {
-        return 'electron';
-      }
-      if ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI_IPC__ || (window as any).__TAURI__) {
-        return 'tauri';
+      const win = window as any;
+      if (win.Capacitor && win.Capacitor.platform !== 'web') {
+        return win.Capacitor.platform as Platform;
       }
     }
     return 'web';
@@ -25,22 +23,9 @@ export function usePlatform() {
   const [sensors, setSensors] = useState<SensorData>({});
 
   useEffect(() => {
-    // Check for Electron
-    if (window && (window as any).lumiElectron) {
-      setPlatform('electron');
-      return;
-    }
-
-    // Check for Tauri
-    if (window && ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI_IPC__ || (window as any).__TAURI__)) {
-      setPlatform('tauri');
-      return;
-    }
-
-    // Check for Capacitor/Cordova (Mobile)
     const win = window as any;
     const isMobile = !!(win.Capacitor && win.Capacitor.platform !== 'web');
-    
+
     if (isMobile) {
       setPlatform(win.Capacitor.platform as Platform);
     } else {
@@ -52,7 +37,6 @@ export function usePlatform() {
     setIsSyncing(true);
     const cleanupFns: (() => void)[] = [];
 
-    // Real GPS via Geolocation API
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -69,7 +53,6 @@ export function usePlatform() {
       cleanupFns.push(() => navigator.geolocation.clearWatch(watchId));
     }
 
-    // Real accelerometer via DeviceMotionEvent
     if ('DeviceMotionEvent' in window) {
       const handleMotion = (e: DeviceMotionEvent) => {
         const acc = e.accelerationIncludingGravity;
@@ -96,14 +79,10 @@ export function usePlatform() {
 
   return {
     platform,
-    isElectron: platform === 'electron',
-    isTauri: platform === 'tauri',
-    isDesktop: platform === 'electron' || platform === 'tauri',
     isMobile: platform === 'ios' || platform === 'android',
     isWeb: platform === 'web',
-    electronAPI: (window as any).lumiElectron || null,
     startSensorSync,
     sensors,
-    isSyncing
+    isSyncing,
   };
 }

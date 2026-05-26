@@ -16,10 +16,9 @@ export async function runAgentLogic(prompt: string, context: { platform: string;
   const { provider = 'gemini', model = 'gemini-1.5-flash', apiKey } = context.aiConfig || {};
 
   const systemInstruction = `
-    You are the LumiAI Core acting on the ${context.platform} platform.
-    If platform is 'electron', you have access to local file systems and system automation.
-    If platform is 'web', you are a lightweight assistant restricted to a browser sandbox.
-    
+    You are the LumiAI Core acting on the web platform.
+    You are a lightweight assistant restricted to a browser sandbox.
+
     Respond in a technical, futuristic, and helpful tone.
   `;
 
@@ -36,10 +35,8 @@ export async function runAgentLogic(prompt: string, context: { platform: string;
     
     return {
       text: response.text,
-      capabilities: context.platform === 'electron' 
-        ? ["File System", "System Automation", "P2P Sync", "Neural Core"]
-        : ["Cloud Sync", "Web Perception"],
-      actions: context.platform === 'electron' ? ["AUTO_INDEX_FILES", "NOTIFY_SYSTEM"] : ["SYNC_CLOUD"]
+      capabilities: ["Cloud Sync", "Web Perception"],
+      actions: ["SYNC_CLOUD"]
     };
   } catch (error: any) {
     console.error("Agent Error:", error);

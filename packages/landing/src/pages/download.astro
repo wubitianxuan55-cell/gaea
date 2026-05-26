@@ -1,25 +1,49 @@
 ---
 import Base from '../layouts/Base.astro';
+import { translations } from '../i18n/translations';
+
+const url = new URL(Astro.request.url);
+const langParam = url.searchParams.get('lang');
+const lang: 'en' | 'zh' = langParam === 'zh' ? 'zh' : 'en';
+const t = translations[lang];
 ---
 
-<Base title="Download Lumi OS — LumiAI">
-  <main class="flex min-h-screen items-center justify-center bg-black text-white">
-    <div class="text-center space-y-6 p-8 max-w-2xl">
-      <h1 class="text-4xl font-bold">Download Lumi OS</h1>
-      <p class="text-gray-400">Get the latest version from GitHub Releases.</p>
+<Base title={`${t.downloadTitle} — LumiOS`} description={t.downloadDesc} lang={lang}>
+  <main class="flex min-h-screen items-center justify-center relative overflow-hidden">
+    <!-- Ambient background -->
+    <div class="absolute inset-0 z-0 pointer-events-none">
+      <div class="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-celestial-saturn/10 blur-[120px] rounded-full" />
+      <div class="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-celestial-mars/8 blur-[100px] rounded-full" />
+    </div>
+
+    <div class="text-center space-y-6 p-8 max-w-2xl relative z-10">
+      <h1 class="text-5xl md:text-6xl font-black tracking-tighter glow-text">{t.downloadTitle}</h1>
+      <p class="text-white/40">{t.downloadDesc}</p>
       <div id="download-buttons" class="flex flex-col gap-4 items-center mt-8">
         <div class="flex flex-col gap-4 items-center">
           <div class="w-64 h-12 bg-white/5 rounded-lg animate-pulse"></div>
           <div class="w-64 h-12 bg-white/5 rounded-lg animate-pulse"></div>
         </div>
-        <p class="text-sm text-gray-500 mt-4">Loading latest release...</p>
+        <p class="text-sm text-white/30 mt-4">{t.loadingRelease}</p>
       </div>
     </div>
   </main>
 </Base>
 
 <script>
+  window.__i18n = {
+    downloadForWindows: "{t.downloadForWindows}",
+    downloadForLinux: "{t.downloadForLinux}",
+    downloadForLinuxAppImage: "{t.downloadForLinuxAppImage}",
+    versionInfo: "{t.versionInfo}",
+    releaseError: "{t.releaseError}",
+    viewOnGitHub: "{t.viewOnGitHub}",
+  };
+</script>
+
+<script>
   const container = document.getElementById('download-buttons');
+  const t = (window as any).__i18n;
 
   function formatSize(bytes: number): string {
     if (bytes >= 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
@@ -32,28 +56,29 @@ import Base from '../layouts/Base.astro';
     const a = document.createElement('a');
     a.href = url;
     a.className = primary
-      ? 'px-6 py-3 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-lg transition w-64 block'
-      : 'px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition w-64 border border-white/20 block';
+      ? 'px-6 py-3 bg-celestial-saturn text-black font-bold rounded-2xl hover:scale-105 transition-all w-64 block shadow-[0_0_30px_rgba(255,204,0,0.15)]'
+      : 'px-6 py-3 glass rounded-2xl text-white font-bold hover:bg-white/10 transition-all w-64 block';
     a.innerHTML = `${label}<br><span class="text-xs opacity-60">${size}</span>`;
     return a;
+  }
+
+  function renderError() {
+    if (!container) return;
+    container.innerHTML = `
+      <div class="flex flex-col gap-4 items-center">
+        <p class="text-red-400 text-sm">${t.releaseError}</p>
+        <a href="https://github.com/maoxiansheng946-dev/-lumi-OS/releases/latest"
+           class="px-6 py-3 bg-celestial-saturn text-black font-bold rounded-2xl hover:scale-105 transition-all w-64">
+          ${t.viewOnGitHub}
+        </a>
+      </div>
+    `;
   }
 
   async function fetchRelease() {
     const res = await fetch('/api/release/latest');
     if (!res.ok) throw new Error(`API returned ${res.status}`);
     return res.json();
-  }
-
-  function renderError() {
-    container.innerHTML = `
-      <div class="flex flex-col gap-4 items-center">
-        <p class="text-red-400 text-sm">Unable to load release information. Please try again later.</p>
-        <a href="https://github.com/maoxiansheng946-dev/-lumi-OS/releases/latest"
-           class="px-6 py-3 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-lg transition w-64">
-          View Releases on GitHub
-        </a>
-      </div>
-    `;
   }
 
   fetchRelease()
@@ -65,19 +90,20 @@ import Base from '../layouts/Base.astro';
 
       if (!exe && !deb && !appimage) throw new Error('No assets found');
 
+      if (!container) return;
       container.innerHTML = '';
       const wrapper = document.createElement('div');
       wrapper.className = 'flex flex-col gap-4 items-center';
 
-      if (exe) wrapper.appendChild(buildButton('Download for Windows', exe.browser_download_url, formatSize(exe.size), true));
-      if (deb) wrapper.appendChild(buildButton('Download for Linux (.deb)', deb.browser_download_url, formatSize(deb.size), false));
-      if (appimage) wrapper.appendChild(buildButton('Download for Linux (.AppImage)', appimage.browser_download_url, formatSize(appimage.size), false));
+      if (exe) wrapper.appendChild(buildButton(t.downloadForWindows, exe.browser_download_url, formatSize(exe.size), true));
+      if (deb) wrapper.appendChild(buildButton(t.downloadForLinux, deb.browser_download_url, formatSize(deb.size), false));
+      if (appimage) wrapper.appendChild(buildButton(t.downloadForLinuxAppImage, appimage.browser_download_url, formatSize(appimage.size), false));
 
       container.appendChild(wrapper);
 
       const version = document.createElement('p');
-      version.className = 'text-sm text-gray-500 mt-4';
-      version.textContent = `Version ${release.tag_name || 'latest'} — automatic updates included.`;
+      version.className = 'text-sm text-white/30 mt-4';
+      version.textContent = `${release.tag_name || 'latest'} — ${t.versionInfo}`;
       container.appendChild(version);
     })
     .catch(() => renderError());

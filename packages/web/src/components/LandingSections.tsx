@@ -5,7 +5,7 @@ import { GlobalNodeMap } from './GlobalNodeMap';
 import { GlassCard, IconBox, FeatureItem } from './SharedUI';
 import { Button } from './ui/button';
 
-export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onSelectMobile }: { t: any; onNavigateToSolutions?: () => void; onSelectDesktop?: () => void; onSelectMobile?: () => void }) {
+export function LandingSections({ t, onNavigateToSolutions }: { t: any; onNavigateToSolutions?: () => void }) {
   return (
     <div className="space-y-32 py-20">
       {/* Existing sections... */}
@@ -266,87 +266,6 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12">
-          {/* Desktop Node Card */}
-          <motion.div 
-            whileHover={{ y: -10 }}
-            className="p-1 glass-dark rounded-[3.5rem] border border-white/5 relative group overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-celestial-saturn/20 via-transparent to-transparent opacity-50 transition-opacity group-hover:opacity-100" />
-            <div className="p-12 space-y-8 relative z-10">
-              <div className="flex justify-between items-start">
-                <div className="w-20 h-20 rounded-[2rem] bg-black/60 border border-white/10 flex items-center justify-center text-celestial-saturn shadow-2xl">
-                  <Network size={36} />
-                </div>
-                <div className="px-3 py-1 bg-celestial-saturn/10 border border-celestial-saturn/20 rounded-full text-[8px] font-black text-celestial-saturn uppercase tracking-widest">
-                  Kernel v2.4.1
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-4xl font-black tracking-tight italic uppercase">{t.desktopNode}</h3>
-                <p className="text-lg text-white/40 leading-relaxed italic">
-                  {t.desktopDesc}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">824 TOPs</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">{t.peakLocalPower || 'Peak Local Power'}</div>
-                 </div>
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">0 ms</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">{t.cloudLatency || 'Cloud Latency'}</div>
-                 </div>
-              </div>
-              <Button 
-                onClick={onSelectDesktop}
-                className="w-full py-8 bg-celestial-saturn text-black font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
-              >
-                {t.initializeDesktopHub}
-              </Button>
-            </div>
-          </motion.div>
-
-          {/* Mobile Node Card */}
-          <motion.div 
-            whileHover={{ y: -10 }}
-            className="p-1 glass-dark rounded-[3.5rem] border border-white/5 relative group overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-celestial-nebula/20 via-transparent to-transparent opacity-50 transition-opacity group-hover:opacity-100" />
-            <div className="p-12 space-y-8 relative z-10">
-              <div className="flex justify-between items-start">
-                <div className="w-20 h-20 rounded-[2rem] bg-black/60 border border-white/10 flex items-center justify-center text-celestial-nebula shadow-2xl">
-                  <Smartphone size={36} />
-                </div>
-                <div className="px-3 py-1 bg-celestial-nebula/10 border border-celestial-nebula/20 rounded-full text-[8px] font-black text-celestial-nebula uppercase tracking-widest">
-                  Gateway v1.02
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-4xl font-black tracking-tight italic uppercase">{t.mobilePerception}</h3>
-                <p className="text-lg text-white/40 leading-relaxed italic">
-                   {t.mobileDesc}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">{t.sensorySync || 'Sensory Sync'}</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">{t.meshActiveLabel || 'Mesh Active'}</div>
-                 </div>
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                    <div className="text-sm font-black text-white/80">{t.biometric || 'Biometric'}</div>
-                    <div className="text-[8px] text-white/20 uppercase font-black">{t.neuralIDEncrypted || 'Neural ID Encrypted'}</div>
-                 </div>
-              </div>
-              <Button 
-                onClick={onSelectMobile}
-                className="w-full py-8 bg-celestial-nebula text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
-              >
-                {t.deployMobileGateway}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
       </section>
 
       {/* Download CTA */}
@@ -373,13 +292,13 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
               <Smartphone size={18} />
               {t.downloadForWindows || 'Download for Windows'}
             </a>
-            <button
-              onClick={onSelectDesktop}
+            <a
+              href="/"
               className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black rounded-2xl hover:bg-white/10 transition-all inline-flex items-center gap-2"
             >
               <Globe size={18} />
               {t.launchWebApp || 'Launch Web App'}
-            </button>
+            </a>
           </div>
           <p className="text-[10px] text-white/20 font-mono">{t.versionInfo || 'v2.0.4 · Windows 10+ · 120MB · Free'}</p>
         </motion.div>

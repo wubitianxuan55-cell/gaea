@@ -130,7 +130,27 @@ export function mountSkillRoutes(
         await mcpManager.restartServer(skillName);
         res.json({ success: true, name: skillName, directory: destDir });
       } else if (source === 'npm' && pkgName) {
-        res.status(400).json({ error: 'npm install not yet implemented — use git URL instead' });
+        const skillName = name || pkgName.replace(/^@?[^/]+\//, '').replace(/^@/, '');
+        const tmpDir = path.join(os.tmpdir(), `lumi_skill_${Date.now()}`);
+        fs.mkdirSync(tmpDir, { recursive: true });
+
+        execSync(`npm init -y --silent`, { cwd: tmpDir, stdio: 'pipe', timeout: 10000 });
+        execSync(`npm install "${pkgName}" --prefix "${tmpDir}" --no-save`, { stdio: 'pipe', timeout: 60000 });
+
+        const nodeModules = path.join(tmpDir, 'node_modules');
+        const pkgShortName = pkgName.replace(/^@/, '').replace('/', '-');
+        const candidates = fs.readdirSync(nodeModules).filter(d => d === pkgShortName || d === pkgName.replace(/^@[^/]+\//, ''));
+        const installedDir = candidates.length > 0 ? path.join(nodeModules, candidates[0]) : path.join(nodeModules, pkgName);
+
+        if (!fs.existsSync(installedDir)) {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+          return res.status(400).json({ error: `npm package "${pkgName}" installed but source directory not found` });
+        }
+
+        const destDir = mcpManager.installSkill(skillName, installedDir);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        await mcpManager.restartServer(skillName);
+        res.json({ success: true, name: skillName, directory: destDir, source: 'npm' });
       } else {
         res.status(400).json({ error: 'Invalid source. Use: git (with url), local (with path), or npm (with package)' });
       }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { setLang } from './lib/useT';
 import * as authService from './services/authService';
-import { Settings } from './components/Settings';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingFallback } from './components/LoadingFallback';
 import { Toaster } from 'sonner';
