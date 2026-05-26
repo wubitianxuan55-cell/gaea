@@ -72,6 +72,7 @@ import { mcpManager, registerMCPTools } from "./mcp";
 import { createLumiMcpServer, handleMcpSSE, handleMcpMessage } from "./mcp/lumi_server";
 import { attachMcpWebSocket, connectMcpServerToRemote } from "./mcp/ws_transport";
 import { attachLAPWebSocket } from "./lap/transport";
+import { lapRoutes } from "./lap/routes";
 import { createMessagingRoutes } from "./messaging";
 import { subscriptionRoutes } from "./subscription/routes";
 import { mountEnterpriseRoutes } from "./enterprise/routes";
@@ -241,6 +242,9 @@ apiRouter.use("/", subscriptionRoutes);
 // 15. Voice + File routes
 apiRouter.use("/", voiceRoutes);
 apiRouter.use("/", fileRoutes);
+
+  // 16. LAP REST routes
+  apiRouter.use("/", lapRoutes);
 
 // ── Messaging (Feishu) ──
 const feishuCfg = getMessagingConfig().feishu;

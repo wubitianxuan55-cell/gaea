@@ -47,7 +47,7 @@ export function CentralLumiChat() {
       }
 
       // Call LLM with KB context
-      const chatRes = await fetch('/api/chat', {
+      const chatRes = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

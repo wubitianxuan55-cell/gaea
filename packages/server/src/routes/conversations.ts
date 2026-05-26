@@ -88,41 +88,4 @@ export function mountConversationRoutes(router: Router, jwtSecret: string) {
     }
   });
 
-  // Get chat history for a specific agent
-  router.get("/agents/:agentId/history", (req, res) => {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-    try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const db = readDB();
-      const agentId = req.params.agentId;
-      const interactions = (db.interactions || [])
-        .filter((i: any) => i.userId === decoded.uid && i.agentId === agentId)
-        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .slice(-100);
-
-      const messages = [];
-      for (const i of interactions) {
-        if (i.message) {
-          messages.push({
-            id: i.id + "_u",
-            role: "user",
-            content: i.message,
-            timestamp: i.timestamp,
-          });
-        }
-        if (i.response) {
-          messages.push({
-            id: i.id + "_r",
-            role: "assistant",
-            content: i.response,
-            timestamp: i.timestamp,
-          });
-        }
-      }
-      res.json(messages);
-    } catch (err: any) {
-      res.status(401).json({ error: "Invalid token" });
-    }
-  });
 }

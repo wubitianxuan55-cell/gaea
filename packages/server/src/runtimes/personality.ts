@@ -94,6 +94,50 @@ export function mountPersonalityRuntime(router: Router, deps: PersonalityRuntime
     }
   });
 
+  // Personality stats dashboard
+  router.get("/personality/stats", (req, res) => {
+    try {
+      const personalityId = req.query.personalityId as string || 'lumi';
+      const db = readDB();
+      const memories = (db.memories || []) as any[];
+      const interactions = (db.interactions || []) as any[];
+
+      const totalMemories = memories.length;
+      const totalInteractions = interactions.length;
+
+      const byType: Record<string, number> = {};
+      const confByType: Record<string, number[]> = {};
+      for (const m of memories) {
+        const type = m.type || 'unknown';
+        byType[type] = (byType[type] || 0) + 1;
+        if (m.confidence != null) {
+          if (!confByType[type]) confByType[type] = [];
+          confByType[type].push(Number(m.confidence));
+        }
+      }
+      const avgConfidence: Record<string, number> = {};
+      for (const [type, scores] of Object.entries(confByType)) {
+        avgConfidence[type] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      }
+
+      // Monthly trend — last 6 months
+      const now = new Date();
+      const monthlyTrend: Array<{ month: string; count: number }> = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const month = d.toISOString().slice(0, 7); // YYYY-MM
+        const count = memories.filter(
+          (m: any) => (m.createdAt || m.timestamp || '').startsWith(month)
+        ).length;
+        monthlyTrend.push({ month, count });
+      }
+
+      res.json({ totalMemories, totalInteractions, personalityId, byType, avgConfidence, monthlyTrend });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Trigger personality evolution
   router.post("/personality/:id/evolve", asyncHandler(async (req, res) => {
     try {
