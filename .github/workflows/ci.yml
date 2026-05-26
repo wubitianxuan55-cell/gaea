@@ -55,8 +55,8 @@ jobs:
       - run: pnpm install --ignore-scripts
       - run: pnpm --filter @lumios/mobile lint
 
-  rust-check:
-    name: Rust backend check
+  rust-check-linux:
+    name: Rust check (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,6 +82,32 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libx11-dev libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev librsvg2-dev patchelf libssl-dev libgtk-3-dev libayatana-appindicator3-dev libdbus-1-dev libxcb1-dev libxcb-shape0-dev libxcb-xfixes0-dev libxcb-render0-dev libxcb-shm0-dev libxcb-xkb-dev
+      - name: Check Rust backend
+        run: cargo check --release
+        working-directory: packages/desktop/src-tauri
+
+  rust-check-macos:
+    name: Rust check (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g pnpm@11.3.0
+      - run: pnpm install --ignore-scripts
+      - name: Build frontend dist
+        run: pnpm --filter @lumios/desktop build
+      - name: Create stub resource dirs for CI
+        run: |
+          mkdir -p packages/desktop/desktop-resources/dist-server
+          mkdir -p packages/desktop/desktop-resources/gpt-sovits-src
+          mkdir -p packages/desktop/desktop-resources/data/voice_training
+          touch packages/desktop/desktop-resources/dist-server/.gitkeep
+          touch packages/desktop/desktop-resources/dist-server/.env
+          touch packages/desktop/desktop-resources/gpt-sovits-src/.gitkeep
+          touch packages/desktop/desktop-resources/data/voice_training/.gitkeep
+      - uses: dtolnay/rust-toolchain@stable
       - name: Check Rust backend
         run: cargo check --release
         working-directory: packages/desktop/src-tauri
