@@ -67,18 +67,13 @@ jobs:
       - run: pnpm install --ignore-scripts
       - name: Build frontend dist
         run: pnpm --filter @lumios/desktop build
-      - name: Verify dist exists
-        run: |
-          echo "=== dist contents ==="
-          ls -la packages/desktop/dist/ 2>&1 || echo "DIST MISSING"
-          echo "=== index.html check ==="
-          ls -la packages/desktop/dist/index.html 2>&1 || echo "NO index.html"
       - name: Create stub resource dirs for CI
         run: |
           mkdir -p packages/desktop/desktop-resources/dist-server
           mkdir -p packages/desktop/desktop-resources/gpt-sovits-src
           mkdir -p packages/desktop/desktop-resources/data/voice_training
           touch packages/desktop/desktop-resources/dist-server/.gitkeep
+          touch packages/desktop/desktop-resources/dist-server/.env
           touch packages/desktop/desktop-resources/gpt-sovits-src/.gitkeep
           touch packages/desktop/desktop-resources/data/voice_training/.gitkeep
           touch packages/desktop/desktop-resources/WebView2Loader.dll
@@ -87,27 +82,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libx11-dev libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev librsvg2-dev patchelf libssl-dev libgtk-3-dev libayatana-appindicator3-dev libdbus-1-dev libxcb1-dev libxcb-shape0-dev libxcb-xfixes0-dev libxcb-render0-dev libxcb-shm0-dev libxcb-xkb-dev
-      - name: Verify pkg-config libs
-        run: |
-          for lib in x11 gtk+-3.0 webkit2gtk-4.1 glib-2.0 cairo pango atk gdk-3.0 gdk-x11-3.0; do
-            if pkg-config --exists $lib 2>&1; then
-              echo "::notice::pkg-config $lib: FOUND"
-            else
-              echo "::warning::pkg-config $lib: NOT FOUND - $(pkg-config --libs $lib 2>&1)"
-            fi
-          done
       - name: Check Rust backend
-        id: cargo-check
-        run: cargo check --release 2>&1 | tee /tmp/cargo-check.log; exit ${PIPESTATUS[0]}
+        run: cargo check --release
         working-directory: packages/desktop/src-tauri
-        env:
-          PKG_CONFIG_ALLOW_CROSS: 1
-      - name: Upload cargo error log
-        if: failure() && steps.cargo-check.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cargo-check-error
-          path: /tmp/cargo-check.log
 
   test:
     name: Unit tests
