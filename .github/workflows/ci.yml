@@ -16,7 +16,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/server lint
 
   desktop-typecheck:
@@ -28,7 +29,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/desktop lint
 
   web-typecheck:
@@ -40,7 +42,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/web lint
 
   mobile-typecheck:
@@ -52,7 +55,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/mobile lint
 
   rust-check:
@@ -64,7 +68,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - name: Build frontend dist
         run: pnpm --filter @lumios/desktop build
       - name: Create stub resource dirs for CI
@@ -94,7 +99,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/server test
       - run: pnpm --filter @lumios/web test
 
@@ -107,6 +113,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
-      - run: pnpm install
+      - run: pnpm install --ignore-scripts
+      - run: pnpm rebuild esbuild sqlite3
       - run: pnpm --filter @lumios/web build
       - run: pnpm --filter @lumios/desktop build
