@@ -17,6 +17,13 @@ jobs:
           node-version: 22
       - run: npm install -g pnpm@11.3.0
       - run: pnpm install --ignore-scripts
+      - run: |
+          cd packages/server
+          npx tsc --noEmit 2>&1 | while IFS= read -r line; do
+            echo "$line" | head -c 200
+            echo ""
+          done
+        continue-on-error: true
       - run: pnpm --filter @lumios/server lint
 
   desktop-typecheck:
