@@ -73,6 +73,7 @@ import { createLumiMcpServer, handleMcpSSE, handleMcpMessage } from "./mcp/lumi_
 import { attachMcpWebSocket, connectMcpServerToRemote } from "./mcp/ws_transport";
 import { attachLAPWebSocket } from "./lap/transport";
 import { createMessagingRoutes } from "./messaging";
+import { subscriptionRoutes } from "./subscription/routes";
 import { mountEnterpriseRoutes } from "./enterprise/routes";
 import { mountBranchRoutes } from "./enterprise/main_api";
 import { attachEnterpriseWs } from "./enterprise/ws_sync";
@@ -234,7 +235,10 @@ mountMarketplaceRoutes(apiRouter, JWT_SECRET, io);
 // 13. Content (ecosystem stats, modules/products, modules/docs)
 mountContentRuntime(apiRouter);
 
-// 14. Voice + File routes
+// 14. Subscription (plans, status, tokens)
+apiRouter.use("/", subscriptionRoutes);
+
+// 15. Voice + File routes
 apiRouter.use("/", voiceRoutes);
 apiRouter.use("/", fileRoutes);
 

@@ -5,11 +5,60 @@ import { fileURLToPath } from "url";
 import { mcpManager, getMCPConfig, updateMCPConfig, SKILLS_DIR } from "../mcp";
 import { getMarketplaceSkills, getSkillById, searchSkills, getCategories, recordInstall, publishSkill, rateSkill, getSkillRatings } from "../marketplace/registry";
 import { translateSkills } from "../skills/translations";
+import { personalityRegistry } from "../personality";
 
 const QWEN_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const CURATED_PERSONALITIES = [
+  {
+    id: "community-teacher",
+    name: "AI Teacher",
+    author: "LumiCommunity",
+    version: "1.0",
+    description: "Patient educator AI that adapts explanations to the user's learning style. Great for studying complex topics.",
+    downloadCount: 234,
+    gistUrl: "",
+    tags: ["education", "teaching", "learning"],
+  },
+  {
+    id: "community-coder",
+    name: "Code Reviewer",
+    author: "DevCollective",
+    version: "2.1",
+    description: "Critical code reviewer that catches bugs, suggests optimizations, and enforces best practices.",
+    downloadCount: 567,
+    gistUrl: "",
+    tags: ["code", "review", "programming"],
+  },
+  {
+    id: "sherlock", name: "Sherlock", author: "Lumi Community", version: "1.0.0",
+    description: "A hyper-analytical detective personality. Notices patterns others miss and asks probing questions.",
+    downloadCount: 3842, gistUrl: "", tags: ["analytical", "investigation", "logic"],
+  },
+  {
+    id: "sage", name: "Sage", author: "Lumi Labs", version: "2.1.0",
+    description: "A wise mentor personality. Draws from philosophy, history, and literature to provide thoughtful guidance.",
+    downloadCount: 5190, gistUrl: "", tags: ["wisdom", "philosophy", "mentoring"],
+  },
+  {
+    id: "hacker", name: "H4CK3R", author: "Lumi Community", version: "1.3.0",
+    description: "Cybersecurity specialist. Thinks in exploits and defenses. Great for CTF challenges and security audits.",
+    downloadCount: 7234, gistUrl: "", tags: ["security", "hacking", "technical"],
+  },
+  {
+    id: "poet", name: "Poet", author: "Lumi Community", version: "1.0.0",
+    description: "Creative writing companion. Crafts beautiful prose, poetry, and storytelling with lyrical flair.",
+    downloadCount: 2156, gistUrl: "", tags: ["creative", "writing", "artistic"],
+  },
+  {
+    id: "architect", name: "Architect", author: "Lumi Labs", version: "1.5.0",
+    description: "Software architecture specialist. Designs systems, evaluates trade-offs, and writes clean abstractions.",
+    downloadCount: 4678, gistUrl: "", tags: ["architecture", "design", "systems"],
+  },
+];
 
 export function mountMarketplaceRoutes(
   router: Router,
@@ -57,59 +106,65 @@ export function mountMarketplaceRoutes(
 
   // Discoverable community personalities
   router.get("/marketplace/personalities", (_req, res) => {
-    const communityPersonalities = [
-      {
-        id: "sherlock",
-        name: "Sherlock",
-        author: "Lumi Community",
-        version: "1.0.0",
-        description: "A hyper-analytical detective personality. Notices patterns others miss and asks probing questions.",
-        downloadCount: 3842,
-        gistUrl: "",
-        tags: ["analytical", "investigation", "logic"],
-      },
-      {
-        id: "sage",
-        name: "Sage",
-        author: "Lumi Labs",
-        version: "2.1.0",
-        description: "A wise mentor personality. Draws from philosophy, history, and literature to provide thoughtful guidance.",
-        downloadCount: 5190,
-        gistUrl: "",
-        tags: ["wisdom", "philosophy", "mentoring"],
-      },
-      {
-        id: "hacker",
-        name: "H4CK3R",
-        author: "Lumi Community",
-        version: "1.3.0",
-        description: "Cybersecurity specialist. Thinks in exploits and defenses. Great for CTF challenges and security audits.",
-        downloadCount: 7234,
-        gistUrl: "",
-        tags: ["security", "hacking", "technical"],
-      },
-      {
-        id: "poet",
-        name: "Poet",
-        author: "Lumi Community",
-        version: "1.0.0",
-        description: "Creative writing companion. Crafts beautiful prose, poetry, and storytelling with lyrical flair.",
-        downloadCount: 2156,
-        gistUrl: "",
-        tags: ["creative", "writing", "artistic"],
-      },
-      {
-        id: "architect",
-        name: "Architect",
-        author: "Lumi Labs",
-        version: "1.5.0",
-        description: "Software architecture specialist. Designs systems, evaluates trade-offs, and writes clean abstractions.",
-        downloadCount: 4678,
-        gistUrl: "",
-        tags: ["architecture", "design", "systems"],
-      },
-    ];
-    res.json(communityPersonalities);
+    res.json(CURATED_PERSONALITIES);
+  });
+
+  // Install a community personality
+  router.post("/marketplace/personalities/install", (req, res) => {
+    try {
+      const { gistUrl, id, name } = req.body;
+
+      if (gistUrl) {
+        fetch(gistUrl)
+          .then(r => r.json())
+          .then(data => {
+            const filePath = path.join(process.cwd(), 'packages', 'server', 'src', 'personality', 'personalities.json');
+            let configs: any[] = [];
+            try { configs = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch {}
+            const existing = configs.findIndex((c: any) => c.id === data.id);
+            if (existing >= 0) {
+              configs[existing] = { ...data, id: data.id };
+            } else {
+              configs.push({ ...data, id: data.id });
+            }
+            fs.writeFileSync(filePath, JSON.stringify(configs, null, 2));
+            personalityRegistry.reload(filePath);
+          })
+          .catch(err => console.error('Gist fetch failed:', err));
+      }
+
+      const curated = CURATED_PERSONALITIES.find(p => p.id === id);
+      if (curated && !curated.gistUrl) {
+        const filePath = path.join(process.cwd(), 'packages', 'server', 'src', 'personality', 'personalities.json');
+        let configs: any[] = [];
+        try { configs = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch {}
+
+        if (configs.find((c: any) => c.id === id)) {
+          return res.json({ success: true, message: `${name || id} already installed` });
+        }
+
+        const newPersonality = {
+          id,
+          name: curated.name,
+          version: curated.version,
+          coreMotivation: curated.description,
+          behavioralBoundaries: [],
+          expressionStyle: { persona: curated.description, tone: 'neutral', verbosity: 'balanced', languages: ['en'] },
+          toolPolicy: { allowedTools: ['*'], requireConfirmation: [], forbiddenTools: [], maxIterations: 3 },
+          memoryPolicy: { retrieveLimit: 5, minConfidence: 0.4, includeTypes: ['preference', 'fact'], autoExtract: true },
+          defaultModel: 'qwen-plus',
+          fallbackModel: 'gemini-1.5-flash',
+        };
+        configs.push(newPersonality);
+        fs.writeFileSync(filePath, JSON.stringify(configs, null, 2));
+        personalityRegistry.reload(filePath);
+        io.emit('personality:installed', { id, name: curated.name });
+      }
+
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // Acquire/install a skill from the marketplace

@@ -288,4 +288,85 @@ export function mountSystemRoutes(router: Router, jwtSecret: string) {
   router.get("/monitor/latency", (_req: any, res: any) => {
     res.json(getLatencyStats());
   });
+
+  // ── Admin config ──
+  router.get("/admin/config", (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      if (decoded.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+      const db = readDB();
+      res.json({ adminEmail: db.adminEmail || "admin@lumi.ai" });
+    } catch {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  router.post("/admin/config", (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      if (decoded.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+      const { adminEmail } = req.body;
+      const db = readDB();
+      db.adminEmail = adminEmail;
+      writeDB(db);
+      res.json({ success: true });
+    } catch {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // ── Feedback ──
+  router.post("/feedback", (req, res) => {
+    const { email, message, type = "general", contact, position } = req.body;
+    const db = readDB();
+    if (!db.feedback) db.feedback = [];
+    db.feedback.push({
+      id: Math.random().toString(36).substring(2, 15),
+      email, message, type, contact, position,
+      timestamp: new Date().toISOString(),
+    });
+    writeDB(db);
+    console.log(`[Feedback] New ${type} from ${email}`);
+    res.json({ success: true });
+  });
+
+  // ── Founder vision ──
+  router.get("/founder/vision", (_req, res) => {
+    const db = readDB();
+    res.json({ vision: db.founderVision });
+  });
+
+  router.post("/founder/vision", (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      if (decoded.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+      const { vision } = req.body;
+      const db = readDB();
+      db.founderVision = vision;
+      writeDB(db);
+      res.json({ success: true });
+    } catch {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // ── User credits ──
+  router.get("/user/credits", (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const db = readDB();
+      const user = db.users.find((u: any) => u.uid === decoded.uid);
+      res.json({ credits: user?.balance || 0 });
+    } catch {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
 }
