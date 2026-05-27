@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { getSocketOrigin, isTauriRuntime } from '@/services/apiBridge';
+import { getSocketOrigin } from '@/services/apiBridge';
 import { getStoredToken } from '@/services/authService';
 
-const isTauri = isTauriRuntime();
+const isTauri = true;
 
 async function handleDesktopExec(socket: Socket, data: {
   correlationId: string;

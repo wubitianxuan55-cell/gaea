@@ -5,9 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { invoke } from '@tauri-apps/api/core';
-import { isTauriRuntime } from '@/services/apiBridge';
-
-const isTauri = isTauriRuntime();
+const isTauri = true;
 
 interface ActivitySnapshot {
   window: { title: string; process_name: string; pid: number };
