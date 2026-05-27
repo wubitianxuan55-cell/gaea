@@ -12,6 +12,9 @@ export function isTauriRuntime(): boolean {
 
 export function getBackendOrigin(): string {
   if (typeof window === 'undefined') return 'http://127.0.0.1:3000';
+  // In Tauri production, WebView2 custom protocol can't reach the backend;
+  // always route through the bundled Node.js server.
+  if (isTauriRuntime()) return 'http://127.0.0.1:3000';
   return window.location.origin;
 }
 
@@ -49,7 +52,9 @@ export function installApiBridge(): void {
         }
       } catch {}
 
-      return nativeFetch(input, patched);
+      // In Tauri production, rewrite /api/* requests to the bundled Node.js backend
+      const backendOrigin = 'http://127.0.0.1:3000';
+      return nativeFetch(backendOrigin + url, patched);
     }
 
     return nativeFetch(input, init);
