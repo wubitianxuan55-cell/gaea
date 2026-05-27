@@ -1980,7 +1980,7 @@ io.on("connection", (socket) => {
 // --- End Real-Time Agent Logic ---
 
 async function startServer() {
-  if (!process.env.JWT_SECRET) {
+  if (!JWT_SECRET) {
     console.error('FATAL: JWT_SECRET environment variable is not set.');
     process.exit(1);
   }

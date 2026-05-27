@@ -54,12 +54,17 @@ import('./server.mjs').catch(err => {
 });
 `);
 
-// Generate hide-console.cjs — required by Tauri production spawn via NODE_OPTIONS
+// Generate hide-console.cjs — required by Tauri production spawn via NODE_OPTIONS (Windows only)
+if (process.platform === 'win32') {
 writeFileSync('dist-server/hide-console.cjs', `// Hide console window on Windows desktop app
 if (process.platform === 'win32') {
   const { exec } = require('child_process');
   exec('powershell -WindowStyle Hidden -Command ""', { windowsHide: true });
 }
 `);
+console.log('[build-server] Generated dist-server/hide-console.cjs');
+} else {
+console.log('[build-server] Skipped hide-console.cjs (not Windows)');
+}
 
 console.log('[build-server] Generated dist-server/server.mjs + dist-server/entry.cjs + dist-server/hide-console.cjs');

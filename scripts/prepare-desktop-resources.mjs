@@ -48,20 +48,30 @@ async function prepareServer() {
   const dest = path.join(outDir, 'dist-server');
 
   await fs.mkdir(dest, { recursive: true });
-  await copyIfExists(path.join(src, 'node.exe'), path.join(dest, 'node.exe'));
+  const nodeBinaryName = process.platform === 'win32' ? 'node.exe' : 'node';
+  await copyIfExists(path.join(src, nodeBinaryName), path.join(dest, nodeBinaryName));
   await copyIfExists(path.join(src, 'entry.cjs'), path.join(dest, 'entry.cjs'));
   await copyIfExists(path.join(src, 'server.mjs'), path.join(dest, 'server.mjs'));
   await copyIfExists(path.join(src, 'server.cjs'), path.join(dest, 'server.cjs'));
   await copyIfExists(path.join(src, 'package.json'), path.join(dest, 'package.json'));
   await copyIfExists(path.join(src, '.env'), path.join(dest, '.env'));
-  await copyIfExists(path.join(src, 'hide-console.cjs'), path.join(dest, 'hide-console.cjs'));
-  await copyDir(path.join(src, 'server'), path.join(dest, 'server'));
+  if (process.platform === 'win32') {
+    await copyIfExists(path.join(src, 'hide-console.cjs'), path.join(dest, 'hide-console.cjs'));
+  }
+  // Copy server runtime files (configs, skills, MCP, personality) from dist-server or project root
+  const distServerDir = path.join(src, 'server');
+  const projectServerDir = path.join(root, 'server');
+  if (existsSync(distServerDir)) {
+    await copyDir(distServerDir, path.join(dest, 'server'));
+  } else if (existsSync(projectServerDir)) {
+    await copyDir(projectServerDir, path.join(dest, 'server'));
+  }
 
   for (const moduleName of runtimeNodeModules) {
-    await copyDir(
-      path.join(src, 'node_modules', moduleName),
-      path.join(dest, 'node_modules', moduleName),
-    );
+    const srcPath = path.join(src, 'node_modules', moduleName);
+    const fallbackPath = path.join(root, 'node_modules', moduleName);
+    const moduleSrc = existsSync(srcPath) ? srcPath : fallbackPath;
+    await copyDir(moduleSrc, path.join(dest, 'node_modules', moduleName));
   }
 }
 

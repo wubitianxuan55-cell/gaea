@@ -3,6 +3,7 @@
  * Replaces browser SpeechRecognition fallback — works in WebView2.
  */
 import { logger } from '../../logger';
+import { getKey } from '../config/keys';
 
 const WAKE_WORDS = [
   'Jarvis', 'jarvis', '贾维斯',
@@ -38,7 +39,9 @@ export function createWakeDetector(
 ): WakeDetectorSession {
   const apiKey = accessKey
     || process.env.DASHSCOPE_API_KEY
-    || process.env.QWEN_API_KEY;
+    || process.env.QWEN_API_KEY
+    || getKey('DASHSCOPE_API_KEY')
+    || getKey('QWEN_API_KEY');
   if (!apiKey) throw new Error('DASHSCOPE_API_KEY required for wake word detection');
 
   const model = 'qwen3-asr-flash-realtime';
