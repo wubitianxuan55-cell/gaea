@@ -6,6 +6,8 @@ declare global {
 
 export function isTauriRuntime(): boolean {
   if (typeof window === 'undefined') return false;
+  // Tauri custom protocol is the most reliable signal — set before any JS runs
+  if (window.location.protocol === 'tauri:') return true;
   const win = window as any;
   return !!(win.__TAURI_INTERNALS__ || win.__TAURI_IPC__ || win.__TAURI__);
 }
@@ -18,6 +20,26 @@ export function getBackendOrigin(): string {
 
 export function getSocketOrigin(): string {
   return getBackendOrigin();
+}
+
+/**
+ * Poll /api/health until the server is ready. Only meaningful in Tauri runtime
+ * where the backend is spawned on-demand by the Rust process.
+ */
+export async function waitForServer(timeoutMs = 15000): Promise<boolean> {
+  if (!isTauriRuntime()) return true; // dev mode — Vite proxies, no need to wait
+  const origin = getBackendOrigin();
+  const start = Date.now();
+  let delay = 300;
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(origin + '/api/health', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) return true;
+    } catch {}
+    await new Promise(r => setTimeout(r, delay));
+    delay = Math.min(delay * 1.5, 2000);
+  }
+  return false;
 }
 
 export function installApiBridge(): void {

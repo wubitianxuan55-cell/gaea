@@ -18,13 +18,43 @@ await build({
 mkdirSync('dist-server', { recursive: true });
 writeFileSync('dist-server/entry.cjs', `// CJS entry point - dynamically imports the ESM server bundle.
 
+// ── Setup log file (production desktop app discards stdout/stderr) ──
+(function setupLogging() {
+  var os = require('os');
+  var path = require('path');
+  var fs = require('fs');
+  var home = os.homedir();
+  var base;
+  if (process.platform === 'win32') {
+    base = process.env.APPDATA || path.join(home, 'AppData', 'Roaming');
+  } else if (process.platform === 'darwin') {
+    base = path.join(home, 'Library', 'Application Support');
+  } else {
+    base = process.env.XDG_DATA_HOME || path.join(home, '.local', 'share');
+  }
+  var dataDir = path.join(base, 'LumiOS');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  var logFile = path.join(dataDir, 'server.log');
+  var logStream = fs.createWriteStream(logFile, { flags: 'a' });
+  var origLog = console.log, origErr = console.error, origWarn = console.warn;
+  function writeLog(level, args) {
+    var line = '[' + new Date().toISOString() + '] [' + level + '] ' + Array.prototype.map.call(args, String).join(' ') + '\\n';
+    logStream.write(line);
+  }
+  console.log = function() { origLog.apply(console, arguments); writeLog('LOG', arguments); };
+  console.error = function() { origErr.apply(console, arguments); writeLog('ERR', arguments); };
+  console.warn = function() { origWarn.apply(console, arguments); writeLog('WRN', arguments); };
+  console.log('LumiOS server starting — log: ' + logFile);
+  console.log('Node ' + process.version + ' | platform ' + process.platform + ' | cwd ' + process.cwd());
+})();
+
 // Monkey-patch child_process to hide console windows on Windows (desktop app)
 if (process.platform === 'win32') {
-  const cp = require('child_process');
-  const origSpawn = cp.spawn;
-  const origExec = cp.exec;
-  const origExecSync = cp.execSync;
-  const origFork = cp.fork;
+  var cp = require('child_process');
+  var origSpawn = cp.spawn;
+  var origExec = cp.exec;
+  var origExecSync = cp.execSync;
+  var origFork = cp.fork;
 
   cp.spawn = function (cmd, args, opts) {
     if (!opts) opts = {};
