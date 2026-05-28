@@ -207,9 +207,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const me = await authService.getMe();
         if (!me && !cancelled) {
           // No valid token — try auto-login bootstrap (local admin account)
-          const result = await authService.bootstrap();
+          // Retry up to 8 times with backoff — the bundled Node.js server
+          // may take a few seconds to start on slower machines (macOS WebKit).
+          let result = await authService.bootstrap();
+          for (let retry = 0; !result.success && retry < 8 && !cancelled; retry++) {
+            const delay = 500 + retry * 500; // 0.5s, 1s, 1.5s, ..., 4s
+            console.log(`[Auth] Bootstrap retry ${retry + 1}/8 in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            result = await authService.bootstrap();
+          }
           if (result.success && !cancelled) {
             console.log('[Auth] Auto-logged in via bootstrap as', result.user?.username);
+          } else if (!cancelled) {
+            console.warn('[Auth] Bootstrap failed after retries:', result.error);
           }
         }
         if (!cancelled) await refreshUser();

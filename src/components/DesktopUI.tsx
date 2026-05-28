@@ -18,6 +18,7 @@ import {
   Activity,
   Wifi,
   Volume2,
+  VolumeX,
   Battery,
   Bluetooth,
   Moon,
@@ -920,7 +921,7 @@ export function DesktopUI({
 
   const socket = useSocket();
   useAmbientPoller(socket); // Ambient awareness: polls window, clipboard, idle state
-  const { callState, audioLevel, startCall, startCallRef, endCall, error: callError, transcript, interrupt, toggleMute } = useVoiceCall({
+  const { callState, audioLevel, startCall, startCallRef, endCall, error: callError, transcript, interrupt, toggleMute, isMuted } = useVoiceCall({
     socket,
   });
 
@@ -1611,10 +1612,29 @@ export function DesktopUI({
                    </span>
                  )}
                </button>
-               <div className="flex items-center gap-1"><Wifi size={14} /></div>
-               <div className="flex items-center gap-1"><Volume2 size={14} /></div>
-               <div className="flex items-center gap-1"><Battery size={14} /> <span className="text-[10px] font-bold">98%</span></div>
-               <span className="text-[8px] font-black text-white/20 uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/5">Lumi</span>
+               {/* Server connection status */}
+               <span
+                 className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-400 shadow-[0_0_6px] shadow-green-400/60' : 'bg-red-400 animate-pulse'}`}
+                 title={socket?.connected ? '服务已连接' : '服务未连接'}
+               />
+               {/* Volume mute toggle */}
+               <button onClick={toggleMute} className="flex items-center gap-1 hover:text-white transition-colors" title={isMuted ? '取消静音' : '静音'}>
+                 {isMuted ? <VolumeX size={14} className="text-red-400" /> : <Volume2 size={14} />}
+               </button>
+               {/* Battery — real via navigator.getBattery() */}
+               <BatteryIndicator />
+               <button
+                 onClick={toggleWallpaperMode}
+                 className={`h-6 px-2 rounded-md border transition-all flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${
+                   isWallpaperMode
+                     ? 'bg-celestial-saturn/20 text-celestial-saturn border-celestial-saturn/30'
+                     : 'bg-white/5 border-white/5 text-white/30 hover:bg-white/10 hover:text-white'
+                 }`}
+                 title={isWallpaperMode ? '退出壁纸模式' : '壁纸模式'}
+               >
+                 <Zap size={10} className={isWallpaperMode ? 'animate-pulse' : ''} />
+                 {isWallpaperMode ? 'Fusion' : 'Focus'}
+               </button>
             </div>
 
             {orgConnection?.connected && (
@@ -1879,22 +1899,7 @@ export function DesktopUI({
             )}
 
             <div className={`flex flex-col items-center gap-4 mt-8 transition-all duration-1000 ${isWallpaperMode ? 'opacity-0 blur-sm pointer-events-none' : 'opacity-100'}`}>
-              <div className="flex items-center gap-3">
-                <VoicePicker t={t} />
-                <div className="flex gap-2">
-                  <button
-                    onClick={toggleWallpaperMode}
-                    className={`h-10 px-4 rounded-xl border transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-xl ${
-                      isWallpaperMode 
-                        ? 'bg-celestial-saturn text-black border-celestial-saturn' 
-                        : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    <Zap size={14} className={isWallpaperMode ? 'animate-pulse' : ''} />
-                    {isWallpaperMode ? (t.fusionActive || 'Fusion Active') : (t.wallpaperMode || 'Wallpaper Mode')}
-                  </button>
-                </div>
-              </div>
+              <VoicePicker t={t} />
 
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
@@ -2363,6 +2368,32 @@ function SoundPanel({ t }: { t?: any }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BatteryIndicator() {
+  const [level, setLevel] = useState<number | null>(null);
+  const [charging, setCharging] = useState(false);
+
+  useEffect(() => {
+    const nav = navigator as any;
+    if (nav.getBattery) {
+      nav.getBattery().then((b: any) => {
+        setLevel(Math.round(b.level * 100));
+        setCharging(b.charging);
+        b.addEventListener('levelchange', () => setLevel(Math.round(b.level * 100)));
+        b.addEventListener('chargingchange', () => setCharging(b.charging));
+      }).catch(() => setLevel(null));
+    }
+  }, []);
+
+  if (level === null) return <Battery size={14} />;
+
+  return (
+    <div className="flex items-center gap-1" title={`电池 ${level}%${charging ? ' (充电中)' : ''}`}>
+      <Battery size={14} className={level <= 20 ? 'text-red-400' : level <= 50 ? 'text-yellow-400' : ''} />
+      <span className="text-[10px] font-bold">{level}%</span>
     </div>
   );
 }
