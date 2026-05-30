@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Rocket, MessageSquare, Globe, Users, User as UserIcon, BookOpen, Zap, ChevronDown, Database, ShoppingBag, Cloud, Network, Smartphone, Laptop, Handshake, Building2, Smile, Settings as SettingsIcon, Briefcase } from 'lucide-react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { WorkModeSwitch } from './enterprise/WorkModeSwitch';
+import { WorkModeSwitch } from './org/WorkModeSwitch';
 import { useApp } from '../contexts/AppContext';
 
 interface NavbarProps {
@@ -141,7 +141,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
 
           <NavItem active={activeTab === 'docs'} onClick={() => setActiveTab('docs')} icon={<BookOpen size={18} />} label={t.docs} />
           <NavItem active={activeTab === 'solutions'} onClick={() => setActiveTab('solutions')} icon={<Building2 size={18} />} label={t.coreVision || "Core Vision"} />
-          <NavItem active={activeTab === 'enterprise'} onClick={() => setActiveTab('enterprise')} icon={<Briefcase size={18} />} label={t.enterpriseWorkbench || 'Workbench'} />
+          <NavItem active={activeTab === 'org'} onClick={() => setActiveTab('org')} icon={<Briefcase size={18} />} label={t.orgWorkbench || 'Workbench'} />
           <NavItem active={activeTab === 'join'} onClick={() => setActiveTab('join')} icon={<Users size={18} />} label={t.join} />
         </div>
 

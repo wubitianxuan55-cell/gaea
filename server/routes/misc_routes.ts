@@ -1,4 +1,4 @@
-// Misc routes that didn't fit into other modules: founder vision, feedback, admin config, enterprise chat
+// Misc routes that didn't fit into other modules: founder vision, feedback, admin config, Org chat
 import { Router } from "express";
 import { readDB, writeDB, querySQL, runSQL } from "../../db_layer";
 import { runWithTools } from "../llm/adapter";
@@ -91,7 +91,7 @@ export function mountMiscRoutes(router: Router, _jwtSecret: string, llm: {
     }
   });
 
-  // ── Enterprise Chat (simpler version of /ai/chat, used by CentralLumiChat) ──
+  // ── Org Chat (simpler version of /ai/chat, used by CentralLumiChat) ──
   router.post("/chat", optionalAuth, asyncHandler(async (req, res) => {
     const { messages, provider: reqProvider, model: reqModel } = req.body || {};
     if (!messages || !Array.isArray(messages)) {

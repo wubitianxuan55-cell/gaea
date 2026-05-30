@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           web: path.resolve(__dirname, 'index.html'),
-          enterprise: path.resolve(__dirname, 'index.enterprise.html'),
+          org: path.resolve(__dirname, 'index.org.html'),
         },
         output: {
           manualChunks(id: string) {

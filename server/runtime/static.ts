@@ -12,8 +12,8 @@ export async function setupStatic(app: express.Express, __filename: string, __di
     isBundledServer ||
     (!isSourceServer && process.env.NODE_ENV !== "development" && fs.existsSync(path.join(process.cwd(), "dist")));
 
-  // Enterprise serves the workbench, personal serves the full web app
-  const defaultFile = role === 'enterprise' ? 'index.enterprise.html' : 'index.html';
+  // Org serves the workbench, personal serves the full web app
+  const defaultFile = role === 'org' ? 'index.org.html' : 'index.html';
 
   if (!isProduction) {
     console.log(`Starting in DEVELOPMENT mode (Vite) as ${role}...`);

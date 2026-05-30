@@ -1,7 +1,7 @@
 // LumiOS Unified Server
 // LUMI_ROLE=personal (default) → personal AI OS
-// LUMI_ROLE=enterprise         → enterprise server with org management
-// A personal instance can upgrade: create org → restart with LUMI_ROLE=enterprise
+// LUMI_ROLE=org         → org server with org management
+// A personal instance can upgrade: create org → restart with LUMI_ROLE=org
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -34,20 +34,20 @@ apiRouter.use("/", fileRoutes);
 apiRouter.use("/", subscriptionRoutes);
 apiRouter.use("/", lapRoutes);
 
-// ── Enterprise routes ──
-// Org creation is always available (personal→enterprise upgrade path).
-// Full enterprise routes mount only when ROLE=enterprise.
+// ── Org routes ──
+// Org creation is always available (personal→org upgrade path).
+// Full org routes mount only when ROLE=org.
 {
-  const { mountEnterpriseRoutes } = await import("./server/enterprise/routes");
-  mountEnterpriseRoutes(apiRouter, io); // POST /enterprise/org always works
-  if (ROLE === 'enterprise') {
-    const { mountBranchRoutes } = await import("./server/enterprise/main_api");
-    const { attachEnterpriseWs } = await import("./server/enterprise/ws_sync");
+  const { mountOrgRoutes } = await import("./server/org/routes");
+  mountOrgRoutes(apiRouter, io); // POST /org/org always works
+  if (ROLE === 'org') {
+    const { mountBranchRoutes } = await import("./server/org/main_api");
+    const { attachOrgWs } = await import("./server/org/ws_sync");
     mountBranchRoutes(apiRouter);
-    attachEnterpriseWs(io);
-    console.log('[Enterprise] Routes mounted at /api/enterprise/*');
-    console.log('[Enterprise] Branch API mounted at /api/branch/*');
-    console.log('[Enterprise] WebSocket sync attached');
+    attachOrgWs(io);
+    console.log('[Org] Routes mounted at /api/org/*');
+    console.log('[Org] Branch API mounted at /api/branch/*');
+    console.log('[Org] WebSocket sync attached');
   }
 }
 
@@ -56,9 +56,9 @@ setupMessaging(apiRouter, llm);
 setupMcpServer(app, server, io, llm, path.join(__dirname, 'server'));
 initSocketRuntime({ io, jwtSecret: JWT_SECRET, llm });
 
-// Enterprise: redirect root to workbench; personal: root to web app
-if (ROLE === 'enterprise') {
-  app.get('/', (_req, res) => res.redirect('/index.enterprise.html'));
+// Org: redirect root to workbench; personal: root to web app
+if (ROLE === 'org') {
+  app.get('/', (_req, res) => res.redirect('/index.org.html'));
 }
 
 async function start() {

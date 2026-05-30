@@ -48,7 +48,7 @@ export function TemplateMarketplace() {
 
   const loadTemplates = async () => {
     try {
-      const res = await fetch('/api/enterprise/templates?status=published', { credentials: 'include' });
+      const res = await fetch('/api/org/templates?status=published', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setTemplates(data);
@@ -60,7 +60,7 @@ export function TemplateMarketplace() {
   const handleInstall = async (templateId: string) => {
     setInstalling(templateId);
     try {
-      const res = await fetch(`/api/enterprise/templates/${templateId}/install`, {
+      const res = await fetch(`/api/org/templates/${templateId}/install`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

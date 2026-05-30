@@ -2,7 +2,7 @@
  * Unified authentication middleware.
  *
  * Replaces the copy-pasted inline JWT verification pattern that appears
- * in 30+ route handlers across the codebase. New enterprise routes use
+ * in 30+ route handlers across the codebase. New org routes use
  * these middlewares. Existing routes continue with inline verification
  * (NOT retrofitted to minimize scope risk).
  */

@@ -1,5 +1,5 @@
 /**
- * Enterprise Audit — query, filter, export, statistics.
+ * Org Audit — query, filter, export, statistics.
  *
  * Low-level logAudit / listAuditLog live in db.ts.
  * This module adds filtering, date-range queries, and CSV export.

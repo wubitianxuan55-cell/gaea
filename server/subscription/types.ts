@@ -3,7 +3,7 @@
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  tier: 'free' | 'light' | 'pro' | 'enterprise';
+  tier: 'free' | 'light' | 'pro' | 'org';
   monthlyTokens: number;        // Token cap per month
   llmProviders: string[];       // e.g. ['qwen', 'deepseek', 'gemini']
   sttIncluded: boolean;
@@ -76,10 +76,10 @@ export const PLANS: Record<string, SubscriptionPlan> = {
     priceCNY: 69,
     description: 'All LLMs, voice cloning, ten agents. For power users.',
   },
-  enterprise: {
-    id: 'enterprise',
-    name: 'Enterprise',
-    tier: 'enterprise',
+  org: {
+    id: 'org',
+    name: 'Org',
+    tier: 'org',
     monthlyTokens: 50_000_000,
     llmProviders: ['qwen', 'deepseek', 'gemini', 'openai', 'anthropic'],
     sttIncluded: true,

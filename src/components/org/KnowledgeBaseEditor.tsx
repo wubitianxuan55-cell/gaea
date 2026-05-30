@@ -22,7 +22,7 @@ export function KnowledgeBaseEditor({ articleId, onSaved }: Props) {
   useEffect(() => {
     if (articleId) {
       setLoading(true);
-      fetch(`/api/enterprise/kb/articles/${articleId}`, { credentials: 'include' })
+      fetch(`/api/org/kb/articles/${articleId}`, { credentials: 'include' })
         .then(r => r.json())
         .then(a => {
           setTitle(a.title);
@@ -41,8 +41,8 @@ export function KnowledgeBaseEditor({ articleId, onSaved }: Props) {
     setSaving(true);
     try {
       const url = articleId
-        ? `/api/enterprise/kb/articles/${articleId}`
-        : '/api/enterprise/kb/articles';
+        ? `/api/org/kb/articles/${articleId}`
+        : '/api/org/kb/articles';
       const method = articleId ? 'PUT' : 'POST';
       const tagArr = tags.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -132,7 +132,7 @@ export function KnowledgeBaseEditor({ articleId, onSaved }: Props) {
           {articleId ? (t.updateArticle || 'Update Article') : (t.createArticle || 'Create Article')}
         </Button>
         <Button
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'kb' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'kb' } }))}
           className="bg-white/10 hover:bg-white/20 text-white/70 rounded-lg flex items-center gap-2"
         >
           <BookOpen size={16} /> {t.backToKB || 'Back to KB'}

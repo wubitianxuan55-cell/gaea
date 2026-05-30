@@ -28,14 +28,14 @@ export function OrgMembers() {
 
   const loadOrgAndMembers = async () => {
     try {
-      const orgsRes = await fetch('/api/enterprise/org', { credentials: 'include' });
+      const orgsRes = await fetch('/api/org/org', { credentials: 'include' });
       if (!orgsRes.ok) return;
       const orgs = await orgsRes.json();
       if (orgs.length === 0) return;
       const orgIdVal = orgs[0].id || orgs[0].orgId;
       setOrgId(orgIdVal);
 
-      const membersRes = await fetch(`/api/enterprise/org/${orgIdVal}/members`, { credentials: 'include' });
+      const membersRes = await fetch(`/api/org/org/${orgIdVal}/members`, { credentials: 'include' });
       if (membersRes.ok) setMembers(await membersRes.json());
     } catch {} finally { setLoading(false); }
   };
@@ -44,7 +44,7 @@ export function OrgMembers() {
     if (!inviteUserId.trim() || !orgId) return;
     setInviting(true);
     try {
-      const res = await fetch(`/api/enterprise/org/${orgId}/members`, {
+      const res = await fetch(`/api/org/org/${orgId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: inviteUserId, role: inviteRole }),
@@ -59,7 +59,7 @@ export function OrgMembers() {
 
   const handleRemove = async (userId: string) => {
     try {
-      await fetch(`/api/enterprise/org/${orgId}/members/${userId}`, {
+      await fetch(`/api/org/org/${orgId}/members/${userId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -87,7 +87,7 @@ export function OrgMembers() {
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Users size={24} className="text-green-400" />
-          {t.enterpriseMembers}
+          {t.orgMembers}
         </h2>
         <p className="text-white/40 text-sm">{members.length} member(s)</p>
       </div>
@@ -110,9 +110,9 @@ export function OrgMembers() {
             onChange={e => setInviteRole(e.target.value)}
             className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white/70 text-sm"
           >
-            <option value="member">{t.enterpriseRoleMember}</option>
-            <option value="admin">{t.enterpriseRoleAdmin}</option>
-            <option value="viewer">{t.enterpriseRoleViewer}</option>
+            <option value="member">{t.orgRoleMember}</option>
+            <option value="admin">{t.orgRoleAdmin}</option>
+            <option value="viewer">{t.orgRoleViewer}</option>
           </select>
         </div>
         <Button

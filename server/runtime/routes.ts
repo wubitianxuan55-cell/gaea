@@ -62,6 +62,6 @@ export function mountAllRoutes({ apiRouter, jwtSecret, llm, getCookieOptions, io
   // Contacts
   mountContactsRoutes(apiRouter, jwtSecret);
 
-  // Misc (founder vision, feedback, admin config, enterprise chat)
+  // Misc (founder vision, feedback, admin config, Org chat)
   mountMiscRoutes(apiRouter, jwtSecret, llmGetters);
 }

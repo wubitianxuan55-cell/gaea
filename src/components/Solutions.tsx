@@ -14,13 +14,13 @@ export function Solutions({ t }: { t: any }) {
 
   const solutions = [
     {
-      id: 'enterprise',
-      title: t.enterpriseSolutions,
+      id: 'org',
+      title: t.orgSolutions,
       subtitle: t.lumiNexusTitle,
       desc: t.lumiNexusDesc,
       icon: <Building2 size={40} className="text-celestial-saturn" />,
       features: [
-        { title: t.enterpriseGrade, desc: t.highAvailability },
+        { title: t.orgGrade, desc: t.highAvailability },
         { title: t.dataSovereignty, desc: t.premiseIsolation },
         { title: t.collectiveWisdom, desc: t.knowledgeGraph }
       ],

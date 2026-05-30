@@ -38,7 +38,7 @@ export function AuditLogViewer() {
         if (withFilters.action) params.set('action', withFilters.action);
         if (withFilters.resourceType) params.set('resourceType', withFilters.resourceType);
       }
-      const res = await fetch(`/api/enterprise/audit?${params.toString()}`, { credentials: 'include' });
+      const res = await fetch(`/api/org/audit?${params.toString()}`, { credentials: 'include' });
       if (res.ok) setEntries(await res.json());
     } catch {} finally { setLoading(false); }
   }, []);
@@ -53,7 +53,7 @@ export function AuditLogViewer() {
       if (filters.userId) params.set('userId', filters.userId);
       if (filters.action) params.set('action', filters.action);
       if (filters.resourceType) params.set('resourceType', filters.resourceType);
-      const res = await fetch(`/api/enterprise/audit/export?${params.toString()}`, { credentials: 'include' });
+      const res = await fetch(`/api/org/audit/export?${params.toString()}`, { credentials: 'include' });
       if (res.ok) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -84,7 +84,7 @@ export function AuditLogViewer() {
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <ScrollText size={24} className="text-amber-400" />
-            {t.enterpriseAudit}
+            {t.orgAudit}
           </h2>
           <p className="text-white/40 text-sm">{entries.length} entries</p>
         </div>

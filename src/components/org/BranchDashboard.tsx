@@ -33,15 +33,15 @@ export function BranchDashboard() {
 
   const loadStats = async () => {
     try {
-      const res = await fetch('/api/enterprise/status', { credentials: 'include' });
+      const res = await fetch('/api/org/status', { credentials: 'include' });
       if (!res.ok) return;
       const status = await res.json();
 
       // Load org-specific stats
       const [membersRes, kbRes, templatesRes] = await Promise.all([
-        fetch('/api/enterprise/org', { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/enterprise/kb/articles?status=published', { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/enterprise/templates?status=published', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/org/org', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/org/kb/articles?status=published', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/org/templates?status=published', { credentials: 'include' }).then(r => r.json()),
       ]);
 
       setStats({
@@ -60,9 +60,9 @@ export function BranchDashboard() {
   };
 
   const cards = [
-    { label: t.enterpriseMembers, value: stats.memberCount, icon: <Users size={20} />, color: 'text-green-400', bg: 'bg-green-500/10' },
-    { label: t.enterpriseKB, value: stats.kbArticleCount, icon: <BookOpen size={20} />, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: t.enterpriseTemplates, value: stats.templateCount, icon: <Package size={20} />, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { label: t.orgMembers, value: stats.memberCount, icon: <Users size={20} />, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { label: t.orgKB, value: stats.kbArticleCount, icon: <BookOpen size={20} />, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { label: t.orgTemplates, value: stats.templateCount, icon: <Package size={20} />, color: 'text-purple-400', bg: 'bg-purple-500/10' },
   ];
 
   return (
@@ -81,7 +81,7 @@ export function BranchDashboard() {
             stats.syncStatus === 'connected' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'
           }`}>
             {stats.syncStatus === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
-            {stats.syncStatus === 'connected' ? t.enterpriseConnectionOnline : t.enterpriseConnectionOffline}
+            {stats.syncStatus === 'connected' ? t.orgConnectionOnline : t.orgConnectionOffline}
           </span>
           <button
             onClick={loadStats}
@@ -125,28 +125,28 @@ export function BranchDashboard() {
           label="Browse Knowledge Base"
           desc="Search company policies, SOPs, and documentation"
           color="blue"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'kb' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'kb' } }))}
         />
         <QuickAction
           icon={<Package size={18} />}
           label="Template Marketplace"
           desc="Discover agent templates from your team"
           color="purple"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'templates' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'templates' } }))}
         />
         <QuickAction
           icon={<Activity size={18} />}
           label="Talk to Company Lumi"
           desc="Ask about culture, policies, and organizational knowledge"
           color="green"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'chat' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'chat' } }))}
         />
         <QuickAction
           icon={<Users size={18} />}
           label="Team Directory"
           desc="View members and departments"
           color="amber"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'members' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'members' } }))}
         />
       </div>
 

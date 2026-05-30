@@ -107,7 +107,7 @@ export function LandingSections({ t, onNavigateToSolutions, onSelectDesktop, onS
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white/40">
               <Building2 size={12} />
-              {t.enterpriseIndustry}
+              {t.orgIndustry}
             </div>
             <h2 className="text-5xl font-bold tracking-tighter leading-tight">
               {t.scalingIntelligence}

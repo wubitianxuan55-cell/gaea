@@ -28,14 +28,14 @@ const COLORS: Record<string, string> = {
   free: 'bg-white/5 border-white/10',
   light: 'bg-blue-500/5 border-blue-500/30',
   pro: 'bg-purple-500/5 border-purple-500/30',
-  enterprise: 'bg-amber-500/5 border-amber-500/30',
+  org: 'bg-amber-500/5 border-amber-500/30',
 };
 
 const ACCENTS: Record<string, string> = {
   free: 'text-white/40',
   light: 'text-blue-400',
   pro: 'text-purple-400',
-  enterprise: 'text-amber-400',
+  org: 'text-amber-400',
 };
 
 function fmtTokens(n: number): string {

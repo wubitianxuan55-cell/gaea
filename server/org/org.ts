@@ -1,8 +1,8 @@
 /**
  * Organization model — CRUD, members, departments, invitations.
  *
- * Uses the enterprise DB abstraction layer for all data access.
- * Called from enterprise routes and also from main_api.ts for branch-facing endpoints.
+ * Uses the Org DB abstraction layer for all data access.
+ * Called from org routes and also from main_api.ts for branch-facing endpoints.
  */
 
 import * as EDB from './db';

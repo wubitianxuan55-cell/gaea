@@ -22,7 +22,7 @@ import { JoinUs } from '../components/JoinUs';
 import { FoundersSanctuary } from '../components/FoundersSanctuary';
 import { Profile } from '../components/Profile';
 import { Settings } from '../components/Settings';
-import { EnterprisePortal } from '../components/EnterprisePortal';
+import { OrgPortal } from '../components/OrgPortal';
 import { useAppShell } from './useAppShell';
 import { usePlatform } from '../hooks/usePlatform';
 
@@ -60,7 +60,7 @@ export function WebApp() {
       case 'join': return <JoinUs t={shell.t} />;
       case 'founders': return <FoundersSanctuary t={shell.t} user={shell.user} onBack={() => setActiveTab('home')} />;
       case 'profile': return !shell.user ? <LoginRequired t={shell.t} onLogin={shell.handleLogin} /> : <Profile t={shell.t} />;
-      case 'enterprise': return !shell.user ? <LoginRequired t={shell.t} onLogin={shell.handleLogin} /> : <EnterprisePortal />;
+      case 'org': return !shell.user ? <LoginRequired t={shell.t} onLogin={shell.handleLogin} /> : <OrgPortal />;
       case 'settings': return !shell.user ? <LoginRequired t={shell.t} onLogin={shell.handleLogin} /> : <Settings t={shell.t} lang={shell.lang} setLang={shell.setLang} />;
       case 'voice': case 'memory': case 'mcp': case 'personality': case 'sync':
         return !shell.user ? <LoginRequired t={shell.t} onLogin={shell.handleLogin} /> : <Settings t={shell.t} lang={shell.lang} setLang={shell.setLang} activeSection={tab} />;

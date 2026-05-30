@@ -55,7 +55,7 @@ function migrateSchema(): Promise<void> {
     db!.run("ALTER TABLE memories ADD COLUMN agentId TEXT DEFAULT ''", () => {});
     // Add location to memories for spatial context
     db!.run("ALTER TABLE memories ADD COLUMN location TEXT DEFAULT ''", () => {});
-    // Enterprise: domain + orgId for data classification
+    // Org: domain + orgId for data classification
     db!.run("ALTER TABLE memories ADD COLUMN domain TEXT DEFAULT 'personal'", () => {});
     db!.run("ALTER TABLE memories ADD COLUMN orgId TEXT DEFAULT ''", () => {});
     db!.run("ALTER TABLE interactions ADD COLUMN domain TEXT DEFAULT 'personal'", () => {});
@@ -288,7 +288,7 @@ function createTables(): Promise<void> {
         createdAt TEXT NOT NULL
       );
 
-      CREATE TABLE IF NOT EXISTS enterprise_kb_articles (
+      CREATE TABLE IF NOT EXISTS org_kb_articles (
         id TEXT PRIMARY KEY,
         orgId TEXT NOT NULL,
         title TEXT NOT NULL,
@@ -302,7 +302,7 @@ function createTables(): Promise<void> {
         updatedAt TEXT NOT NULL
       );
 
-      CREATE TABLE IF NOT EXISTS enterprise_kb_embeddings (
+      CREATE TABLE IF NOT EXISTS org_kb_embeddings (
         id TEXT PRIMARY KEY,
         articleId TEXT NOT NULL,
         chunkIndex INTEGER NOT NULL,
@@ -425,13 +425,13 @@ async function loadMemoryDB(): Promise<void> {
   // Load token usage
   const tokenUsageRaw = await query<any>('SELECT * FROM token_usage');
 
-  // Load enterprise tables
+  // Load org tables
   const organizations = await query<any>('SELECT * FROM organizations');
   const departments = await query<any>('SELECT * FROM departments');
   const orgMemberships = await query<any>('SELECT * FROM org_memberships');
   const orgInvitations = await query<any>('SELECT * FROM org_invitations');
-  const enterpriseKbArticles = await query<any>('SELECT * FROM enterprise_kb_articles');
-  const enterpriseKbEmbeddings = await query<any>('SELECT * FROM enterprise_kb_embeddings');
+  const orgKbArticles = await query<any>('SELECT * FROM org_kb_articles');
+  const orgKbEmbeddings = await query<any>('SELECT * FROM org_kb_embeddings');
   const agentTemplates = await query<any>('SELECT * FROM agent_templates');
   const auditLogEntries = await query<any>('SELECT * FROM audit_log');
 
@@ -497,8 +497,8 @@ async function loadMemoryDB(): Promise<void> {
     departments: departments || [],
     orgMemberships: orgMemberships || [],
     orgInvitations: orgInvitations || [],
-    enterpriseKbArticles: enterpriseKbArticles || [],
-    enterpriseKbEmbeddings: enterpriseKbEmbeddings || [],
+    orgKbArticles: orgKbArticles || [],
+    orgKbEmbeddings: orgKbEmbeddings || [],
     agentTemplates: agentTemplates || [],
     auditLog: auditLogEntries || [],
   };
@@ -693,16 +693,16 @@ async function persistMemoryDB(): Promise<void> {
       rows: () => (memoryDB.orgInvitations || []).map((inv: any) => [inv.id, inv.orgId, inv.code, inv.createdBy, inv.role || 'member', inv.departmentId || null, inv.maxUses || 0, inv.useCount || 0, inv.expiresAt || null, inv.createdAt]),
     },
     {
-      name: 'enterprise_kb_articles',
-      createSQL: `CREATE TABLE _temp_enterprise_kb_articles (id TEXT PRIMARY KEY, orgId TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, category TEXT DEFAULT 'general', tags TEXT DEFAULT '[]', authorId TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published', viewCount INTEGER DEFAULT 0, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL)`,
-      insertSQL: `INSERT INTO _temp_enterprise_kb_articles (id, orgId, title, content, category, tags, authorId, status, viewCount, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      rows: () => (memoryDB.enterpriseKbArticles || []).map((a: any) => [a.id, a.orgId, a.title, a.content, a.category || 'general', a.tags || '[]', a.authorId, a.status || 'published', a.viewCount || 0, a.createdAt, a.updatedAt]),
+      name: 'org_kb_articles',
+      createSQL: `CREATE TABLE _temp_org_kb_articles (id TEXT PRIMARY KEY, orgId TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL, category TEXT DEFAULT 'general', tags TEXT DEFAULT '[]', authorId TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published', viewCount INTEGER DEFAULT 0, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL)`,
+      insertSQL: `INSERT INTO _temp_org_kb_articles (id, orgId, title, content, category, tags, authorId, status, viewCount, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      rows: () => (memoryDB.orgKbArticles || []).map((a: any) => [a.id, a.orgId, a.title, a.content, a.category || 'general', a.tags || '[]', a.authorId, a.status || 'published', a.viewCount || 0, a.createdAt, a.updatedAt]),
     },
     {
-      name: 'enterprise_kb_embeddings',
-      createSQL: `CREATE TABLE _temp_enterprise_kb_embeddings (id TEXT PRIMARY KEY, articleId TEXT NOT NULL, chunkIndex INTEGER NOT NULL, embedding TEXT NOT NULL, content TEXT NOT NULL, modelName TEXT NOT NULL DEFAULT 'text-embedding-3-small', createdAt TEXT NOT NULL)`,
-      insertSQL: `INSERT INTO _temp_enterprise_kb_embeddings (id, articleId, chunkIndex, embedding, content, modelName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      rows: () => (memoryDB.enterpriseKbEmbeddings || []).map((e: any) => [e.id, e.articleId, e.chunkIndex, e.embedding, e.content, e.modelName || 'text-embedding-3-small', e.createdAt]),
+      name: 'org_kb_embeddings',
+      createSQL: `CREATE TABLE _temp_org_kb_embeddings (id TEXT PRIMARY KEY, articleId TEXT NOT NULL, chunkIndex INTEGER NOT NULL, embedding TEXT NOT NULL, content TEXT NOT NULL, modelName TEXT NOT NULL DEFAULT 'text-embedding-3-small', createdAt TEXT NOT NULL)`,
+      insertSQL: `INSERT INTO _temp_org_kb_embeddings (id, articleId, chunkIndex, embedding, content, modelName, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      rows: () => (memoryDB.orgKbEmbeddings || []).map((e: any) => [e.id, e.articleId, e.chunkIndex, e.embedding, e.content, e.modelName || 'text-embedding-3-small', e.createdAt]),
     },
     {
       name: 'agent_templates',

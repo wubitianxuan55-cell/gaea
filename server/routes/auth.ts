@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { readDB, writeDB } from "../../db_layer";
 import { syncUserToSupabase } from "../config/supabase";
-import { getMember, listUserOrgs } from "../enterprise/db";
+import { getMember, listUserOrgs } from "../org/db";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

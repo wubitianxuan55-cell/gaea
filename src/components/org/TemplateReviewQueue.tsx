@@ -29,7 +29,7 @@ export function TemplateReviewQueue() {
 
   const loadQueue = async () => {
     try {
-      const res = await fetch('/api/enterprise/templates?status=pending_review', { credentials: 'include' });
+      const res = await fetch('/api/org/templates?status=pending_review', { credentials: 'include' });
       if (res.ok) setQueue(await res.json());
     } catch {} finally { setLoading(false); }
   };
@@ -39,7 +39,7 @@ export function TemplateReviewQueue() {
     try {
       const endpoint = action === 'approve' ? 'approve' : 'reject';
       const body = action === 'reject' ? { comment } : comment ? { comment } : {};
-      const res = await fetch(`/api/enterprise/templates/${templateId}/${endpoint}`, {
+      const res = await fetch(`/api/org/templates/${templateId}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

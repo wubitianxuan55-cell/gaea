@@ -1,10 +1,10 @@
-// Enterprise Portal — shown in personal edition's "Enterprise" tab.
-// Three paths: join existing org, create new org (upgrade personal→enterprise),
-// or open the enterprise workbench if already connected.
+// Org Portal — shown in personal edition's "Org" tab.
+// Three paths: join existing org, create new org (upgrade personal→org),
+// or open the Org workbench if already connected.
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Building2, Plus, Users, ArrowRight, Loader2, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
-import { JoinOrgPage } from './enterprise/JoinOrgPage';
+import { JoinOrgPage } from './org/JoinOrgPage';
 import { useApp } from '../contexts/AppContext';
 import { useT } from '../lib/useT';
 
@@ -14,7 +14,7 @@ interface OrgStatus {
   orgRole: string | null;
 }
 
-export function EnterprisePortal() {
+export function OrgPortal() {
   const t = useT();
   const { user } = useApp();
   const [status, setStatus] = useState<OrgStatus | null>(null);
@@ -27,7 +27,7 @@ export function EnterprisePortal() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    fetch('/api/enterprise/status', { credentials: 'include' })
+    fetch('/api/org/status', { credentials: 'include' })
       .then(r => r.json())
       .then(s => setStatus({ connected: !!s.orgId, orgId: s.orgId, orgRole: s.orgRole }))
       .catch(() => setStatus({ connected: false, orgId: null, orgRole: null }))
@@ -39,7 +39,7 @@ export function EnterprisePortal() {
     setCreating(true);
     setCreateResult('idle');
     try {
-      const res = await fetch('/api/enterprise/org', {
+      const res = await fetch('/api/org/org', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: orgForm.name.trim(), slug: orgForm.slug.trim() }),
@@ -49,7 +49,7 @@ export function EnterprisePortal() {
       if (res.ok) {
         setCreateResult('success');
         setCreateMsg(data.upgrade
-          ? 'Organization created. Server is restarting as enterprise — this page will reload in a few seconds.'
+          ? 'Organization created. Server is restarting as org — this page will reload in a few seconds.'
           : 'Organization created successfully.');
         if (data.upgrade) setTimeout(() => window.location.reload(), 3000);
       } else {
@@ -69,7 +69,7 @@ export function EnterprisePortal() {
       <div className="flex items-center justify-center p-20">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
           <Building2 size={48} className="mx-auto text-white/20 mb-4" />
-          <p className="text-white/40 text-sm">{t.loginRequired || 'Sign in to access enterprise features'}</p>
+          <p className="text-white/40 text-sm">{t.loginRequired || 'Sign in to access org features'}</p>
         </motion.div>
       </div>
     );
@@ -90,17 +90,17 @@ export function EnterprisePortal() {
         <div className="max-w-md mx-auto space-y-6">
           <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 text-center">
             <CheckCircle size={40} className="mx-auto text-green-400 mb-3" />
-            <h2 className="text-xl font-bold text-white mb-1">{t.enterpriseConnected || 'Connected to Organization'}</h2>
+            <h2 className="text-xl font-bold text-white mb-1">{t.orgConnected || 'Connected to Organization'}</h2>
             <p className="text-white/40 text-sm mb-4">Role: {status.orgRole || 'member'}</p>
             <a
-              href="/index.enterprise.html"
+              href="/index.org.html"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
             >
               <ExternalLink size={16} />
-              {t.openEnterpriseWorkbench || 'Open Enterprise Workbench'}
+              {t.openOrgWorkbench || 'Open Org Workbench'}
             </a>
             <p className="text-white/20 text-xs mt-3">
-              {t.enterpriseWorkbenchNote || 'The workbench opens in a new tab. Manage your organization, knowledge base, and team from there.'}
+              {t.orgWorkbenchNote || 'The workbench opens in a new tab. Manage your organization, knowledge base, and team from there.'}
             </p>
           </div>
         </div>
@@ -116,9 +116,9 @@ export function EnterprisePortal() {
           <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-lg mx-auto space-y-6">
             <div className="text-center mb-8">
               <Building2 size={48} className="mx-auto text-blue-400 mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-2">{t.enterpriseHub || 'Enterprise Hub'}</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">{t.orgHub || 'Org Hub'}</h1>
               <p className="text-white/40 text-sm max-w-sm mx-auto">
-                {t.enterpriseHubDesc || 'Join your company\'s organization or create your own.'}
+                {t.orgHubDesc || 'Join your company\'s organization or create your own.'}
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export function EnterprisePortal() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-white font-semibold">{t.createOrganization || 'Create Organization'}</h3>
-                  <p className="text-white/40 text-sm">{t.createOrganizationDesc || 'Become the admin. Your instance will upgrade to enterprise mode.'}</p>
+                  <p className="text-white/40 text-sm">{t.createOrganizationDesc || 'Become the admin. Your instance will upgrade to org mode.'}</p>
                 </div>
                 <ArrowRight size={20} className="text-white/20" />
               </motion.button>
@@ -187,7 +187,7 @@ export function EnterprisePortal() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
                 <h2 className="text-xl font-bold text-white">{t.createOrganization || 'Create Organization'}</h2>
                 <p className="text-white/40 text-sm">
-                  {t.createOrganizationNote || 'This will upgrade your LumiOS instance to enterprise mode. The server will restart automatically.'}
+                  {t.createOrganizationNote || 'This will upgrade your LumiOS instance to org mode. The server will restart automatically.'}
                 </p>
 
                 <div>
@@ -228,7 +228,7 @@ export function EnterprisePortal() {
                 </button>
 
                 <p className="text-white/20 text-xs text-center">
-                  {t.createOrganizationHint || 'Your server will restart as enterprise after creation. This takes a few seconds.'}
+                  {t.createOrganizationHint || 'Your server will restart as org after creation. This takes a few seconds.'}
                 </p>
               </div>
             )}

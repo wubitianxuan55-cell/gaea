@@ -26,7 +26,7 @@ export function TemplateCreator() {
       let config: any;
       try { config = JSON.parse(configStr); } catch { config = {}; }
 
-      const res = await fetch('/api/enterprise/templates', {
+      const res = await fetch('/api/org/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, category, config, icon }),
@@ -36,7 +36,7 @@ export function TemplateCreator() {
       if (res.ok) {
         const t = await res.json();
         // Submit for review immediately
-        await fetch(`/api/enterprise/templates/${t.id}/submit`, {
+        await fetch(`/api/org/templates/${t.id}/submit`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -54,7 +54,7 @@ export function TemplateCreator() {
         <h3 className="text-xl font-bold text-white">{t.templateSubmitted || 'Template Submitted!'}</h3>
         <p className="text-white/40 text-sm">{t.templatePendingReview || 'Your template is pending review by an admin.'}</p>
         <Button
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'templates' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'templates' } }))}
           className="bg-white/10 hover:bg-white/20 text-white rounded-lg"
         >
           <ArrowLeft size={16} className="mr-1" /> {t.backToMarketplace || 'Back to Marketplace'}
@@ -67,7 +67,7 @@ export function TemplateCreator() {
     <div className="p-6 space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'templates' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'templates' } }))}
           className="text-white/40 hover:text-white"
         >
           <ArrowLeft size={18} />

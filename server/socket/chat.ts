@@ -20,7 +20,7 @@ import { matchQuickCommand } from "../cognition/quick_commands";
 import { checkLLMAccess, recordUsage, estimateTokens } from "../subscription/proxy";
 import { recordTokenUsage } from "../llm/token_tracker";
 import { runOrchestratedTask, shouldDistillSkill, buildSkillDescription } from "../agents/orchestrator";
-import { searchKnowledgeBase } from "../enterprise/kb";
+import { searchKnowledgeBase } from "../org/kb";
 import { getWorkflow, recordWorkflowRun, listWorkflows } from "../agents/workflows";
 
 export function registerChatHandler(
@@ -96,7 +96,7 @@ export function registerChatHandler(
         ragChunks = chunks.map((c: any) => c.content);
       }
 
-      // Enterprise: search company KB when in work domain
+      // Org: search company KB when in work domain
       let kbContext: string | undefined;
       if (domain === 'work' && orgId) {
         try {

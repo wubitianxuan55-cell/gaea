@@ -1,5 +1,5 @@
-// Enterprise web entry — standalone admin workbench
-// Served when LUMI_ROLE=enterprise; no landing page, no ecosystem, no desktop UI
+// Org web entry — standalone admin workbench
+// Served when LUMI_ROLE=org; no landing page, no ecosystem, no desktop UI
 import { StrictMode, lazy, Suspense, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppProvider } from '../contexts/AppContext';
@@ -14,9 +14,9 @@ import { Building2, LogIn } from 'lucide-react';
 import '@fontsource-variable/geist';
 import '../index.css';
 
-const EnterpriseHub = lazy(() => import('../components/enterprise/EnterpriseHub').then(m => ({ default: m.EnterpriseHub })));
+const OrgHub = lazy(() => import('../components/org/OrgHub').then(m => ({ default: m.OrgHub })));
 
-function EnterpriseShell() {
+function OrgShell() {
   const { user, loading, refreshUser } = useApp();
   const t = useT();
   const [showLogin, setShowLogin] = useState(false);
@@ -43,10 +43,10 @@ function EnterpriseShell() {
         >
           <Building2 size={48} className="text-celestial-saturn" />
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-celestial-mars to-celestial-saturn">
-            {t.enterpriseWorkbench || 'Enterprise Workbench'}
+            {t.orgWorkbench || 'Org Workbench'}
           </h1>
           <p className="text-white/40 text-sm max-w-md text-center">
-            {t.enterpriseLoginPrompt || 'Log in to access your organization dashboard, knowledge base, and admin tools.'}
+            {t.orgLoginPrompt || 'Log in to access your organization dashboard, knowledge base, and admin tools.'}
           </p>
         </motion.div>
         <motion.button
@@ -68,7 +68,7 @@ function EnterpriseShell() {
     <div className="min-h-screen bg-celestial-deep overflow-hidden">
       <Toaster position="top-right" theme="dark" />
       <Suspense fallback={<LoadingFallback />}>
-        <EnterpriseHub />
+        <OrgHub />
       </Suspense>
     </div>
   );
@@ -78,7 +78,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <AppProvider>
-        <EnterpriseShell />
+        <OrgShell />
       </AppProvider>
     </ErrorBoundary>
   </StrictMode>,

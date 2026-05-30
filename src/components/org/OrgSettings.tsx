@@ -21,12 +21,12 @@ export function OrgSettings() {
 
   const loadOrg = async () => {
     try {
-      const orgsRes = await fetch('/api/enterprise/org', { credentials: 'include' });
+      const orgsRes = await fetch('/api/org/org', { credentials: 'include' });
       if (!orgsRes.ok) return;
       const orgs = await orgsRes.json();
       if (orgs.length === 0) return;
 
-      const orgDetailRes = await fetch(`/api/enterprise/org/${orgs[0].id}`, { credentials: 'include' });
+      const orgDetailRes = await fetch(`/api/org/org/${orgs[0].id}`, { credentials: 'include' });
       if (orgDetailRes.ok) {
         const orgData = await orgDetailRes.json();
         setOrg(orgData);
@@ -39,7 +39,7 @@ export function OrgSettings() {
     if (!org || !name.trim()) return;
     setSaving(true);
     try {
-      await fetch(`/api/enterprise/org/${org.id}`, {
+      await fetch(`/api/org/org/${org.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -53,7 +53,7 @@ export function OrgSettings() {
     if (!org) return;
     setGenerating(true);
     try {
-      const res = await fetch(`/api/enterprise/org/${org.id}/invitations`, {
+      const res = await fetch(`/api/org/org/${org.id}/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: invitationRole, maxUses: 0 }),
@@ -93,7 +93,7 @@ export function OrgSettings() {
     <div className="p-6 space-y-6 max-w-2xl mx-auto">
       <h2 className="text-xl font-bold text-white flex items-center gap-2">
         <Settings size={24} className="text-white/40" />
-        {t.enterpriseSettings}
+        {t.orgSettings}
       </h2>
 
       {/* General */}
@@ -135,9 +135,9 @@ export function OrgSettings() {
               onChange={e => setInvitationRole(e.target.value)}
               className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white/70 text-sm"
             >
-              <option value="member">{t.enterpriseRoleMember}</option>
-              <option value="admin">{t.enterpriseRoleAdmin}</option>
-              <option value="viewer">{t.enterpriseRoleViewer}</option>
+              <option value="member">{t.orgRoleMember}</option>
+              <option value="admin">{t.orgRoleAdmin}</option>
+              <option value="viewer">{t.orgRoleViewer}</option>
             </select>
           </div>
           <Button
@@ -184,7 +184,7 @@ export function OrgSettings() {
         <Button
           onClick={() => {
             if (confirm('This action is irreversible. Are you sure?')) {
-              fetch(`/api/enterprise/org/${org.id}`, { method: 'DELETE', credentials: 'include' })
+              fetch(`/api/org/org/${org.id}`, { method: 'DELETE', credentials: 'include' })
                 .then(() => window.location.reload());
             }
           }}

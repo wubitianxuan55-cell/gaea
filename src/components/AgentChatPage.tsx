@@ -622,7 +622,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose }: { t: any; use
               {agentName}
               {workDomain === 'work' && orgConnection?.connected && (
                 <span className="text-[8px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-medium uppercase tracking-wider">
-                  {t.enterpriseWorkDomain || 'Work'}
+                  {t.orgWorkDomain || 'Work'}
                 </span>
               )}
             </h2>

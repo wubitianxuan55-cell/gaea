@@ -14,7 +14,7 @@ export function JoinOrgPage() {
   const handleValidate = async () => {
     if (code.length < 6) return;
     try {
-      const res = await fetch(`/api/enterprise/invitations/${code.toUpperCase()}`, { credentials: 'include' });
+      const res = await fetch(`/api/org/invitations/${code.toUpperCase()}`, { credentials: 'include' });
       const data = await res.json();
       if (data.valid) {
         setOrgInfo(data);
@@ -32,7 +32,7 @@ export function JoinOrgPage() {
   const handleJoin = async () => {
     setStep('joining');
     try {
-      const res = await fetch(`/api/enterprise/invitations/${code.toUpperCase()}/accept`, {
+      const res = await fetch(`/api/org/invitations/${code.toUpperCase()}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -61,8 +61,8 @@ export function JoinOrgPage() {
       >
         <div className="text-center mb-8">
           <Building2 size={48} className="mx-auto text-blue-400 mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">{t.enterpriseJoin}</h1>
-          <p className="text-white/50 text-sm">{t.enterpriseJoinDesc}</p>
+          <h1 className="text-2xl font-bold text-white mb-2">{t.orgJoin}</h1>
+          <p className="text-white/50 text-sm">{t.orgJoinDesc}</p>
         </div>
 
         {step === 'input' && (

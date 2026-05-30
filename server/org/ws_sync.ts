@@ -1,5 +1,5 @@
 /**
- * Enterprise WebSocket Sync — real-time channel between branches and company server.
+ * Org WebSocket Sync — real-time channel between branches and company server.
  *
  * Attaches to the existing Socket.IO server and adds org-scoped rooms.
  * Branches join their org room on connect; the company server broadcasts
@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 // ── Initialize ──────────────────────────────────────────────────────────
 
-export function attachEnterpriseWs(server: SocketIOServer) {
+export function attachOrgWs(server: SocketIOServer) {
   io = server;
 
   io.on('connection', (socket: Socket) => {
@@ -35,33 +35,33 @@ export function attachEnterpriseWs(server: SocketIOServer) {
       socket.join(`org:${orgId}`);
       socket.data.orgId = orgId;
       socket.data.userId = userId;
-      console.log(`[WS:Enterprise] ${userId} joined org:${orgId} on socket ${socket.id}`);
+      console.log(`[WS:Org] ${userId} joined org:${orgId} on socket ${socket.id}`);
     }
 
     // ── Branch heartbeat ──────────────────────────────────────────────
 
-    socket.on('enterprise:heartbeat', (data: { orgId: string }) => {
+    socket.on('org:heartbeat', (data: { orgId: string }) => {
       if (data.orgId && userId !== 'anonymous') {
-        socket.emit('enterprise:heartbeat:ack', { serverTime: new Date().toISOString() });
+        socket.emit('org:heartbeat:ack', { serverTime: new Date().toISOString() });
       }
     });
 
     // ── Work domain sync push ─────────────────────────────────────────
 
-    socket.on('enterprise:sync', (data: { orgId: string; payload: any }) => {
+    socket.on('org:sync', (data: { orgId: string; payload: any }) => {
       // Branch pushes work data in real-time via WS instead of REST
       // The server acknowledges receipt; full processing is async
       if (data.orgId === socket.data.orgId) {
-        socket.emit('enterprise:sync:ack', { received: true, count: countSyncItems(data.payload) });
+        socket.emit('org:sync:ack', { received: true, count: countSyncItems(data.payload) });
       }
     });
 
     // ── KB cache invalidation request ─────────────────────────────────
 
-    socket.on('enterprise:kb:invalidate', (data: { orgId: string }) => {
+    socket.on('org:kb:invalidate', (data: { orgId: string }) => {
       if (data.orgId === socket.data.orgId) {
         // Notify all branches in the org to re-pull KB cache
-        io!.to(`org:${data.orgId}`).emit('enterprise:kb:stale', {
+        io!.to(`org:${data.orgId}`).emit('org:kb:stale', {
           orgId: data.orgId,
           timestamp: new Date().toISOString(),
         });
@@ -82,7 +82,7 @@ export function attachEnterpriseWs(server: SocketIOServer) {
         }
       }
       if (socket.data.orgId) {
-        console.log(`[WS:Enterprise] ${userId} left org:${socket.data.orgId}`);
+        console.log(`[WS:Org] ${userId} left org:${socket.data.orgId}`);
       }
     });
   });

@@ -562,7 +562,7 @@ export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent
             t={t}
           />
           <SubscriptionCard
-            tier={t.subscriptionEnterprise || 'Enterprise'}
+            tier={t.subscriptionOrg || 'Org'}
             price={t.subscriptionCustom || 'Custom'}
             features={['Unlimited Storage', 'Dedicated Mesh Node', 'Custom AI Personality', '24/7 Neural Support']}
             t={t}

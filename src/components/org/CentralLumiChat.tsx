@@ -31,7 +31,7 @@ export function CentralLumiChat() {
 
     try {
       // Search KB for relevant context
-      const kbRes = await fetch('/api/enterprise/kb/search', {
+      const kbRes = await fetch('/api/org/kb/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMsg.content, limit: 3 }),
@@ -83,7 +83,7 @@ export function CentralLumiChat() {
           <Building2 size={20} className="text-blue-400" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-white">{t.enterpriseChat}</h2>
+          <h2 className="text-lg font-bold text-white">{t.orgChat}</h2>
           <p className="text-white/30 text-xs">Organizational AI — ask about policies, culture, and knowledge</p>
         </div>
       </div>

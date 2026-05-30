@@ -70,7 +70,7 @@ interface AppContextType {
   // Tools
   toolOverrides: Record<string, ToolOverride>;
   setToolOverride: (name: string, override: ToolOverride) => void;
-  // Enterprise
+  // Org
   orgConnection: OrgConnection | null;
   workDomain: 'personal' | 'work';
   switchDomain: (domain: 'personal' | 'work') => void;
@@ -111,7 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try { return JSON.parse(localStorage.getItem('lumi_tool_overrides') || '{}'); } catch { return {}; }
   });
 
-  // Enterprise state
+  // Org state
   const [orgConnection, setOrgConnection] = useState<OrgConnection | null>(() => {
     try { return JSON.parse(localStorage.getItem('lumi_org_connection') || 'null'); } catch { return null; }
   });

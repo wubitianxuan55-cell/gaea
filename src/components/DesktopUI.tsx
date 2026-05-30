@@ -61,9 +61,9 @@ import { ContextMenu } from './ContextMenu';
 import { DesktopOnboarding } from './DesktopOnboarding';
 import { DeviceSyncCenter } from './DeviceSyncCenter';
 import { AgentChatPage } from './AgentChatPage';
-import { EnterpriseHub } from './enterprise/EnterpriseHub';
-import { EnterprisePortal } from './EnterprisePortal';
-import { WorkModeSwitch } from './enterprise/WorkModeSwitch';
+import { OrgHub } from './org/OrgHub';
+import { OrgPortal } from './OrgPortal';
+import { WorkModeSwitch } from './org/WorkModeSwitch';
 import { Sanctuary } from './Sanctuary';
 import { MemoryAvatarLab } from './MemoryAvatarLab';
 import { AvatarStudio } from './AvatarStudio';
@@ -843,7 +843,7 @@ export function DesktopUI({
   const isOrgAdmin = orgConnection?.connected && (orgConnection.orgRole === 'owner' || orgConnection.orgRole === 'admin');
   const desktopIcons = [
     { id: 'kernel', labelKey: 'osKernel', icon: <Cpu size={24} />, colorClass: 'from-orange-600 to-red-500', windowId: 'kernel' },
-    { id: 'workbench', labelKey: 'enterpriseWorkbench', icon: <Briefcase size={24} />, colorClass: 'from-blue-500 to-indigo-600', windowId: 'enterprise' as const },
+    { id: 'workbench', labelKey: 'orgWorkbench', icon: <Briefcase size={24} />, colorClass: 'from-blue-500 to-indigo-600', windowId: 'org' as const },
     { id: 'tools', labelKey: 'tools', icon: <Wrench size={24} />, colorClass: 'from-amber-500 to-orange-600', windowId: 'tools' },
     { id: 'github-mcp', labelKey: 'githubMCP', icon: <Globe size={24} />, colorClass: 'from-purple-500 to-violet-600', windowId: 'github-mcp' },
     { id: 'devices', labelKey: 'deviceMesh', icon: <Wifi size={24} />, colorClass: 'from-cyan-500 to-blue-600', windowId: 'devices' },
@@ -958,12 +958,12 @@ export function DesktopUI({
     if (callError) toast.error(callError);
   }, [callError]);
 
-  // Listen for enterprise navigation events
+  // Listen for org navigation events
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.tab) {
-        // Anyone can open the enterprise tab — join/create/connect handled by EnterprisePortal
+        // Anyone can open the org tab — join/create/connect handled by OrgPortal
         setActiveTab(detail.tab);
       }
     };
@@ -1934,7 +1934,7 @@ export function DesktopUI({
                     key={def.id}
                     onDoubleClick={() => {
                       if (def.id === 'workbench') {
-                        setActiveTab('enterprise');
+                        setActiveTab('org');
                       } else {
                         toggleWindow(def.windowId);
                       }
@@ -2197,9 +2197,9 @@ export function DesktopUI({
         onClose={() => setChatOpen(false)}
       />
 
-      {/* Enterprise Workbench fullscreen overlay — available to all logged-in users */}
+      {/* Org Workbench fullscreen overlay — available to all logged-in users */}
       <AnimatePresence>
-        {activeTab === 'enterprise' && (
+        {activeTab === 'org' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -2207,7 +2207,7 @@ export function DesktopUI({
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-[220] bg-celestial-deep overflow-auto"
           >
-            <EnterprisePortal />
+            <OrgPortal />
           </motion.div>
         )}
       </AnimatePresence>

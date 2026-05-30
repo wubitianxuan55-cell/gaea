@@ -1,5 +1,5 @@
 // MCP Server + LAP + remote device setup
-// Shared between personal and enterprise servers
+// Shared between personal and org servers
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";

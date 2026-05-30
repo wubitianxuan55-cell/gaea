@@ -1,8 +1,8 @@
 /**
- * Enterprise Knowledge Base — CRUD, chunking, embedding, semantic search.
+ * Org Knowledge Base — CRUD, chunking, embedding, semantic search.
  *
  * Embeds articles using the cheapest available LLM provider and stores
- * embeddings as JSON arrays in enterprise_kb_embeddings. Search uses
+ * embeddings as JSON arrays in org_kb_embeddings. Search uses
  * in-memory cosine similarity (no vector DB dependency).
  */
 

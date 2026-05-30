@@ -1,7 +1,7 @@
 /**
- * Enterprise DB abstraction layer.
+ * Org DB abstraction layer.
  *
- * All enterprise data access goes through this module instead of touching
+ * All org data access goes through this module instead of touching
  * memoryDB.organizations etc. directly. This keeps the door open for a future
  * PostgreSQL migration — swap the implementation here, zero changes elsewhere.
  */
@@ -341,14 +341,14 @@ function generateCode(): string {
 // ── Knowledge Base ───────────────────────────────────────────────────────
 
 export function listKbArticles(orgId: string, filters?: { category?: string; status?: string }): KbArticle[] {
-  let articles = (entDB().enterpriseKbArticles || []).filter((a: KbArticle) => a.orgId === orgId);
+  let articles = (entDB().orgKbArticles || []).filter((a: KbArticle) => a.orgId === orgId);
   if (filters?.category) articles = articles.filter((a: KbArticle) => a.category === filters.category);
   if (filters?.status) articles = articles.filter((a: KbArticle) => a.status === filters.status);
   return articles;
 }
 
 export function getKbArticle(orgId: string, articleId: string): KbArticle | undefined {
-  return entDB().enterpriseKbArticles?.find(
+  return entDB().orgKbArticles?.find(
     (a: KbArticle) => a.orgId === orgId && a.id === articleId
   );
 }
@@ -372,15 +372,15 @@ export function createKbArticle(
     createdAt: now(),
     updatedAt: now(),
   };
-  if (!db.enterpriseKbArticles) db.enterpriseKbArticles = [];
-  db.enterpriseKbArticles.push(article);
+  if (!db.orgKbArticles) db.orgKbArticles = [];
+  db.orgKbArticles.push(article);
   entWrite();
   return article;
 }
 
 export function updateKbArticle(orgId: string, articleId: string, updates: Partial<Pick<KbArticle, 'title' | 'content' | 'category' | 'tags' | 'status'>>): KbArticle | null {
   const db = entDB();
-  const article = db.enterpriseKbArticles?.find(
+  const article = db.orgKbArticles?.find(
     (a: KbArticle) => a.orgId === orgId && a.id === articleId
   );
   if (!article) return null;
@@ -391,13 +391,13 @@ export function updateKbArticle(orgId: string, articleId: string, updates: Parti
 
 export function deleteKbArticle(orgId: string, articleId: string): boolean {
   const db = entDB();
-  const idx = db.enterpriseKbArticles?.findIndex(
+  const idx = db.orgKbArticles?.findIndex(
     (a: KbArticle) => a.orgId === orgId && a.id === articleId
   );
   if (idx === undefined || idx < 0) return false;
-  db.enterpriseKbArticles.splice(idx, 1);
+  db.orgKbArticles.splice(idx, 1);
   // Cascade: remove embeddings
-  db.enterpriseKbEmbeddings = (db.enterpriseKbEmbeddings || []).filter(
+  db.orgKbEmbeddings = (db.orgKbEmbeddings || []).filter(
     (e: KbEmbedding) => e.articleId !== articleId
   );
   entWrite();
@@ -417,25 +417,25 @@ export function saveKbEmbedding(articleId: string, chunkIndex: number, embedding
     modelName,
     createdAt: now(),
   };
-  if (!db.enterpriseKbEmbeddings) db.enterpriseKbEmbeddings = [];
-  db.enterpriseKbEmbeddings.push(emb);
+  if (!db.orgKbEmbeddings) db.orgKbEmbeddings = [];
+  db.orgKbEmbeddings.push(emb);
   entWrite();
   return emb;
 }
 
 export function getKbEmbeddings(articleId: string): KbEmbedding[] {
-  return (entDB().enterpriseKbEmbeddings || []).filter((e: KbEmbedding) => e.articleId === articleId);
+  return (entDB().orgKbEmbeddings || []).filter((e: KbEmbedding) => e.articleId === articleId);
 }
 
 export function getAllKbEmbeddings(orgId: string): KbEmbedding[] {
-  const articles = (entDB().enterpriseKbArticles || []).filter((a: KbArticle) => a.orgId === orgId);
+  const articles = (entDB().orgKbArticles || []).filter((a: KbArticle) => a.orgId === orgId);
   const articleIds = new Set(articles.map(a => a.id));
-  return (entDB().enterpriseKbEmbeddings || []).filter((e: KbEmbedding) => articleIds.has(e.articleId));
+  return (entDB().orgKbEmbeddings || []).filter((e: KbEmbedding) => articleIds.has(e.articleId));
 }
 
 export function deleteKbEmbeddings(articleId: string): void {
   const db = entDB();
-  db.enterpriseKbEmbeddings = (db.enterpriseKbEmbeddings || []).filter(
+  db.orgKbEmbeddings = (db.orgKbEmbeddings || []).filter(
     (e: KbEmbedding) => e.articleId !== articleId
   );
   entWrite();

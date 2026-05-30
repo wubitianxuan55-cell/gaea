@@ -26,33 +26,33 @@ interface NavItem {
   roles: Array<'owner' | 'admin' | 'member' | 'viewer'>;
 }
 
-export function EnterpriseHub() {
+export function OrgHub() {
   const [subView, setSubView] = useState<SubView>('dashboard');
   const { workDomain, switchDomain, orgConnection } = useApp();
   const t = useT();
 
   const allNavItems: NavItem[] = useMemo(() => [
-    { id: 'dashboard', label: t.enterpriseDashboard, icon: <Home size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
-    { id: 'chat', label: t.enterpriseChat, icon: <MessageSquare size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
-    { id: 'kb', label: t.enterpriseKB, icon: <BookOpen size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
-    { id: 'templates', label: t.enterpriseTemplates, icon: <Package size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
-    { id: 'review', label: t.enterpriseReview, icon: <ClipboardCheck size={16} />, roles: ['owner', 'admin'] },
-    { id: 'members', label: t.enterpriseMembers, icon: <Users size={16} />, roles: ['owner', 'admin'] },
-    { id: 'audit', label: t.enterpriseAudit, icon: <ScrollText size={16} />, roles: ['owner', 'admin'] },
-    { id: 'settings', label: t.enterpriseSettings, icon: <Settings size={16} />, roles: ['owner', 'admin'] },
+    { id: 'dashboard', label: t.orgDashboard, icon: <Home size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
+    { id: 'chat', label: t.orgChat, icon: <MessageSquare size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
+    { id: 'kb', label: t.orgKB, icon: <BookOpen size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
+    { id: 'templates', label: t.orgTemplates, icon: <Package size={16} />, roles: ['owner', 'admin', 'member', 'viewer'] },
+    { id: 'review', label: t.orgReview, icon: <ClipboardCheck size={16} />, roles: ['owner', 'admin'] },
+    { id: 'members', label: t.orgMembers, icon: <Users size={16} />, roles: ['owner', 'admin'] },
+    { id: 'audit', label: t.orgAudit, icon: <ScrollText size={16} />, roles: ['owner', 'admin'] },
+    { id: 'settings', label: t.orgSettings, icon: <Settings size={16} />, roles: ['owner', 'admin'] },
   ], [t]);
 
   const roleLabel: Record<string, { label: string; icon: React.ReactNode; color: string }> = useMemo(() => ({
-    owner:  { label: t.enterpriseRoleOwner,  icon: <Shield size={10} />, color: 'text-amber-400 bg-amber-500/10' },
-    admin:  { label: t.enterpriseRoleAdmin,  icon: <Shield size={10} />, color: 'text-red-400 bg-red-500/10' },
-    member: { label: t.enterpriseRoleMember, icon: <User size={10} />,   color: 'text-blue-400 bg-blue-500/10' },
-    viewer: { label: t.enterpriseRoleViewer, icon: <User size={10} />,   color: 'text-white/40 bg-white/5' },
+    owner:  { label: t.orgRoleOwner,  icon: <Shield size={10} />, color: 'text-amber-400 bg-amber-500/10' },
+    admin:  { label: t.orgRoleAdmin,  icon: <Shield size={10} />, color: 'text-red-400 bg-red-500/10' },
+    member: { label: t.orgRoleMember, icon: <User size={10} />,   color: 'text-blue-400 bg-blue-500/10' },
+    viewer: { label: t.orgRoleViewer, icon: <User size={10} />,   color: 'text-white/40 bg-white/5' },
   }), [t]);
 
   React.useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.tab === 'enterprise' && detail?.sub) {
+      if (detail?.tab === 'org' && detail?.sub) {
         setSubView(detail.sub as SubView);
       }
     };
@@ -87,7 +87,7 @@ export function EnterpriseHub() {
         <div className="p-4 border-b border-white/5 space-y-3">
           <h3 className="text-white text-sm font-bold flex items-center gap-2">
             <Building2 size={16} className="text-blue-400" />
-            {t.enterpriseWorkSpace}
+            {t.orgWorkSpace}
           </h3>
           {orgConnection?.orgName && (
             <p className="text-white/30 text-[10px]">{orgConnection.orgName}</p>
@@ -106,7 +106,7 @@ export function EnterpriseHub() {
             }`}
           >
             {workDomain === 'work' ? <Briefcase size={12} /> : <User size={12} />}
-            {workDomain === 'work' ? t.enterpriseWorkDomain : t.enterprisePersonalDomain}
+            {workDomain === 'work' ? t.orgWorkDomain : t.orgPersonalDomain}
           </button>
         </div>
 
@@ -131,7 +131,7 @@ export function EnterpriseHub() {
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white/60 hover:bg-white/5 transition-all"
           >
             <ArrowLeft size={16} />
-            {t.enterpriseExitWorkSpace}
+            {t.orgExitWorkSpace}
           </button>
         </nav>
       </div>

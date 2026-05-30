@@ -30,7 +30,7 @@ export function KnowledgeBaseBrowser() {
 
   const loadArticles = async () => {
     try {
-      const res = await fetch('/api/enterprise/kb/articles', { credentials: 'include' });
+      const res = await fetch('/api/org/kb/articles', { credentials: 'include' });
       if (res.ok) setArticles(await res.json());
     } catch {} finally { setLoading(false); }
   };
@@ -39,7 +39,7 @@ export function KnowledgeBaseBrowser() {
     if (!query.trim()) { setSearchResults([]); return; }
     setSearching(true);
     try {
-      const res = await fetch('/api/enterprise/kb/search', {
+      const res = await fetch('/api/org/kb/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, limit: 10 }),
@@ -68,12 +68,12 @@ export function KnowledgeBaseBrowser() {
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <BookOpen size={24} className="text-blue-400" />
-            {t.enterpriseKB}
+            {t.orgKB}
           </h2>
           <p className="text-white/40 text-sm">Company policies, SOPs, and documentation</p>
         </div>
         <Button
-          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'enterprise', sub: 'kb-edit' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumi:navigate', { detail: { tab: 'org', sub: 'kb-edit' } }))}
           className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm flex items-center gap-1"
         >
           <Plus size={14} /> New Article
