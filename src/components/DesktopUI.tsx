@@ -1528,8 +1528,6 @@ export function DesktopUI({
               </motion.div>
 
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setViewMode('personal')}
                 className="group px-10 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black text-white/60 tracking-[0.4em] uppercase transition-all backdrop-blur-2xl hover:text-white hover:border-white/20"
               >
@@ -1948,8 +1946,6 @@ export function DesktopUI({
                     animate={{ opacity: 1, scale: 1 }}
                     style={{ position: 'absolute', left: x, top: y }}
                     className="desktop-icon group cursor-pointer z-10"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(def.windowId); }}}
