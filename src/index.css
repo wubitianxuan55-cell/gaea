@@ -131,7 +131,7 @@
     overflow: hidden;
   }
 
-  /* ── Light Mode: accent & misc overrides (text/bg handled by dynamic style tag) ── */
+  /* ── Light Mode: accent remap (yellow→green) ── */
   [data-mode="light"] .text-celestial-saturn { color: #1a8040 !important; }
   [data-mode="light"] .bg-celestial-saturn { background-color: #1a8040 !important; }
   [data-mode="light"] .border-celestial-saturn\/20 { border-color: rgba(26,128,64,0.25) !important; }
@@ -140,14 +140,6 @@
   [data-mode="light"] .bg-celestial-saturn\/10 { background-color: rgba(26,128,64,0.12) !important; }
   [data-mode="light"] .bg-celestial-saturn\/20 { background-color: rgba(26,128,64,0.18) !important; }
   [data-mode="light"] .text-celestial-glow { color: #2ecc71 !important; }
-
-  /* dock bar */
-  [data-mode="light"] .bg-black\/70 { background-color: rgba(245,255,248,0.85) !important; }
-  [data-mode="light"] .bg-black\/50 { background-color: rgba(245,255,248,0.7) !important; }
-  /* vignette light */
-  [data-mode="light"] .shadow-\[inset_0_0_300px_rgba\(0\,0\,0\,1\)\] {
-    box-shadow: inset 0 0 300px rgba(0,60,20,0.12) !important;
-  }
 
   body::before {
     content: "";
@@ -505,3 +497,62 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LIGHT MODE — at very bottom so it beats Tailwind utility specificity
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Text: blanket override for ALL text-white/XX classes */
+html[data-mode="light"] [class*="text-white"] {
+  color: #1a2e1a !important;
+}
+/* Preserve colored text that uses text-white as a fallback */
+html[data-mode="light"] [class*="text-celestial"] { color: #1a8040 !important; }
+html[data-mode="light"] [class*="text-blue-"] { color: #2563eb !important; }
+html[data-mode="light"] [class*="text-green-"] { color: #16a34a !important; }
+html[data-mode="light"] [class*="text-red-"] { color: #dc2626 !important; }
+html[data-mode="light"] [class*="text-amber-"] { color: #d97706 !important; }
+html[data-mode="light"] [class*="text-emerald-"] { color: #059669 !important; }
+html[data-mode="light"] [class*="text-pink-"] { color: #db2777 !important; }
+html[data-mode="light"] [class*="text-purple-"] { color: #7c3aed !important; }
+html[data-mode="light"] [class*="text-violet-"] { color: #6d28d9 !important; }
+html[data-mode="light"] [class*="text-cyan-"] { color: #0891b2 !important; }
+html[data-mode="light"] [class*="text-sky-"] { color: #0284c7 !important; }
+html[data-mode="light"] [class*="text-orange-"] { color: #ea580c !important; }
+html[data-mode="light"] [class*="text-yellow-"] { color: #a16207 !important; }
+html[data-mode="light"] [class*="text-fuchsia-"] { color: #c026d3 !important; }
+html[data-mode="light"] [class*="text-indigo-"] { color: #4338ca !important; }
+html[data-mode="light"] [class*="text-teal-"] { color: #0d9488 !important; }
+
+/* Backdrop & surfaces */
+html[data-mode="light"] [class*="bg-black"] {
+  background-color: rgba(255,255,255,0.75) !important;
+}
+html[data-mode="light"] [class*="bg-white\\/5"] { background-color: rgba(0,60,20,0.04) !important; }
+html[data-mode="light"] [class*="bg-white\\/10"] { background-color: rgba(0,60,20,0.06) !important; }
+
+/* Borders */
+html[data-mode="light"] [class*="border-white\\/5"],
+html[data-mode="light"] [class*="border-white\\/10"] {
+  border-color: rgba(20,100,40,0.12) !important;
+}
+
+/* Glass panels */
+html[data-mode="light"] .glass-dark {
+  background-color: rgba(255,255,255,0.7) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html[data-mode="light"] .glass {
+  background-color: rgba(255,255,255,0.6) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.08) !important;
+}
+
+/* Subtle black elements that should stay dark */
+html[data-mode="light"] .bg-black,
+html[data-mode="light"] [class*="bg-black\\/70"],
+html[data-mode="light"] [class*="bg-black\\/80"],
+html[data-mode="light"] [class*="bg-black\\/90"] {
+  background-color: rgba(245,255,248,0.85) !important;
+}
+

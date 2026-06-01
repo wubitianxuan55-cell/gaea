@@ -27,6 +27,7 @@ export function LocalAgentSphere({
   facePresent = false,
   gesturesDisabled = false,
   diffused = false,
+  isLightMode = false,
 }: {
   t: any;
   onMessage?: (text: string) => void;
@@ -50,6 +51,7 @@ export function LocalAgentSphere({
   facePresent?: boolean;
   gesturesDisabled?: boolean;
   diffused?: boolean;
+  isLightMode?: boolean;
 }) {
   const [interactionPulse, setInteractionPulse] = useState(0);
   const [reactionColor, setReactionColor] = useState('rgba(255,200,80,0.2)');
@@ -85,6 +87,8 @@ export function LocalAgentSphere({
   const sentimentRef = useRef(sentiment);
   const audioLevelRef = useRef(audioLevel);
   const highPerfRef = useRef(highPerformance);
+  const lightModeRef = useRef(isLightMode);
+  useEffect(() => { lightModeRef.current = isLightMode; }, [isLightMode]);
 
   useEffect(() => { opennessRef.current = handOpenness; }, [handOpenness]);
   useEffect(() => { fingerDirRef.current = handPosition; }, [handPosition]);
@@ -185,13 +189,21 @@ export function LocalAgentSphere({
       const x = this.x * perspective + cx;
       const y = this.y * perspective + cy;
       const size = this.size * perspective;
+      const lm = lightModeRef.current;
       if (this.color === '#000000') {
         ctx.globalAlpha = 1;
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeStyle = lm ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)';
         ctx.lineWidth = 0.5;
         ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.stroke();
       } else {
-        ctx.fillStyle = this.color;
+        let c = this.color;
+        if (lm) {
+          if (c === '#ffffff') c = '#1a2a1a';
+          else if (c === '#ff4d4d') c = '#8b1a1a';
+          else if (c === '#ffcc00') c = '#1a8040';
+          else if (c.startsWith('hsl')) c = '#142c1c';
+        }
+        ctx.fillStyle = c;
         ctx.globalAlpha = Math.max(0.1, perspective - 0.4);
         ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
         if (isDispersed && this.type === 'signal') {

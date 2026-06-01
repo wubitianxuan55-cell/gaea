@@ -841,40 +841,6 @@ export function DesktopUI({
 
   const [theme, setTheme] = useState<string>('celestial');
   const [isLightMode, setIsLightMode] = useState(false);
-  // Inject high-priority light-mode style overrides that beat Tailwind utility specificity
-  useEffect(() => {
-    const id = 'lumi-light-mode-style';
-    let el = document.getElementById(id) as HTMLStyleElement | null;
-    if (!el) {
-      el = document.createElement('style');
-      el.id = id;
-      document.head.appendChild(el);
-    }
-    if (isLightMode) {
-      el.textContent = `
-        html[data-mode="light"] body{color:#142c1c!important}
-        html[data-mode="light"] [class*="text-white"]{color:#142c1c!important}
-        html[data-mode="light"] [class*="bg-black"][class*="\\/40"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/50"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/60"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/70"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/80"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/90"]{background-color:rgba(240,255,244,.75)!important}
-        html[data-mode="light"] [class*="bg-black"][class*="\\/20"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/30"]{background-color:rgba(240,255,244,.65)!important}
-        html[data-mode="light"] [class*="bg-black"][class*="\\/5"],
-        html[data-mode="light"] [class*="bg-black"][class*="\\/10"]{background-color:rgba(0,60,20,.04)!important}
-        html[data-mode="light"] [class*="bg-white\\/5"]{background-color:rgba(0,60,20,.04)!important}
-        html[data-mode="light"] [class*="bg-white\\/10"]{background-color:rgba(0,60,20,.06)!important}
-        html[data-mode="light"] [class*="border-white\\/5"],
-        html[data-mode="light"] [class*="border-white\\/10"]{border-color:rgba(20,100,40,.12)!important}
-        html[data-mode="light"] [class*="bg-black\\/70"]{background-color:rgba(245,255,248,.85)!important}
-        html[data-mode="light"] [class*="bg-black\\/50"]{background-color:rgba(245,255,248,.7)!important}
-      `;
-    } else {
-      el.textContent = '';
-    }
-  }, [isLightMode]);
   useEffect(() => {
     document.documentElement.setAttribute('data-mode', isLightMode ? 'light' : 'dark');
   }, [isLightMode]);
@@ -1865,13 +1831,6 @@ export function DesktopUI({
         className={`absolute inset-0 z-[15] flex flex-col ${viewMode === 'world' ? 'pointer-events-none' : ''}`}
       >
         <div className="relative w-full h-full pointer-events-auto">
-          {/* Soft dark backdrop for sphere contrast in light mode */}
-          {isLightMode && (
-            <div
-              className="absolute inset-0 z-[14] pointer-events-none"
-              style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 40%, transparent 70%)' }}
-            />
-          )}
           {/* Central Interactive Entity */}
           <div className="absolute inset-0 flex items-center justify-center z-[15] pointer-events-none">
         <motion.div 
@@ -1952,6 +1911,7 @@ export function DesktopUI({
                 facePresent={facePresent}
                 gesturesDisabled={false}
                 diffused={diffused}
+                isLightMode={isLightMode}
               />
               {wakeWord.isListening && callState === 'idle' && (
                 <div className="mt-2 text-[10px] text-white/20 uppercase tracking-[0.25em] font-mono">
