@@ -1526,6 +1526,19 @@ export function DesktopUI({
                   </motion.div>
                 )}
                 {/* Other themes ... */}
+                {/* Light mode wallpaper — white-green gradient */}
+                {isLightMode && (
+                  <motion.div
+                    key="light-wp"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 1 }}
+                    className="absolute inset-0"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#f0fdf4] via-[#ecfdf5] to-[#dcfce7]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(34,197,94,0.06)_0%,transparent_60%),radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.04)_0%,transparent_60%)]" />
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(34,197,94,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,197,94,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </motion.div>
