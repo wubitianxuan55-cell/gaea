@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bell, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle, Zap, MessageSquare } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useT } from '../lib/useT';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 const ICONS: Record<string, React.ReactNode> = {
   info: <Info size={14} className="text-blue-400" />,
@@ -12,19 +12,17 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 export function NotificationCenter({ onChatMessage }: { onChatMessage?: (message: string) => void }) {
-  const { notifications, unreadCount, markAllNotificationsRead, clearNotifications } = useApp();
+  const { notifications, markAllNotificationsRead, clearNotifications } = useApp();
   const t = useT();
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const sessionStart = useRef(Date.now());
 
   const handleClick = (item: any) => {
     setDismissedIds(prev => new Set([...prev, item.id]));
     onChatMessage?.(item.message);
   };
 
-  // Filter: only show in-memory notifications from this session, excluding dismissed
+  // Filter: show all in-memory notifications, excluding dismissed
   const visibleItems = notifications
-    .filter(n => n.timestamp > sessionStart.current)
     .filter(n => !dismissedIds.has(n.id))
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
@@ -33,16 +31,16 @@ export function NotificationCenter({ onChatMessage }: { onChatMessage?: (message
       <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5">
         <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center relative">
           <Bell size={20} className="text-amber-400" />
-          {unreadCount > 0 && (
+          {visibleItems.filter(n => !n.read).length > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[8px] font-black flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {visibleItems.filter(n => !n.read).length > 9 ? '9+' : visibleItems.filter(n => !n.read).length}
             </span>
           )}
         </div>
         <div>
           <h2 className="text-sm font-bold text-white/90">{t.ncTitle || 'Notification Center'}</h2>
           <p className="text-[10px] text-white/30">
-            {unreadCount > 0 ? unreadCount + ' ' + (t.unreadCount || 'unread') : (t.allCaughtUp || 'All caught up')}
+            {visibleItems.length > 0 ? visibleItems.filter(n => !n.read).length + ' ' + (t.unreadCount || 'unread') : (t.allCaughtUp || 'All caught up')}
           </p>
         </div>
         <div className="flex-1" />
