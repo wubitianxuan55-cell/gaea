@@ -32,7 +32,7 @@ export function WeChatSettings({ t }: { t?: any }) {
         const qrId = data.qrcode_id || data.qrcode;
         setQrId(qrId);
         // Use Google Charts API or qrserver to generate the QR image
-        setQrCode(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrcode_img_content || `https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3&qrcode=${qrId}`)}`);
+        setQrCode(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrcode_img_content)}`);
         setStep('show_qr');
         if (qrId) startPolling(qrId);
       } else {
