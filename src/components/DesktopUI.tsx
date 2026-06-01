@@ -852,30 +852,24 @@ export function DesktopUI({
     }
     if (isLightMode) {
       el.textContent = `
-        html[data-mode="light"] body { color: #142c1c !important; }
-        html[data-mode="light"] .text-white\\/90, html[data-mode="light"] .text-white\\/80, html[data-mode="light"] .text-white\\/70,
-        html[data-mode="light"] .text-white\\/60, html[data-mode="light"] .text-white\\/50, html[data-mode="light"] .text-white\\/40,
-        html[data-mode="light"] .text-white\\/30, html[data-mode="light"] .text-white\\/20, html[data-mode="light"] .text-white\\/10,
-        html[data-mode="light"] .text-white\\/15 { color: rgba(20,44,28,0.78) !important; }
-        html[data-mode="light"] .text-white { color: #142c1c !important; }
-        html[data-mode="light"] .text-white\\/70 { color: rgba(20,44,28,0.72) !important; }
-        html[data-mode="light"] .text-white\\/80 { color: rgba(20,44,28,0.82) !important; }
-        html[data-mode="light"] .text-white\\/40 { color: rgba(20,44,28,0.45) !important; }
-        html[data-mode="light"] .text-white\\/30 { color: rgba(20,44,28,0.35) !important; }
-        html[data-mode="light"] .text-white\\/20 { color: rgba(20,44,28,0.24) !important; }
-        html[data-mode="light"] .text-white\\/10 { color: rgba(20,44,28,0.14) !important; }
-        html[data-mode="light"] .text-white\\/15 { color: rgba(20,44,28,0.18) !important; }
-        html[data-mode="light"] .bg-black\\/40, html[data-mode="light"] .bg-black\\/50,
-        html[data-mode="light"] .bg-black\\/60, html[data-mode="light"] .bg-black\\/70,
-        html[data-mode="light"] .bg-black\\/80, html[data-mode="light"] .bg-black\\/90 { background-color: rgba(240,255,244,0.75) !important; }
-        html[data-mode="light"] .bg-black\\/20, html[data-mode="light"] .bg-black\\/30 { background-color: rgba(240,255,244,0.65) !important; }
-        html[data-mode="light"] .bg-black\\/5, html[data-mode="light"] .bg-black\\/10 { background-color: rgba(0,60,20,0.04) !important; }
-        html[data-mode="light"] .bg-white\\/5 { background-color: rgba(0,60,20,0.04) !important; }
-        html[data-mode="light"] .bg-white\\/10 { background-color: rgba(0,60,20,0.06) !important; }
-        html[data-mode="light"] .bg-white\\/\\[0\\.02\\], html[data-mode="light"] .bg-white\\/\\[0\\.03\\] { background-color: rgba(0,60,20,0.02) !important; }
-        html[data-mode="light"] .border-white\\/5, html[data-mode="light"] .border-white\\/10 { border-color: rgba(20,100,40,0.12) !important; }
-        html[data-mode="light"] .bg-black\\/70 { background-color: rgba(245,255,248,0.85) !important; }
-        html[data-mode="light"] .bg-black\\/50 { background-color: rgba(245,255,248,0.7) !important; }
+        html[data-mode="light"] body{color:#142c1c!important}
+        html[data-mode="light"] [class*="text-white"]{color:#142c1c!important}
+        html[data-mode="light"] [class*="bg-black"][class*="\\/40"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/50"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/60"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/70"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/80"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/90"]{background-color:rgba(240,255,244,.75)!important}
+        html[data-mode="light"] [class*="bg-black"][class*="\\/20"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/30"]{background-color:rgba(240,255,244,.65)!important}
+        html[data-mode="light"] [class*="bg-black"][class*="\\/5"],
+        html[data-mode="light"] [class*="bg-black"][class*="\\/10"]{background-color:rgba(0,60,20,.04)!important}
+        html[data-mode="light"] [class*="bg-white\\/5"]{background-color:rgba(0,60,20,.04)!important}
+        html[data-mode="light"] [class*="bg-white\\/10"]{background-color:rgba(0,60,20,.06)!important}
+        html[data-mode="light"] [class*="border-white\\/5"],
+        html[data-mode="light"] [class*="border-white\\/10"]{border-color:rgba(20,100,40,.12)!important}
+        html[data-mode="light"] [class*="bg-black\\/70"]{background-color:rgba(245,255,248,.85)!important}
+        html[data-mode="light"] [class*="bg-black\\/50"]{background-color:rgba(245,255,248,.7)!important}
       `;
     } else {
       el.textContent = '';
@@ -1871,11 +1865,12 @@ export function DesktopUI({
         className={`absolute inset-0 z-[15] flex flex-col ${viewMode === 'world' ? 'pointer-events-none' : ''}`}
       >
         <div className="relative w-full h-full pointer-events-auto">
-          {/* Dark backdrop circle for sphere visibility in light mode */}
+          {/* Soft dark backdrop for sphere contrast in light mode */}
           {isLightMode && (
-            <div className="absolute inset-0 flex items-center justify-center z-[14] pointer-events-none">
-              <div className="w-64 h-64 rounded-full bg-black/15 backdrop-blur-sm" />
-            </div>
+            <div
+              className="absolute inset-0 z-[14] pointer-events-none"
+              style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 40%, transparent 70%)' }}
+            />
           )}
           {/* Central Interactive Entity */}
           <div className="absolute inset-0 flex items-center justify-center z-[15] pointer-events-none">

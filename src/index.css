@@ -131,54 +131,7 @@
     overflow: hidden;
   }
 
-  /* ── Light Mode Global Overrides ── */
-
-  /* Strategy: swap background + invert "white" textual elements via CSS vars */
-  [data-mode="light"] {
-    /* Override the Tailwind white fallback — all opacity stops map to dark green */
-    --tw-text-opacity: 1;
-  }
-
-  [data-mode="light"] body {
-    color: #142c1c !important;
-  }
-
-  /* All white-to-text: catch every Tailwind `text-white/XX` by targeting the RGB */
-  [data-mode="light"] * {
-    --lumi-text-r: 20;
-    --lumi-text-g: 44;
-    --lumi-text-b: 28;
-  }
-
-  /* ── wallpaper / backdrop ── */
-  [data-mode="light"] .bg-black\/40,
-  [data-mode="light"] .bg-black\/50,
-  [data-mode="light"] .bg-black\/60,
-  [data-mode="light"] .bg-black\/70,
-  [data-mode="light"] .bg-black\/80,
-  [data-mode="light"] .bg-black\/90 {
-    background-color: rgba(240, 255, 244, 0.75) !important;
-  }
-  [data-mode="light"] .bg-black\/20,
-  [data-mode="light"] .bg-black\/30 {
-    background-color: rgba(240, 255, 244, 0.65) !important;
-  }
-  [data-mode="light"] .bg-black\/5,
-  [data-mode="light"] .bg-black\/10 {
-    background-color: rgba(0, 60, 20, 0.04) !important;
-  }
-  [data-mode="light"] .bg-white\/5 {
-    background-color: rgba(0, 60, 20, 0.04) !important;
-  }
-  [data-mode="light"] .bg-white\/10 {
-    background-color: rgba(0, 60, 20, 0.06) !important;
-  }
-  [data-mode="light"] .border-white\/5,
-  [data-mode="light"] .border-white\/10 {
-    border-color: rgba(20, 100, 40, 0.12) !important;
-  }
-
-  /* ── green accent remap ── */
+  /* ── Light Mode: accent & misc overrides (text/bg handled by dynamic style tag) ── */
   [data-mode="light"] .text-celestial-saturn { color: #1a8040 !important; }
   [data-mode="light"] .bg-celestial-saturn { background-color: #1a8040 !important; }
   [data-mode="light"] .border-celestial-saturn\/20 { border-color: rgba(26,128,64,0.25) !important; }
