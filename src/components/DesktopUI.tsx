@@ -852,6 +852,10 @@ export function DesktopUI({
   const [volume, setVolume] = useState(60);
   const [time, setTime] = useState(new Date());
   const [isWallpaperMode, setIsWallpaperMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('lumi_icon_positions') || '{}'); } catch { return {}; }
+  });
   const [wallpaper, setWallpaper] = useState<string>(() => localStorage.getItem('lumi_wallpaper_type') || 'celestial');
   const [wallpaperUrl, setWallpaperUrl] = useState<string>(() => localStorage.getItem('lumi_wallpaper_url') || '');
   const wallpaperInputRef = React.useRef<HTMLInputElement>(null);
@@ -1636,8 +1640,12 @@ export function DesktopUI({
                 <button onClick={onExit} className="w-full text-left px-4 py-2 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-white/10 transition-colors">{t.exit || 'Exit'}</button>
               </TopMenuButton>
               <TopMenuButton label={t.edit || 'Edit'}>
-                <button onClick={() => { toggleWindow('settings'); setSettingsSection('personalization'); }} className="w-full text-left px-4 py-2 text-[11px] text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.desktopCustomize || 'Desktop'}</button>
-                <button onClick={() => { toggleWindow('settings'); setSettingsSection('general'); }} className="w-full text-left px-4 py-2 text-[11px] text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.language || 'Language'}</button>
+                <button onClick={() => {
+                  setEditMode(!editMode);
+                }} className="w-full text-left px-4 py-2 text-[11px] text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                  {editMode ? (t.doneEditing || 'Done Editing') : (t.editDesktop || 'Edit Desktop')}
+                </button>
+                <button onClick={() => { toggleWindow('settings'); setSettingsSection('personalization'); }} className="w-full text-left px-4 py-2 text-[11px] text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.theme || 'Theme'}</button>
               </TopMenuButton>
               <TopMenuButton label={t.kernel || 'Kernel'} onClick={() => toggleWindow('kernel')} />
               <TopMenuButton label={t.view || 'View'} onClick={() => setViewMode(viewMode === 'personal' ? 'world' : 'personal')} />
@@ -2001,38 +2009,59 @@ export function DesktopUI({
         <div className="flex flex-col xl:flex-row justify-between items-start gap-12">
             <div className="relative flex-1 w-full min-h-[400px]" style={{ margin: 0, padding: 0 }}>
               {desktopIcons.map((def, i) => {
-                const x = 40 + (i % 4) * 130;
-                const y = 0 + Math.floor(i / 4) * 120;
+                const defaultX = 40 + (i % 4) * 130;
+                const defaultY = 0 + Math.floor(i / 4) * 120;
+                const saved = iconPositions[def.id];
+                const x = saved?.x ?? defaultX;
+                const y = saved?.y ?? defaultY;
                 const label = (t as any)[def.labelKey] || def.labelKey;
+                const handleClick = () => {
+                  if (editMode) return;
+                  if (def.id === 'workbench') setActiveTab('org');
+                  else toggleWindow(def.windowId);
+                };
                 return (
                   <motion.div
                     key={def.id}
-                    onDoubleClick={() => {
-                      if (def.id === 'workbench') {
-                        setActiveTab('org');
-                      } else {
-                        toggleWindow(def.windowId);
-                      }
+                    drag={editMode}
+                    dragMomentum={false}
+                    dragElastic={0.1}
+                    onDoubleClick={handleClick}
+                    onClick={handleClick}
+                    onDragEnd={(_e, info) => {
+                      const nx = defaultX + info.offset.x;
+                      const ny = defaultY + info.offset.y;
+                      const newPos = { ...iconPositions, [def.id]: { x: nx, y: ny } };
+                      setIconPositions(newPos);
+                      localStorage.setItem('lumi_icon_positions', JSON.stringify(newPos));
                     }}
                     onContextMenu={(e: React.MouseEvent) => {
+                      if (editMode) return;
                       e.preventDefault();
                       e.stopPropagation();
                       showContextMenu(e.clientX, e.clientY, { type: 'icon', targetId: def.id });
                     }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={editMode ? false : { opacity: 0, scale: 0.8 }}
+                    animate={editMode ? { opacity: 1 } : { opacity: 1, scale: 1 }}
                     style={{ position: 'absolute', left: x, top: y }}
-                    className="desktop-icon group cursor-pointer z-10"
+                    className={`desktop-icon group z-10 select-none ${
+                      editMode
+                        ? 'cursor-grab active:cursor-grabbing ring-2 ring-celestial-saturn/50 rounded-xl p-1'
+                        : 'cursor-pointer'
+                    }`}
                     role="button"
-                    tabIndex={0}
-                    onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(def.windowId); }}}
+                    tabIndex={editMode ? -1 : 0}
+                    onKeyDown={(e: React.KeyboardEvent) => {
+                      if (editMode) return;
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(def.windowId); }
+                    }}
                   >
-                    <div className={`desktop-icon-img bg-gradient-to-br ${def.colorClass} shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)]`}>
-                      <div className="text-white group-hover:rotate-12 transition-transform">
+                    <div className={`desktop-icon-img bg-gradient-to-br ${def.colorClass} shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] ${editMode ? 'scale-105' : ''}`}>
+                      <div className={`text-white ${editMode ? '' : 'group-hover:rotate-12'} transition-transform`}>
                         {def.icon}
                       </div>
                     </div>
-                    <span className="desktop-icon-label">{label}</span>
+                    <span className={`desktop-icon-label ${editMode ? 'bg-black/80 text-white px-2 py-0.5 rounded-full text-[8px]' : ''}`}>{label}</span>
                   </motion.div>
                 );
               })}
