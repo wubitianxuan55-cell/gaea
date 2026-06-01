@@ -90,8 +90,9 @@ export function createWeChatRoutes(
     }
   });
 
-  // Auto-start polling if already configured
+  // Auto-start polling if already configured (survives restarts)
   if (config?.botToken && config?.botId) {
+    console.log('[WeChat] Already logged in — starting poll loop');
     startWeChatPolling(adapter, config, options);
   }
 

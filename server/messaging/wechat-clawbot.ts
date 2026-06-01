@@ -111,56 +111,66 @@ export class WeChatClawBotAdapter implements MessageAdapter {
     this.onMessage = onMessage;
     if (this.pollingTimer) return;
 
+    const running = { value: true };
+    this.pollingTimer = running as any;
+
     const poll = async () => {
-      try {
-        const uin = crypto.randomInt(0, 4294967295).toString();
-        const uinB64 = Buffer.from(uin).toString('base64');
+      while (running.value) {
+        try {
+          const uin = crypto.randomInt(0, 4294967295).toString();
+          const uinB64 = Buffer.from(uin).toString('base64');
 
-        const body: any = {};
-        if (this.cursor) body.get_updates_buf = this.cursor;
+          const body: any = {};
+          if (this.cursor) body.get_updates_buf = this.cursor;
 
-        const res = await fetch(`${this.config.baseUrl || 'https://ilinkai.weixin.qq.com'}/ilink/bot/getupdates`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'AuthorizationType': 'ilink_bot_token',
-            'X-WECHAT-UIN': uinB64,
-            'Authorization': `Bearer ${this.config.botToken}`,
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(40_000), // 35s hold + 5s margin
-        });
+          const res = await fetch(`${this.config.baseUrl || 'https://ilinkai.weixin.qq.com'}/ilink/bot/getupdates`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'AuthorizationType': 'ilink_bot_token',
+              'X-WECHAT-UIN': uinB64,
+              'Authorization': `Bearer ${this.config.botToken}`,
+            },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(40_000),
+          });
 
-        const data: GetUpdatesResponse = await res.json();
-        if (data.get_updates_buf) this.cursor = data.get_updates_buf;
+          const data: GetUpdatesResponse = await res.json();
+          console.log('[WeChat] Poll response — ok:', data.ok, 'messages:', data.messages?.length || 0, 'buf:', data.get_updates_buf?.slice(0, 20));
+          if (data.get_updates_buf) this.cursor = data.get_updates_buf;
 
-        if (data.messages && data.messages.length > 0) {
-          for (const msg of data.messages) {
-            const parsed = this.parseEvent(msg);
-            if (parsed && this.onMessage) {
-              const reply = await this.onMessage(parsed);
-              if (reply) await this.sendMessage(parsed.userId, reply);
+          if (data.messages && data.messages.length > 0) {
+            for (const msg of data.messages) {
+              const parsed = this.parseEvent(msg);
+              console.log('[WeChat] Message from:', parsed?.userId, 'type:', msg.message_type, 'text:', parsed?.text?.slice(0, 50));
+              if (parsed && this.onMessage) {
+                const reply = await this.onMessage(parsed).catch(() => null);
+                if (reply) {
+                  // Must carry the context_token from the inbound message to the outbound reply
+                  (reply as any).context_token = (parsed.raw as any)?.context_token || msg.context_token || '';
+                  await this.sendMessage(parsed.userId, reply).catch(e => console.error('[WeChat] Send error:', e));
+                }
+              }
             }
           }
-        }
-      } catch (err: any) {
-        // Long-poll timeout (AbortError) is expected — restart immediately
-        if (err.name !== 'AbortError' && err.name !== 'TimeoutError') {
+        } catch (err: any) {
+          if (err.name === 'AbortError' || err.name === 'TimeoutError') {
+            // Expected on long-poll timeout — reconnect immediately
+            continue;
+          }
           console.error('[WeChat] Poll error:', err.message);
-          // Brief backoff on unexpected errors
           await new Promise(r => setTimeout(r, 3000));
         }
       }
     };
 
-    this.pollingTimer = setInterval(() => poll(), 100); // fire every 100ms; poll() blocks internally
-    poll(); // fire first one immediately
+    poll(); // start the loop
   }
 
   /** Stop long-polling loop */
   stopPolling(): void {
     if (this.pollingTimer) {
-      clearInterval(this.pollingTimer);
+      (this.pollingTimer as any).value = false;
       this.pollingTimer = null;
     }
   }
