@@ -104,32 +104,43 @@ export class WeChatClawBotAdapter implements MessageAdapter {
     };
   }
 
-  // ── Activation: must send typing before WeChat routes messages ──
+  // ── Activation ──
+
+  private makeHeaders(): Record<string, string> {
+    // X-WECHAT-UIN must be base64 of a 32-bit unsigned integer, not a string
+    const uin = crypto.randomInt(1, 4294967295);
+    const buf = Buffer.alloc(4);
+    buf.writeUInt32BE(uin, 0);
+    const uinB64 = buf.toString('base64');
+    return {
+      'Content-Type': 'application/json',
+      'AuthorizationType': 'ilink_bot_token',
+      'X-WECHAT-UIN': uinB64,
+      'Authorization': `Bearer ${this.config.botToken}`,
+    };
+  }
 
   private async activate(): Promise<void> {
     try {
-      const uin = crypto.randomInt(0, 4294967295).toString();
-      const uinB64 = Buffer.from(uin).toString('base64');
-      const headers = {
-        'Content-Type': 'application/json',
-        'AuthorizationType': 'ilink_bot_token',
-        'X-WECHAT-UIN': uinB64,
-        'Authorization': `Bearer ${this.config.botToken}`,
-      };
       const base = this.config.baseUrl || 'https://ilinkai.weixin.qq.com';
 
-      // Step 1: getconfig → typing_ticket
-      const cfgRes = await fetch(`${base}/ilink/bot/getconfig`, { method: 'POST', headers, body: '{}' });
-      const cfg: any = await cfgRes.json();
-      const ticket = cfg?.typing_ticket || '';
+      const cfgRes = await fetch(`${base}/ilink/bot/getconfig`, { method: 'POST', headers: this.makeHeaders(), body: '{}' });
+      const cfgText = await cfgRes.text();
+      console.log('[WeChat] getconfig raw:', cfgText.slice(0, 200));
+      let cfg: any = {};
+      try { cfg = JSON.parse(cfgText); } catch {}
+      const ticket = cfg?.typing_ticket || cfg?.ticket || '';
       console.log('[WeChat] getconfig — ticket:', ticket ? `${ticket.slice(0, 6)}...` : 'none');
 
-      // Step 2: sendtyping with ticket → signals WeChat that we are online
-      const typingBody = { ticket, to_user_id: this.config.botId };
-      await fetch(`${base}/ilink/bot/sendtyping`, { method: 'POST', headers, body: JSON.stringify(typingBody) });
-      console.log('[WeChat] sendtyping sent — activation complete');
+      if (ticket) {
+        await fetch(`${base}/ilink/bot/sendtyping`, {
+          method: 'POST', headers: this.makeHeaders(),
+          body: JSON.stringify({ ticket, to_user_id: this.config.botId }),
+        });
+        console.log('[WeChat] sendtyping ok');
+      }
     } catch (err: any) {
-      console.warn('[WeChat] Activation warning:', err.message);
+      console.warn('[WeChat] Activation:', err.message);
     }
   }
 
@@ -149,20 +160,12 @@ export class WeChatClawBotAdapter implements MessageAdapter {
     const poll = async () => {
       while (running.value) {
         try {
-          const uin = crypto.randomInt(0, 4294967295).toString();
-          const uinB64 = Buffer.from(uin).toString('base64');
-
           const body: any = {};
           if (this.cursor) body.get_updates_buf = this.cursor;
 
           const res = await fetch(`${this.config.baseUrl || 'https://ilinkai.weixin.qq.com'}/ilink/bot/getupdates`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'AuthorizationType': 'ilink_bot_token',
-              'X-WECHAT-UIN': uinB64,
-              'Authorization': `Bearer ${this.config.botToken}`,
-            },
+            headers: this.makeHeaders(),
             body: JSON.stringify(body),
             signal: AbortSignal.timeout(40_000),
           });
@@ -232,11 +235,7 @@ export class WeChatClawBotAdapter implements MessageAdapter {
   // ── Send Message ──
 
   async sendMessage(toUser: string, message: OutgoingMessage): Promise<string> {
-    // toUser is the user_id from the incoming message (e.g. xxx@im.wechat)
     const contextToken = (message as any).context_token || '';
-
-    const uin = crypto.randomInt(0, 4294967295).toString();
-    const uinB64 = Buffer.from(uin).toString('base64');
 
     const body: any = {
       to_user_id: toUser,
@@ -248,12 +247,7 @@ export class WeChatClawBotAdapter implements MessageAdapter {
     const url = `${this.config.baseUrl || 'https://ilinkai.weixin.qq.com'}/ilink/bot/sendmessage`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'AuthorizationType': 'ilink_bot_token',
-        'X-WECHAT-UIN': uinB64,
-        'Authorization': `Bearer ${this.config.botToken}`,
-      },
+      headers: this.makeHeaders(),
       body: JSON.stringify(body),
     });
 
