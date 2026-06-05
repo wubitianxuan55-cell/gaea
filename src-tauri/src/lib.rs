@@ -394,21 +394,39 @@ fn minimize_window(window: tauri::WebviewWindow) -> Result<(), String> {
 
 #[tauri::command]
 fn toggle_maximize_window(window: tauri::WebviewWindow) -> Result<(), String> {
-    // On macOS with decorations: false, native maximize() is broken.
-    // Use primary monitor dimensions to manually maximize/unmaximize.
-    let is_max = window.is_maximized().unwrap_or(false);
-    if is_max {
-        window.unmaximize().map_err(|e| e.to_string())
-    } else {
-        match window.primary_monitor() {
-            Ok(Some(monitor)) => {
-                let size = monitor.size();
-                let pos = monitor.position();
-                let _ = window.set_position(tauri::PhysicalPosition::new(pos.x, pos.y));
-                let _ = window.set_size(tauri::PhysicalSize::new(size.width, size.height));
-                Ok(())
+    #[cfg(target_os = "macos")]
+    {
+        // NSWindowWithDecorations:false → native maximize/unmaximize broken.
+        // Detect fill state by comparing window size to monitor size.
+        let is_filling = match window.primary_monitor() {
+            Ok(Some(m)) => {
+                let ws = window.outer_size().unwrap_or(tauri::PhysicalSize::new(0, 0));
+                ws.width >= m.size().width.saturating_sub(80)
+                    && ws.height >= m.size().height.saturating_sub(80)
             }
-            _ => window.maximize().map_err(|e| e.to_string()),
+            _ => false,
+        };
+        if is_filling {
+            let _ = window.center();
+            return window
+                .set_size(tauri::PhysicalSize::new(1280, 820))
+                .map_err(|e| e.to_string());
+        }
+        if let Ok(Some(m)) = window.primary_monitor() {
+            let _ = window.set_position(tauri::PhysicalPosition::new(m.position().x, m.position().y));
+            return window
+                .set_size(tauri::PhysicalSize::new(m.size().width, m.size().height))
+                .map_err(|e| e.to_string());
+        }
+        return Err("no monitor".into());
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let is_max = window.is_maximized().unwrap_or(false);
+        if is_max {
+            window.unmaximize().map_err(|e| e.to_string())
+        } else {
+            window.maximize().map_err(|e| e.to_string())
         }
     }
 }
@@ -1117,11 +1135,20 @@ pub fn run() {
                 .resource_dir()
                 .unwrap_or_default();
 
-            // Center window on primary monitor, then maximize
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.center();
-                // Use maximize() instead of native fullscreen — works on macOS borderless
-                let _ = window.maximize();
+                #[cfg(target_os = "macos")]
+                {
+                    // macOS: fullscreen:true + decorations:false creates new Space.
+                    // Exit native fullscreen, fill monitor manually.
+                    let _ = window.set_fullscreen(false);
+                    if let Ok(Some(monitor)) = window.primary_monitor() {
+                        let s = monitor.size();
+                        let p = monitor.position();
+                        let _ = window.set_position(tauri::PhysicalPosition::new(p.x, p.y));
+                        let _ = window.set_size(tauri::PhysicalSize::new(s.width, s.height));
+                    }
+                }
             }
 
             // Ensure WebView2Loader.dll is alongside the EXE (Windows only)
