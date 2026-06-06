@@ -1,11 +1,27 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 
 // ── Wake detector factory — pure logic tests ──
 
+// Node.js doesn't have WebSocket built-in; mock it so factory doesn't throw
+const originalWebSocket = (globalThis as any).WebSocket;
+(globalThis as any).WebSocket = class MockWebSocket {
+  static OPEN = 1;
+  readyState = 1;
+  onopen: (() => void) | null = null;
+  onmessage: ((event: any) => void) | null = null;
+  onerror: (() => void) | null = null;
+  onclose: (() => void) | null = null;
+  send(_data: any) {}
+  close() {}
+};
+
 describe('Wake Detector Factory', () => {
-  // Mock getVoicePreference
   const mockGetVoicePref = vi.fn();
   const mockGetKey = vi.fn();
+
+  afterAll(() => {
+    (globalThis as any).WebSocket = originalWebSocket;
+  });
 
   beforeEach(() => {
     vi.resetModules();
@@ -85,7 +101,7 @@ describe('Wake Detector Factory', () => {
   it('isWakeWord matches Chinese and English variants', async () => {
     const { isWakeWord } = await import('../server/stt/wake_detector');
 
-    expect(isWakeWord('jarvis')).toBe('Jarvis'); // lowercased input matches 'Jarvis' first in waKE_WORDS
+    expect(isWakeWord('jarvis')).toBe('Jarvis'); // lowercased input matches 'Jarvis' first in WAKE_WORDS
     expect(isWakeWord('Jarvis')).toBe('Jarvis');
     expect(isWakeWord('贾维斯')).toBe('贾维斯');
     // 'lumi' before more specific matches in WAKE_WORDS array
