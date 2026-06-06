@@ -85,8 +85,8 @@ export function getActiveSTTProvider(): STTProvider | null {
   try {
     if (localWhisper.isLocalWhisperAvailable()) return 'local-whisper';
   } catch {}
-  const arkKey = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (arkKey) return 'ark';
+  const doubaoSpeech = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY');
+  if (doubaoSpeech && doubaoSpeech.includes(':')) return 'ark';
   const qwenKey = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY
     || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
   if (qwenKey) return 'qwen';

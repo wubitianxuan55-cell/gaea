@@ -172,9 +172,9 @@ function createArkWakeDetector(
       form.append('model', MODEL);
       form.append('language', 'zh');
 
-      const res = await fetch('https://ark.cn-beijing.volces.com/api/v3/audio/transcriptions', {
+      const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { Authorization: `Bearer;${apiKey}` },
         body: form,
         signal: AbortSignal.timeout(5000),
       });
@@ -231,11 +231,12 @@ export function createWakeDetector(
   accessKey?: string,
   echoFilter?: (text: string) => boolean,
 ): WakeDetectorSession {
-  // 1. Ark (Doubao) — preferred
-  const arkKey = accessKey || process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (arkKey) {
-    logger.info('[WakeDetector] Using Ark (Doubao)');
-    return createArkWakeDetector(arkKey, echoFilter);
+  // 1. Doubao Speech — preferred (AppID:AccessToken)
+  const speechKey = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY');
+  if (speechKey && speechKey.includes(':')) {
+    const token = speechKey.slice(speechKey.indexOf(':') + 1).trim();
+    logger.info('[WakeDetector] Using Doubao Speech');
+    return createArkWakeDetector(token, echoFilter);
   }
 
   // 2. Qwen (DashScope) — fallback
@@ -249,5 +250,5 @@ export function createWakeDetector(
     return createQwenWakeDetector(qwenKey, echoFilter);
   }
 
-  throw new Error('ARK_API_KEY or DASHSCOPE_API_KEY required for wake word detection');
+  throw new Error('Doubao Speech (AppID:AccessToken) or DASHSCOPE_API_KEY required for wake word detection');
 }

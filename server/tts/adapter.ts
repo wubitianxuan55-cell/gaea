@@ -3,6 +3,7 @@ import * as gptsovits from './providers/gptsovits';
 import * as cosyvoice from './providers/cosyvoice';
 import * as ark from './providers/ark';
 import { getKey } from '../config/keys';
+import { hasDoubaoSpeech } from './providers/ark';
 import { getVoicePreference } from '../config/voice_preference';
 
 export async function synthesizeSpeech(text: string, config: TTSConfig): Promise<TTSResult> {
@@ -53,10 +54,9 @@ export function getActiveProvider(): TTSProvider | null {
   const pref = getVoicePreference();
   if (pref.tts === 'gptsovits' && (process.env.GPTSOVITS_API_URL || process.env.GPTSOVITS_ENABLED === 'true')) return 'gptsovits';
   if (pref.tts === 'cosyvoice') return 'cosyvoice';
-  if (pref.tts === 'ark') return 'ark';
+  if (pref.tts === 'ark' && hasDoubaoSpeech()) return 'ark';
   // Auto mode — pick based on what's available
-  const arkKey = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (arkKey) return 'ark';
+  if (hasDoubaoSpeech()) return 'ark';
   const dashscopeKey = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
   if (dashscopeKey) return 'cosyvoice';
   if (process.env.GPTSOVITS_API_URL || process.env.GPTSOVITS_ENABLED === 'true') return 'gptsovits';

@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       allowedHosts: ['lumiai.asia', '.lumiai.asia'],
       watch: {
-        ignored: ['**/gpt-sovits-src/**', '**/data/voice_training/**', '**/*.db', '**/db.json', '**/.keys.json', '**/data/**'],
+        ignored: ['**/gpt-sovits-src/**', '**/data/voice_training/**', '**/*.db', '**/db.json', '**/.keys.json', '**/data/**', '**/server/mcp/config.json'],
       },
     },
     build: {

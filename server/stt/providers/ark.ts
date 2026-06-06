@@ -2,9 +2,11 @@ import { STTResult } from '../types';
 import { getKey } from '../../config/keys';
 
 function getApiKey(): string {
-  const key = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (!key) throw new Error('ARK_API_KEY not configured. Add it in Settings → API Matrix.');
-  return key;
+  // Doubao Speech uses AppID:AccessToken, Ark LLM key is separate
+  const raw = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY') || '';
+  const colonIdx = raw.indexOf(':');
+  if (colonIdx === -1) throw new Error('Doubao Speech not configured. Enter AppID:AccessToken in Settings → Voice Services.');
+  return raw.slice(colonIdx + 1).trim();
 }
 
 export async function transcribe(
@@ -18,15 +20,15 @@ export async function transcribe(
   form.append('model', 'doubao-stt-1.0');
   form.append('language', language);
 
-  const res = await fetch('https://ark.cn-beijing.volces.com/api/v3/audio/transcriptions', {
+  const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer;${apiKey}` },
     body: form,
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Ark ASR error (${res.status}): ${err}`);
+    throw new Error(`Doubao ASR error (${res.status}): ${err}`);
   }
 
   const data = await res.json() as any;

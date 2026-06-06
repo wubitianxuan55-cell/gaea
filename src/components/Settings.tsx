@@ -20,7 +20,8 @@ import {
   Loader2,
   LogOut,
   Terminal,
-  Cloud
+  Cloud,
+  Volume2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -844,10 +845,10 @@ function VoiceServicesPage({ t }: { t: any }) {
           <VoiceProviderSwitch t={t} />
         </div>
         <p className="text-sm text-white/40 max-w-xl mb-6">
-          {t.voiceServicesDesc || 'Speech recognition (ASR) and speech synthesis (TTS). Ark (Doubao) is auto-prioritized when configured.'}
+          {t.voiceServicesDesc || 'Speech recognition (ASR) and speech synthesis (TTS). Doubao Speech is auto-prioritized when configured.'}
         </p>
         <div className="grid grid-cols-1 gap-6">
-          <ApiKeyField icon={<Cloud size={18} className="text-cyan-400" />} label={t.arkVoiceLabel || 'Doubao / Ark (TTS + ASR)'} placeholder="Enter Ark API key..." storageKey="lumi_ark_key" serverKey="ARK_API_KEY" hint={t.arkVoiceHint || 'Doubao TTS (6 voices) + ASR. Get your key at console.volcengine.com/ark'} t={t} />
+          <ApiKeyField icon={<Volume2 size={18} className="text-emerald-400" />} label={t.doubaoSpeechLabel || 'Doubao Speech (STT + TTS)'} placeholder="AppID:AccessToken" storageKey="lumi_doubao_speech" serverKey="DOUBAO_SPEECH_KEY" hint={t.doubaoSpeechHint || 'Format: AppID:AccessToken. Get both from console.volcengine.com/speech → App Management'} t={t} />
           <ApiKeyField icon={<Zap size={18} className="text-violet-400" />} label={t.dashscopeLabel || 'DashScope (STT + TTS)'} placeholder="sk-..." storageKey="lumi_dashscope_key" serverKey="DASHSCOPE_API_KEY" hint={t.dashscopeHint || 'Powers Qwen ASR and CosyVoice TTS. Get your key at dashscope.aliyun.com'} t={t} />
         </div>
         <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">

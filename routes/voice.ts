@@ -181,11 +181,15 @@ router.get('/voice/voices', async (req: Request, res: Response) => {
     const providers: TTSProvider[] = [];
 
     // Check which providers are available (by API key / server presence)
-    if (process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY')) {
-      providers.push('cosyvoice');
+    if (true) {
+      // cosyvoice always available if dashscope key is set
+      const dk = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
+      if (dk) providers.push('cosyvoice');
     }
-    if (process.env.ARK_API_KEY || getKey('ARK_API_KEY')) {
-      providers.push('ark');
+    {
+      // Ark (Doubao) TTS needs separate Speech AppID + Token (not ARK_API_KEY for LLM)
+      const { hasDoubaoSpeech } = await import('../server/tts/providers/ark');
+      if (hasDoubaoSpeech()) providers.push('ark');
     }
     if (process.env.GPTSOVITS_API_URL || process.env.GPTSOVITS_ENABLED === 'true') {
       providers.push('gptsovits');

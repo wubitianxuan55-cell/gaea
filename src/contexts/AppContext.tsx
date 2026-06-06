@@ -58,7 +58,7 @@ interface AppContextType {
   aiConfig: AIConfig;
   // Voice
   selectedVoiceId: string | undefined;
-  setSelectedVoiceId: (id: string) => void;
+  setSelectedVoiceId: (id: string, provider?: string) => void;
   favoriteVoices: string[];
   toggleFavoriteVoice: (id: string) => void;
   // Notifications
@@ -294,9 +294,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser((prev) => prev ? { ...prev, balance: (prev.balance || 0) + amount } : prev);
   };
 
-  const setSelectedVoiceId = (id: string) => {
+  const setSelectedVoiceId = (id: string, provider?: string) => {
     setSelectedVoiceIdState(id);
     localStorage.setItem('lumi_selected_voice_id', id);
+    if (provider) {
+      localStorage.setItem('lumi_selected_voice_provider', provider);
+      // Auto-switch TTS provider to match the selected voice
+      fetch('/api/voice/provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tts: provider }),
+      }).catch(() => {});
+    }
   };
 
   const toggleFavoriteVoice = (id: string) => {

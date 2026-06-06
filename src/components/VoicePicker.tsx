@@ -72,7 +72,7 @@ export function VoicePicker({ t, direction = 'up', refreshTrigger = 0 }: { t: an
       setPlayingId(voice.voiceId);
       const lang = voice.language || 'zh';
       const sampleText = SAMPLE_TEXTS[lang] || SAMPLE_TEXTS.en;
-      const buffer = await synthesizeSpeech(sampleText, voice.voiceId);
+      const buffer = await synthesizeSpeech(sampleText, voice.voiceId, voice.provider);
       const blob = new Blob([buffer], { type: 'audio/mp3' });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -155,7 +155,7 @@ export function VoicePicker({ t, direction = 'up', refreshTrigger = 0 }: { t: an
                 filtered.map(voice => (
                   <div
                     key={voice.voiceId}
-                    onClick={() => { setSelectedVoiceId(voice.voiceId); setOpen(false); }}
+                    onClick={() => { setSelectedVoiceId(voice.voiceId, voice.provider); setOpen(false); }}
                     className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-all group ${
                       selectedVoiceId === voice.voiceId
                         ? 'bg-white/10 text-white'

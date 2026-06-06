@@ -42,6 +42,7 @@ export interface SkillPackage {
   generatedFrom?: string;
   installedAt: string;
   source: 'local' | 'external';
+  broken?: boolean;       // dir exists but no index.ts — can be auto-cleaned on reinstall
 }
 
 interface ConnectedServer {
@@ -113,10 +114,12 @@ class MCPClientManager {
       const pkgPath = path.join(skillDir, 'package.json');
       const indexPath = path.join(skillDir, 'index.ts');
 
-      if (!fs.existsSync(indexPath)) continue;
-
       let pkg: any = {};
       try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')); } catch {}
+
+      const hasIndex = fs.existsSync(indexPath);
+      const hasRunCommand = !!pkg.lumi?.runCommand;
+      const broken = !hasIndex && !hasRunCommand;
 
       skills.push({
         name: entry.name,
@@ -126,6 +129,7 @@ class MCPClientManager {
         generatedFrom: pkg.lumi?.generatedFrom,
         installedAt: pkg.lumi?.installedAt || '',
         source: 'local',
+        broken,
       });
     }
     return skills;
@@ -137,7 +141,15 @@ class MCPClientManager {
     const destDir = path.join(SKILLS_DIR, name);
 
     if (fs.existsSync(destDir)) {
-      throw new Error(`Skill "${name}" already exists. Uninstall it first.`);
+      // Auto-clean broken installs (no index.ts and no runCommand = incomplete)
+      const hasIndex = fs.existsSync(path.join(destDir, 'index.ts'));
+      const pkg = this.readPkg(destDir);
+      const hasRunCmd = !!pkg.lumi?.runCommand;
+      if (!hasIndex && !hasRunCmd) {
+        fs.rmSync(destDir, { recursive: true, force: true });
+      } else {
+        throw new Error(`Skill "${name}" already exists. Uninstall it first.`);
+      }
     }
 
     this.copyDirSync(sourceDir, destDir);
@@ -160,7 +172,14 @@ class MCPClientManager {
     const skillDir = path.join(SKILLS_DIR, skillName);
 
     if (fs.existsSync(skillDir)) {
-      throw new Error(`Skill "${skillName}" already exists. Uninstall it first.`);
+      const hasIndex = fs.existsSync(path.join(skillDir, 'index.ts'));
+      const pkg = this.readPkg(skillDir);
+      const hasRunCmd = !!pkg.lumi?.runCommand;
+      if (!hasIndex && !hasRunCmd) {
+        fs.rmSync(skillDir, { recursive: true, force: true });
+      } else {
+        throw new Error(`Skill "${skillName}" already exists. Uninstall it first.`);
+      }
     }
 
     // Create a workspace package that depends on the npm MCP skill
@@ -247,7 +266,14 @@ main().catch((err) => { console.error('[npm-skill] Fatal:', err); process.exit(1
     const skillDir = path.join(SKILLS_DIR, repoName);
 
     if (fs.existsSync(skillDir)) {
-      throw new Error(`Skill "${repoName}" already exists. Uninstall it first.`);
+      const hasIndex = fs.existsSync(path.join(skillDir, 'index.ts'));
+      const pkg = this.readPkg(skillDir);
+      const hasRunCmd = !!pkg.lumi?.runCommand;
+      if (!hasIndex && !hasRunCmd) {
+        fs.rmSync(skillDir, { recursive: true, force: true });
+      } else {
+        throw new Error(`Skill "${repoName}" already exists. Uninstall it first.`);
+      }
     }
 
     console.log(`[MCP] Cloning ${repoUrl} → ${skillDir}`);

@@ -127,6 +127,8 @@ export function mountMarketplaceRoutes(
           io.emit('skill:installing', { skillId, name: skillName, stage: 'connecting' });
           await mcpManager.restartServer(skillDirName);
         } catch (err: any) {
+          // Clean up partial install so user can retry
+          try { mcpManager.uninstallSkill(skillDirName); } catch {}
           return res.status(500).json({ error: `Install failed: ${err.message}` });
         }
         recordInstall(skillId);
@@ -145,6 +147,7 @@ export function mountMarketplaceRoutes(
             io.emit('skill:installing', { skillId, name: skillName, stage: 'connecting' });
             await mcpManager.restartServer(skillDirName);
           } catch (err: any) {
+            try { mcpManager.uninstallSkill(skillDirName); } catch {}
             return res.status(500).json({ error: `Install failed: ${err.message}` });
           }
           recordInstall(skillId);
@@ -175,12 +178,13 @@ export function mountMarketplaceRoutes(
       if (installSource === 'npm' && req.body.npmPackage) {
         const npmPkg = req.body.npmPackage;
         io.emit('skill:installing', { skillId, name: npmPkg, stage: 'downloading' });
-        let skillDirName: string;
+        let skillDirName = '';
         try {
           skillDirName = path.basename(await mcpManager.installFromNpm(npmPkg));
           io.emit('skill:installing', { skillId, name: skillName, stage: 'connecting' });
           await mcpManager.restartServer(skillDirName);
         } catch (err: any) {
+          if (skillDirName) try { mcpManager.uninstallSkill(skillDirName); } catch {}
           return res.status(500).json({ error: `npm install failed: ${err.message}` });
         }
         recordInstall(skillId);
@@ -192,12 +196,13 @@ export function mountMarketplaceRoutes(
       if (installSource === 'github' && req.body.repoUrl) {
         const repoUrl = req.body.repoUrl;
         io.emit('skill:installing', { skillId, name: skillName, stage: 'cloning' });
-        let skillDirName: string;
+        let skillDirName = '';
         try {
           skillDirName = path.basename(await mcpManager.installFromGitHub(repoUrl));
           io.emit('skill:installing', { skillId, name: skillName, stage: 'connecting' });
           await mcpManager.restartServer(skillDirName);
         } catch (err: any) {
+          if (skillDirName) try { mcpManager.uninstallSkill(skillDirName); } catch {}
           return res.status(500).json({ error: `GitHub install failed: ${err.message}` });
         }
         recordInstall(skillId);

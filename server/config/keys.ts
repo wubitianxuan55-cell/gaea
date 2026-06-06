@@ -15,6 +15,7 @@ interface KeyStore {
   MINIMAX_API_KEY?: string;
   E2B_API_KEY?: string;
   ARK_API_KEY?: string;
+  DOUBAO_SPEECH_KEY?: string;
 }
 
 export function loadKeys(): KeyStore {
@@ -56,5 +57,6 @@ export function getAllKeyNames(): (keyof KeyStore)[] {
     'MINIMAX_API_KEY',
     'E2B_API_KEY',
     'ARK_API_KEY',
+    'DOUBAO_SPEECH_KEY',
   ];
 }

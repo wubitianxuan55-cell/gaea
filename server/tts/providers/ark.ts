@@ -2,62 +2,88 @@ import { TTSResult, VoiceListItem } from '../types';
 import { getKey } from '../../config/keys';
 import { withCloudResilience } from '../../cloud/resilience';
 
-const BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/audio/speech';
+const BASE_URL = 'https://openspeech.bytedance.com/api/v1/tts';
 
-function getApiKey(): string {
-  const key = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (!key) throw new Error('ARK_API_KEY not configured. Add it in Settings → API Matrix.');
-  return key;
+function getCredentials(): { appId: string; token: string } {
+  const raw = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY') || '';
+  const colonIdx = raw.indexOf(':');
+  if (colonIdx === -1) throw new Error('Doubao Speech not configured. Enter AppID:AccessToken in Settings → Voice Services.');
+  return { appId: raw.slice(0, colonIdx).trim(), token: raw.slice(colonIdx + 1).trim() };
+}
+
+export function hasDoubaoSpeech(): boolean {
+  const raw = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY') || '';
+  return raw.includes(':');
 }
 
 const PRESET_VOICES: VoiceListItem[] = [
-  { voiceId: 'zh_female_qingxin', name: '清新女声', category: 'premade', language: 'zh' },
-  { voiceId: 'zh_male_qingse', name: '青涩男声', category: 'premade', language: 'zh' },
-  { voiceId: 'zh_female_shuangkuai', name: '爽快女声', category: 'premade', language: 'zh' },
-  { voiceId: 'zh_male_haoting', name: '好听男声', category: 'premade', language: 'zh' },
-  { voiceId: 'zh_female_wenrou', name: '温柔女声', category: 'premade', language: 'zh' },
-  { voiceId: 'zh_male_wenhou', name: '温厚男声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV001_streaming', name: '通用女声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV002_streaming', name: '通用男声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV003_streaming', name: '温柔女声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV004_streaming', name: '知性女声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV005_streaming', name: '清新女声', category: 'premade', language: 'zh' },
+  { voiceId: 'BV006_streaming', name: '沉稳男声', category: 'premade', language: 'zh' },
 ];
 
 export async function synthesizeSpeech(
   text: string,
-  voiceId: string = 'zh_female_qingxin',
+  voiceId: string = 'BV001_streaming',
   signal?: AbortSignal,
   speechRate?: number,
   pitch?: number,
   volume?: number,
 ): Promise<TTSResult> {
-  const apiKey = getApiKey();
+  const { appId, token } = getCredentials();
 
   const body: Record<string, any> = {
-    model: 'doubao-tts-1.0',
-    input: text,
-    voice: voiceId,
-    response_format: 'mp3',
+    app: { appid: appId, cluster: 'volcano_tts' },
+    user: { uid: 'lumi_user' },
+    audio: {
+      voice_type: voiceId,
+      encoding: 'mp3',
+      rate: 24000,
+    },
+    request: {
+      reqid: `lumi_${Date.now()}`,
+      text,
+      text_type: 'plain',
+      operation: 'query',
+    },
   };
-  if (speechRate !== undefined) body.speed = speechRate;
+  if (speechRate !== undefined) body.audio.speed_ratio = speechRate;
+  if (pitch !== undefined) body.audio.pitch_ratio = pitch;
+  if (volume !== undefined) body.audio.volume_ratio = volume;
 
   const res = await withCloudResilience(
     () => fetch(BASE_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer;${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
       signal,
     }),
-    { provider: 'ark-tts', maxRetries: 1 },
+    { provider: 'doubao-tts', maxRetries: 1 },
   );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(`Ark TTS error (${res.status}): ${err.message || err.code || 'Unknown'}`);
+    throw new Error(`Doubao TTS error (${res.status}): ${err.message || err.code || 'Unknown'}`);
   }
 
-  const arrayBuffer = await res.arrayBuffer();
+  const json = await res.json() as any;
+  if (json.code !== 3000) {
+    throw new Error(`Doubao TTS error: ${json.message || JSON.stringify(json)}`);
+  }
+
+  const audioData = json.data || json.audio?.data;
+  if (!audioData) {
+    throw new Error(`Doubao TTS response missing audio data: ${JSON.stringify(json)}`);
+  }
+
   return {
-    audioBuffer: Buffer.from(arrayBuffer),
+    audioBuffer: Buffer.from(audioData, 'base64'),
     format: 'audio/mp3',
   };
 }
