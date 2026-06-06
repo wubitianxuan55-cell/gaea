@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Zap, TrendingUp, Clock, Layers, RefreshCw, AlertTriangle } from 'lucide-react';
+import { GlassCard } from './SharedUI';
 import { socketService } from '@/services/socketService';
 
 interface ProviderStats {
@@ -28,6 +29,7 @@ interface UsageData {
 const PROVIDER_LABELS: Record<string, string> = {
   deepseek: 'DeepSeek',
   qwen: 'Qwen',
+  ark: 'Doubao',
   openai: 'OpenAI',
   gemini: 'Gemini',
   anthropic: 'Anthropic',
@@ -36,6 +38,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 const PROVIDER_COLORS: Record<string, string> = {
   deepseek: '#6366f1',
   qwen: '#06b6d4',
+  ark: '#00d4ff',
   openai: '#10b981',
   gemini: '#8b5cf6',
   anthropic: '#f59e0b',
@@ -45,6 +48,10 @@ function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString();
 }
 
 export const TokenDashboard: React.FC = () => {
@@ -85,13 +92,11 @@ export const TokenDashboard: React.FC = () => {
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
-  // Auto-poll every 10s
   useEffect(() => {
     const id = setInterval(() => fetchUsage(), 10000);
     return () => clearInterval(id);
   }, [fetchUsage]);
 
-  // Socket-based instant refresh
   useEffect(() => {
     const s = socketService.getSocket();
     if (!s) return;
@@ -107,27 +112,29 @@ export const TokenDashboard: React.FC = () => {
   const providers = data?.byProvider ? Object.entries(data.byProvider) : [];
   const maxDaily = data?.daily?.length ? Math.max(...data.daily.map(d => d.totalTokens), 1) : 1;
 
-  // Donut ring data
   const total = providers.reduce((sum, [, s]) => sum + s.totalTokens, 0);
   let cumulative = 0;
   const segments = providers.map(([p, s]) => {
     const start = cumulative;
     const frac = total > 0 ? s.totalTokens / total : 0;
     cumulative += frac;
-    return { provider: p, stats: s, start, frac, color: PROVIDER_COLORS[p] || '#888' };
+    return { provider: p, stats: s, start, frac, color: PROVIDER_COLORS[p] || '#666' };
   });
-  const circumference = 2 * Math.PI * 36;
+  const circumference = 2 * Math.PI * 52;
+
+  const quotaPct = quota ? Math.round((quota.used / quota.cap) * 100) : 0;
+  const barColor = quotaPct >= 90 ? 'bg-red-500' : quotaPct >= 80 ? 'bg-amber-500' : 'bg-emerald-400';
 
   return (
     <div className="h-full flex flex-col text-white">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
             <Zap size={16} className="text-amber-400" />
           </div>
           <div>
-            <h2 className="text-base font-black tracking-tight">Token Usage</h2>
+            <h2 className="text-sm font-black tracking-tight">Token Usage</h2>
             <p className="text-[10px] text-white/25 font-medium">LLM API consumption</p>
           </div>
         </div>
@@ -136,11 +143,11 @@ export const TokenDashboard: React.FC = () => {
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+              className={`px-3 py-1 rounded-lg text-[10px] font-bold tracking-wider transition-all ${
                 days === d ? 'bg-white/15 text-white' : 'text-white/30 hover:text-white/50'
               }`}
             >
-              {d}d
+              {d}天
             </button>
           ))}
           <button onClick={fetchUsage} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-all">
@@ -158,142 +165,153 @@ export const TokenDashboard: React.FC = () => {
           <p className="text-red-400 text-xs">{error}</p>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col gap-3 overflow-auto custom-scrollbar pr-1">
-          {/* Grand total */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2.5">
-              <TrendingUp size={16} className="text-amber-400/70" />
-              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Total</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xl font-black tracking-tight">{formatTokens(data?.grandTotal || 0)}</span>
-              <span className="text-[10px] text-white/20 ml-1">{data?.recordCount || 0} calls</span>
-            </div>
-          </motion.div>
+        <div className="flex-1 flex flex-col gap-3 overflow-auto custom-scrollbar pr-0.5">
+          {/* Top row: Total + Quota */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Grand total */}
+            <GlassCard className="p-4 rounded-2xl border-white/5 bg-white/[0.03]">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={13} className="text-amber-400/70" />
+                <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider">Total Tokens</span>
+              </div>
+              <div className="text-2xl font-black tracking-tight">{formatTokens(data?.grandTotal || 0)}</div>
+              <div className="text-[10px] text-white/20 mt-0.5">{formatNumber(data?.recordCount || 0)} API calls</div>
+            </GlassCard>
 
-          {/* Quota progress bar */}
-          {quota && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-white/5 border border-white/5 p-4 space-y-2"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Quota · {quota.plan}</span>
-                <span className="text-[9px] font-mono text-white/40">{formatTokens(quota.used)} / {formatTokens(quota.cap)}</span>
+            {/* Quota */}
+            <GlassCard className="p-4 rounded-2xl border-white/5 bg-white/[0.03]">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle size={13} className={quotaPct >= 80 ? 'text-amber-400' : 'text-white/25'} />
+                <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider">
+                  Quota · {quota?.plan || 'Free'}
+                </span>
               </div>
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((quota.used / quota.cap) * 100, 100)}%` }}
-                  transition={{ duration: 0.5 }}
-                  className={`h-full rounded-full ${
-                    quota.used / quota.cap >= 0.9 ? 'bg-red-500' :
-                    quota.used / quota.cap >= 0.8 ? 'bg-amber-500' :
-                    'bg-amber-500/60'
-                  }`}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] text-white/20">{Math.round((quota.used / quota.cap) * 100)}% used</span>
-                {quota.used / quota.cap >= 0.8 && (
-                  <span className="text-[9px] text-amber-400 flex items-center gap-1">
-                    <AlertTriangle size={10} /> {quota.used / quota.cap >= 0.9 ? 'Critical' : 'Warning'}
-                  </span>
-                )}
-              </div>
-            </motion.div>
-          )}
+              {quota ? (
+                <>
+                  <div className="text-lg font-black tracking-tight">
+                    {formatTokens(quota.remaining)} <span className="text-[10px] text-white/20 font-normal">left</span>
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(quotaPct, 100)}%` }}
+                      transition={{ duration: 0.6 }}
+                      className={`h-full rounded-full ${barColor}`}
+                    />
+                  </div>
+                  <div className="text-[9px] text-white/20 mt-1">
+                    {formatTokens(quota.used)} / {formatTokens(quota.cap)} · {quotaPct}%
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-white/20">No subscription data</div>
+              )}
+            </GlassCard>
+          </div>
 
-          {/* Provider breakdown */}
-          <div className="rounded-2xl bg-white/5 border border-white/5 p-4">
-            <h3 className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+          {/* Providers + Ring */}
+          <GlassCard className="p-4 rounded-2xl border-white/5 bg-white/[0.03]">
+            <h3 className="text-[9px] font-bold text-white/20 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Layers size={10} /> Providers
             </h3>
             {providers.length === 0 ? (
-              <p className="text-white/20 text-xs py-4 text-center">No usage data yet.</p>
+              <p className="text-white/20 text-xs py-6 text-center">No usage data yet.</p>
             ) : (
-              <div className="flex items-center gap-4">
-                {/* Ring chart */}
-                <svg width="90" height="90" viewBox="0 0 90 90" className="shrink-0">
+              <div className="flex items-center gap-5">
+                {/* Ring */}
+                <svg width="110" height="110" viewBox="0 0 110 110" className="shrink-0">
                   {segments.map(seg => {
-                    const dashArray = seg.frac * circumference;
-                    const dashOffset = -seg.start * circumference;
+                    const dash = seg.frac * circumference;
                     return (
                       <circle
                         key={seg.provider}
-                        r="36" cx="45" cy="45"
+                        r="52" cx="55" cy="55"
                         fill="none"
                         stroke={seg.color}
-                        strokeWidth="10"
-                        strokeDasharray={`${dashArray} ${circumference - dashArray}`}
-                        strokeDashoffset={dashOffset}
-                        strokeLinecap="round"
-                        className="opacity-80"
-                        transform="rotate(-90 45 45)"
+                        strokeWidth="11"
+                        strokeDasharray={`${dash} ${circumference - dash}`}
+                        strokeDashoffset={-seg.start * circumference}
+                        strokeLinecap="butt"
+                        transform="rotate(-90 55 55)"
                       />
                     );
                   })}
-                  <text x="45" y="43" textAnchor="middle" className="text-[14px] font-black" fill="white">
+                  <text x="55" y="52" textAnchor="middle" className="text-[15px] font-black" fill="white">
                     {formatTokens(total)}
                   </text>
-                  <text x="45" y="56" textAnchor="middle" className="text-[8px] font-bold" fill="rgba(255,255,255,0.25)">
+                  <text x="55" y="66" textAnchor="middle" className="text-[8px] font-bold" fill="rgba(255,255,255,0.2)">
                     TOTAL
                   </text>
                 </svg>
 
-                {/* Legend */}
-                <div className="flex-1 space-y-1.5 min-w-0">
-                  {providers.map(([provider, stats]) => (
-                    <div key={provider} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: PROVIDER_COLORS[provider] || '#888' }} />
-                        <span className="text-[10px] font-bold text-white/60 truncate">{PROVIDER_LABELS[provider] || provider}</span>
+                {/* Provider list */}
+                <div className="flex-1 space-y-2">
+                  {providers.map(([provider, stats]) => {
+                    const pct = total > 0 ? Math.round((stats.totalTokens / total) * 100) : 0;
+                    return (
+                      <div key={provider} className="space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PROVIDER_COLORS[provider] || '#666' }} />
+                            <span className="text-[10px] font-bold text-white/60">{PROVIDER_LABELS[provider] || provider}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-white/40">
+                            {formatTokens(stats.totalTokens)} <span className="text-white/15">· {stats.calls} calls</span>
+                          </span>
+                        </div>
+                        <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: PROVIDER_COLORS[provider] || '#666' }}
+                          />
+                        </div>
                       </div>
-                      <span className="text-[10px] text-white/30 font-mono shrink-0">
-                        {formatTokens(stats.totalTokens)} / {stats.calls}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
-          </div>
+          </GlassCard>
 
-          {/* Daily trend */}
-          <div className="flex-1 rounded-2xl bg-white/5 border border-white/5 p-4">
-            <h3 className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Clock size={10} /> Daily
+          {/* Daily chart */}
+          <GlassCard className="flex-1 p-4 rounded-2xl border-white/5 bg-white/[0.03] flex flex-col">
+            <h3 className="text-[9px] font-bold text-white/20 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Clock size={10} /> Daily Trend
             </h3>
             {!data?.daily || data.daily.length === 0 ? (
-              <p className="text-white/20 text-xs py-4 text-center">No daily data.</p>
+              <p className="text-white/20 text-xs py-6 text-center">No daily data yet.</p>
             ) : (
-              <div className="flex items-end gap-0.5 h-28">
-                <AnimatePresence>
+              <div className="flex-1 flex flex-col justify-end">
+                <div className="flex items-end gap-[2px] flex-1">
                   {data.daily.map((d, i) => {
                     const h = (d.totalTokens / maxDaily) * 100;
                     return (
                       <motion.div
                         key={d.date}
                         initial={{ height: 0 }}
-                        animate={{ height: `${Math.max(h, 1)}%` }}
-                        transition={{ delay: i * 0.01, type: 'spring', stiffness: 300, damping: 20 }}
-                        className="flex-1 rounded-t-[2px] bg-amber-500/25 hover:bg-amber-400/50 transition-colors min-h-[2px] relative group"
+                        animate={{ height: `${Math.max(h, 1.5)}%` }}
+                        transition={{ delay: i * 0.005, type: 'spring', stiffness: 300, damping: 20 }}
+                        className="flex-1 rounded-t-[3px] bg-amber-500/30 hover:bg-amber-400/60 transition-colors min-h-[3px] relative group cursor-pointer"
                       >
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-black/90 rounded text-[9px] font-mono text-white/60 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-10">
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 border border-white/10 rounded-md text-[9px] font-mono text-white/70 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-10">
                           {formatTokens(d.totalTokens)}
+                        </div>
+                        {/* Date label on x-axis */}
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] text-white/15 opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity">
+                          {d.date.slice(5)}
                         </div>
                       </motion.div>
                     );
                   })}
-                </AnimatePresence>
+                </div>
+                {/* X-axis: first/last date labels */}
+                <div className="flex justify-between mt-5 text-[8px] text-white/15 font-mono">
+                  <span>{data.daily[0]?.date?.slice(5)}</span>
+                  <span>{data.daily[data.daily.length - 1]?.date?.slice(5)}</span>
+                </div>
               </div>
             )}
-          </div>
+          </GlassCard>
         </div>
       )}
     </div>

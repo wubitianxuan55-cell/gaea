@@ -210,7 +210,7 @@ export function NeuralSynthesisMonitor({ t, onOpenTokens }: { t?: any; onOpenTok
     ? liveStats.gpu_vendor.replace(/NVIDIA GeForce /, '').replace(/AMD Radeon /, '').replace(/Intel /, '')
     : null;
   const gpuFmt = liveStats?.gpu_utilization != null ? `${Math.round(liveStats.gpu_utilization)}%` : (gpuShort || '--');
-  const gpuLabel = gpuShort || 'GPU';
+  const gpuLabel = 'GPU';
 
   const modelLabel = aiConfig ? `${aiConfig.provider}/${aiConfig.model}` : '--';
   const tokenSpeedFmt = tokenSpeed > 0 ? `${Math.round(tokenSpeed)} tok/s` : '--';
