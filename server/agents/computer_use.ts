@@ -117,8 +117,8 @@ async function callVisionModel(
 ): Promise<string> {
   const g = llmGetters;
 
-  // Prefer OpenAI GPT-4o, fall back to Qwen-VL, then Gemini
-  let provider: 'openai' | 'gemini' | 'qwen';
+  // Prefer OpenAI GPT-4o, fall back to Qwen-VL, Ark, then Gemini
+  let provider: 'openai' | 'qwen' | 'ark' | 'gemini';
   let model: string;
   if (g.getOpenAI?.()) {
     provider = 'openai';
@@ -126,11 +126,14 @@ async function callVisionModel(
   } else if (g.getQwen?.()) {
     provider = 'qwen';
     model = 'qwen-vl-max';
+  } else if (g.getArk?.()) {
+    provider = 'ark';
+    model = 'doubao-1-5-vision-pro-32k';
   } else if (g.getGemini?.()) {
     provider = 'gemini';
     model = 'gemini-2.0-flash';
   } else {
-    throw new Error('Computer use requires a vision-capable model. Add an OpenAI, DashScope (Qwen), or Gemini API key in Settings → Voice Services.');
+    throw new Error('Computer use requires a vision-capable model. Add an OpenAI, DashScope (Qwen), Ark (Doubao), or Gemini API key in Settings → API Matrix.');
   }
 
   const historyContext = actionHistory.length > 0
@@ -155,6 +158,8 @@ async function callVisionModel(
     g.getOpenAI,
     g.getAnthropic,
     g.getQwen,
+    g.getOllama,
+    g.getArk,
   );
 
   return result.text || '';

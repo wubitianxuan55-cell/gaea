@@ -21,7 +21,7 @@ interface SocketContext {
   io: Server;
   jwtSecret: string;
   llm: {
-    getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any; getOllama: any; isOllamaAvailable: any;
+    getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any; getArk: any; getOllama: any; isOllamaAvailable: any;
   };
 }
 
@@ -64,7 +64,7 @@ export function initSocketRuntime({ io, jwtSecret, llm }: SocketContext) {
   initMemorySync(io);
   initMemoryAssociations();
 
-  const llmGetters = { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen, getOllama: llm.getOllama, isOllamaAvailable: llm.isOllamaAvailable };
+  const llmGetters = { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen, getArk: llm.getArk, getOllama: llm.getOllama, isOllamaAvailable: llm.isOllamaAvailable };
 
   io.on("connection", (socket) => {
     console.log(`[Socket] Client connected: ${socket.id}`);

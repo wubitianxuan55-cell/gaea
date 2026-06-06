@@ -5,7 +5,7 @@ import { recordWorkflow, WorkflowStep } from '../skills/worklog';
 import { recordLatency } from '../monitor/latency_store';
 
 export interface LLMConfig {
-  provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen' | 'ollama' | 'auto';
+  provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen' | 'ark' | 'ollama' | 'auto';
   model: string;
   maxTokens?: number;
   userId?: string;
@@ -39,6 +39,7 @@ export async function runWithTools(
   onStreamChunk?: StreamCallback,
   context?: ToolContext,
   getOllama?: () => any,
+  getArk?: () => any,
 ): Promise<LLMResult> {
   const executionLog: ToolExecutionRecord[] = [];
   const usageRecords: LLMUsageRecord[] = [];
@@ -73,6 +74,7 @@ export async function runWithTools(
           getAnthropic || (() => null),
           getQwen || (() => null),
           getOllama || (() => null),
+          getArk || (() => null),
         )
       : await makeLLMCall(
           conversationHistory,
@@ -84,6 +86,7 @@ export async function runWithTools(
           getAnthropic || (() => null),
           getQwen || (() => null),
           getOllama || (() => null),
+          getArk || (() => null),
         );
     recordLatency('llm', Date.now() - llmStart);
 
@@ -221,6 +224,7 @@ export async function analyzeScreen(
   getAnthropic?: () => any,
   getQwen?: () => any,
   getOllama?: () => any,
+  getArk?: () => any,
 ): Promise<string> {
   const { base64, mime } = parseScreenshotBase64(imageBase64);
 
@@ -230,10 +234,11 @@ export async function analyzeScreen(
 
   // Route to best vision-capable provider
   if (provider === 'deepseek') {
-    // DeepSeek doesn't support vision natively; fall back to OpenAI or Gemini
     if (getOpenAI?.()) { provider = 'openai'; model = 'gpt-4o'; }
+    else if (getQwen?.()) { provider = 'qwen'; model = 'qwen-vl-max'; }
+    else if (getArk?.()) { provider = 'ark'; model = 'doubao-1-5-vision-pro-32k'; }
     else if (getGemini?.()) { provider = 'gemini'; model = 'gemini-2.0-flash'; }
-    else throw new Error('Vision requires OpenAI or Gemini API key');
+    else throw new Error('Vision requires an OpenAI, Qwen, Ark, or Gemini API key');
   }
 
   const messages: NormalizedMessage[] = [
@@ -254,7 +259,7 @@ export async function analyzeScreen(
     messages, [],
     { provider: provider as any, model, maxTokens: 1000 },
     getDeepSeek || (() => null), getGemini || (() => null),
-    getOpenAI, getAnthropic, getQwen, getOllama,
+    getOpenAI, getAnthropic, getQwen, getOllama, getArk,
   );
 
   return result.text || 'Vision analysis returned no text.';
@@ -270,7 +275,8 @@ export async function runWithVision(
   getAnthropic?: () => any,
   getQwen?: () => any,
   getOllama?: () => any,
+  getArk?: () => any,
 ): Promise<string> {
-  const result = await makeLLMCall(messages, [], config, getDeepSeek || (() => null), getGemini || (() => null), getOpenAI, getAnthropic, getQwen, getOllama);
+  const result = await makeLLMCall(messages, [], config, getDeepSeek || (() => null), getGemini || (() => null), getOpenAI, getAnthropic, getQwen, getOllama, getArk);
   return result.text || '';
 }

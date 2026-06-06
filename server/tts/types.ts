@@ -1,4 +1,4 @@
-export type TTSProvider = 'gptsovits' | 'cosyvoice';
+export type TTSProvider = 'gptsovits' | 'cosyvoice' | 'ark';
 
 export interface TTSConfig {
   provider: TTSProvider;

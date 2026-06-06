@@ -14,6 +14,7 @@ interface KeyStore {
   QWEN_API_KEY?: string;
   MINIMAX_API_KEY?: string;
   E2B_API_KEY?: string;
+  ARK_API_KEY?: string;
 }
 
 export function loadKeys(): KeyStore {
@@ -54,5 +55,6 @@ export function getAllKeyNames(): (keyof KeyStore)[] {
     'QWEN_API_KEY',
     'MINIMAX_API_KEY',
     'E2B_API_KEY',
+    'ARK_API_KEY',
   ];
 }

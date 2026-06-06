@@ -4,8 +4,8 @@
 import { readDB, writeDB } from '../../db_layer';
 
 export interface VoicePreference {
-  stt: 'auto' | 'local-whisper' | 'qwen' | 'deepgram' | 'whisper';
-  tts: 'auto' | 'gptsovits' | 'cosyvoice';
+  stt: 'auto' | 'local-whisper' | 'qwen' | 'ark' | 'deepgram' | 'whisper';
+  tts: 'auto' | 'gptsovits' | 'cosyvoice' | 'ark';
 }
 
 const DEFAULT: VoicePreference = { stt: 'auto', tts: 'auto' };

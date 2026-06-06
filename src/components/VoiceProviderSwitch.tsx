@@ -26,6 +26,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
   const sttOpts = [
     { value: 'auto', label: t?.auto || 'Auto' },
     { value: 'local-whisper', label: t?.local || 'Local' },
+    { value: 'ark', label: 'Doubao' },
     { value: 'qwen', label: 'Qwen ASR' },
     { value: 'deepgram', label: 'Deepgram' },
     { value: 'whisper', label: 'Whisper' },
@@ -34,6 +35,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
   const ttsOpts = [
     { value: 'auto', label: t?.auto || 'Auto' },
     { value: 'gptsovits', label: t?.local || 'Local' },
+    { value: 'ark', label: 'Doubao' },
     { value: 'cosyvoice', label: 'CosyVoice' },
   ];
 
@@ -42,7 +44,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t?.sttProvider || 'STT'}</span>
         <div className="flex items-center gap-1">
-          {active.stt === 'local-whisper' ? <Cpu size={12} className="text-emerald-400" /> : <Cloud size={12} className="text-blue-400" />}
+          {active.stt === 'local-whisper' ? <Cpu size={12} className="text-emerald-400" /> : <Cloud size={12} className={active.stt === 'ark' ? 'text-cyan-400' : 'text-blue-400'} />}
           <span className="text-[9px] font-mono text-white/30">{active.stt}</span>
         </div>
       </div>
@@ -63,7 +65,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
       <div className="flex items-center justify-between mt-4">
         <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t?.ttsProvider || 'TTS'}</span>
         <div className="flex items-center gap-1">
-          {active.tts === 'gptsovits' ? <Cpu size={12} className="text-emerald-400" /> : <Cloud size={12} className="text-blue-400" />}
+          {active.tts === 'gptsovits' ? <Cpu size={12} className="text-emerald-400" /> : <Cloud size={12} className={active.tts === 'ark' ? 'text-cyan-400' : 'text-blue-400'} />}
           <span className="text-[9px] font-mono text-white/30">{active.tts}</span>
         </div>
       </div>

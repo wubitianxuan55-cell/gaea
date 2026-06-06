@@ -11,6 +11,13 @@ import { requireAuth } from "../middleware/auth";
 import { getLatencyStats } from "../monitor/latency_store";
 import { mcpManager, getMCPConfig } from "../mcp";
 
+// Cached GPU detection — queried once
+let _cachedGPU: { name?: string; util?: number } | null | undefined;
+
+function sumTimes(times: Record<string, number>): number {
+  return (times.user || 0) + (times.nice || 0) + (times.sys || 0) + (times.idle || 0) + (times.irq || 0);
+}
+
 export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
   // Health Check
   router.get("/health", (req, res) => {
@@ -120,6 +127,7 @@ export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
         openai: { available: envOrStore('OPENAI_API_KEY', 'OPENAI_API_KEY'), model: process.env.OPENAI_MODEL || 'gpt-4o' },
         anthropic: { available: envOrStore('ANTHROPIC_API_KEY', 'ANTHROPIC_API_KEY'), model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6' },
         qwen: { available: envOrStore('QWEN_API_KEY', 'DASHSCOPE_API_KEY') || envOrStore('DASHSCOPE_API_KEY', 'DASHSCOPE_API_KEY'), model: process.env.QWEN_MODEL || 'qwen-plus' },
+        ark: { available: envOrStore('ARK_API_KEY', 'ARK_API_KEY'), model: process.env.ARK_MODEL || 'doubao-1-5-pro-32k' },
       },
     });
   });
@@ -135,6 +143,7 @@ export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
         openai: apiKey || process.env.OPENAI_API_KEY || stored.OPENAI_API_KEY,
         anthropic: apiKey || process.env.ANTHROPIC_API_KEY || stored.ANTHROPIC_API_KEY,
         qwen: apiKey || process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || stored.QWEN_API_KEY || stored.DASHSCOPE_API_KEY,
+        ark: apiKey || process.env.ARK_API_KEY || stored.ARK_API_KEY,
       };
       const key = keyMap[provider];
       if (!key) {
@@ -233,37 +242,57 @@ export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
   });
 
   // System stats — real-time CPU / memory / platform info
-  router.get("/system/stats", (_req: any, res: any) => {
+  router.get("/system/stats", async (_req: any, res: any) => {
     try {
-      const cpus = os.cpus();
       const totalMem = os.totalmem();
       const freeMem = os.freemem();
       const usedMem = totalMem - freeMem;
       const memPercent = Math.round((usedMem / totalMem) * 100);
 
-      // CPU: average across all cores
+      // CPU: delta between two snapshots for real-time usage (like Task Manager)
+      const snap1 = os.cpus().map(c => ({ total: sumTimes(c.times), idle: c.times.idle }));
+      await new Promise(r => setTimeout(r, 200));
+      const snap2 = os.cpus().map(c => ({ total: sumTimes(c.times), idle: c.times.idle }));
       const cpuPercent = Math.round(
-        cpus.reduce((sum, core) => {
-          const total = Object.values(core.times).reduce((a, b) => a + b, 0);
-          const idle = core.times.idle;
-          return sum + (1 - idle / total) * 100;
-        }, 0) / cpus.length
+        snap1.reduce((sum, s1, i) => {
+          const s2 = snap2[i];
+          const totalDelta = s2.total - s1.total;
+          const idleDelta = s2.idle - s1.idle;
+          if (totalDelta <= 0) return sum;
+          return sum + ((totalDelta - idleDelta) / totalDelta) * 100;
+        }, 0) / snap1.length
       );
+
+      // GPU: detect once, cache forever
+      if (_cachedGPU === undefined) {
+        _cachedGPU = null;
+        if (process.platform === 'win32') {
+          try {
+            const { execSync } = await import('child_process');
+            const psCmd = `Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notmatch 'Idd|Indirect|Mirror|Virtual' } | Select-Object -First 1 -ExpandProperty Name`;
+            const out = execSync(`powershell -NoProfile -Command "${psCmd}"`, { timeout: 5000, encoding: 'utf-8' });
+            const trimmed = out.trim();
+            if (trimmed) _cachedGPU = { name: trimmed };
+          } catch {}
+        }
+      }
 
       res.json({
         cpu: cpuPercent,
+        gpu: _cachedGPU,
         ram: { used: Math.round(usedMem / 1024 / 1024 / 1024 * 10) / 10, total: Math.round(totalMem / 1024 / 1024 / 1024 * 10) / 10, percent: memPercent },
         platform: os.platform(),
         release: os.release(),
         arch: os.arch(),
         hostname: os.hostname(),
-        cpus: cpus.length,
+        cpus: os.cpus().length,
         uptime: Math.round(os.uptime()),
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
+
 
   // Latency stats
   router.get("/monitor/latency", (_req: any, res: any) => {

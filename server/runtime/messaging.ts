@@ -9,10 +9,10 @@ import { loadEmotionalState } from "../personality/state";
 
 export function setupMessaging(
   apiRouter: Router,
-  llm: { getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any },
+  llm: { getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any; getArk: any },
 ) {
   const cfg = getMessagingConfig();
-  const llmGetters = { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen };
+  const llmGetters = { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen, getArk: llm.getArk };
 
   // Always mount messaging routes so UI can save config even before env vars are set
   // Feishu

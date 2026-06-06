@@ -8,6 +8,7 @@ let anthropic: Anthropic | null = null;
 let gemini: GoogleGenerativeAI | null = null;
 let deepseek: OpenAI | null = null;
 let qwen: OpenAI | null = null;
+let ark: OpenAI | null = null;
 let ollama: OpenAI | null = null;
 let ollamaDetected = false;
 
@@ -17,6 +18,7 @@ export interface LLMClients {
   getGemini: () => GoogleGenerativeAI | null;
   getDeepSeek: () => OpenAI | null;
   getQwen: () => OpenAI | null;
+  getArk: () => OpenAI | null;
   getOllama: () => OpenAI | null;
   isOllamaAvailable: () => boolean;
 }
@@ -68,6 +70,17 @@ function getQwen() {
   return qwen;
 }
 
+function getArk() {
+  const key = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
+  if (!ark && key) {
+    ark = new OpenAI({
+      apiKey: key,
+      baseURL: process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
+    });
+  }
+  return ark;
+}
+
 function getOllama() {
   if (!ollama && ollamaDetected) {
     ollama = new OpenAI({
@@ -107,5 +120,5 @@ async function detectOllama(): Promise<boolean> {
 export function createLLMRuntime(): LLMClients {
   // Fire-and-forget: detect local Ollama in background
   detectOllama();
-  return { getOpenAI, getAnthropic, getGemini, getDeepSeek, getQwen, getOllama, isOllamaAvailable };
+  return { getOpenAI, getAnthropic, getGemini, getDeepSeek, getQwen, getArk, getOllama, isOllamaAvailable };
 }

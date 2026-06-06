@@ -489,7 +489,7 @@ function DesktopIcon({ label, icon, colorClass, onClick, onContextMenu }: Deskto
 
 function KernelMonitorApp({ t }: { t: any }) {
   const [data, setData] = useState<number[]>([]);
-  const [stats, setStats] = useState({ cpu: 0, ram: { used: 0, total: 0, percent: 0 }, platform: '', release: '', arch: '', hostname: '', cpus: 0, uptime: 0 });
+  const [stats, setStats] = useState({ cpu: 0, ram: { used: 0, total: 0, percent: 0 }, platform: '', release: '', arch: '', hostname: '', cpus: 0, uptime: 0, gpu: null as { name?: string; util?: number } | null });
   const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
@@ -551,7 +551,7 @@ function KernelMonitorApp({ t }: { t: any }) {
         {[
           { label: t.neuralThroughput || 'CPU Load', value: `${stats.cpu}%`, bar: stats.cpu, color: 'bg-celestial-saturn' },
           { label: t.synapticLoad || 'Memory', value: `${stats.ram.used} / ${stats.ram.total} GB`, bar: stats.ram.percent, color: 'bg-emerald-500' },
-          { label: t.meshLatency || 'Disk I/O', value: `${stats.cpus} Cores · ${stats.arch}`, bar: 0, color: 'bg-blue-500' }
+          { label: 'GPU', value: stats.gpu?.name || `${stats.cpus} Cores · ${stats.arch}`, bar: 0, color: 'bg-blue-500' }
         ].map((stat, i) => (
           <div key={i} className="p-5 bg-white/5 rounded-[2rem] border border-white/5 space-y-3 hover:bg-white/10 transition-colors cursor-default">
             <div className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">{stat.label}</div>

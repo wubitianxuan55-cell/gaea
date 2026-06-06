@@ -114,7 +114,13 @@ fn detect_gpu() -> Option<String> {
                 let parts: Vec<&str> = line.split(',').collect();
                 if parts.len() >= 2 {
                     let name = parts[1].trim();
-                    if !name.is_empty() {
+                    // Skip virtual/indirect display adapters
+                    if !name.is_empty()
+                        && !name.contains("Idd")
+                        && !name.contains("Indirect")
+                        && !name.contains("Mirror")
+                        && !name.contains("Virtual")
+                    {
                         return Some(name.to_string());
                     }
                 }
@@ -123,7 +129,6 @@ fn detect_gpu() -> Option<String> {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        // Linux: check lspci
         let output = Command::new("sh")
             .args(["-c", "lspci | grep -i vga | head -1 | cut -d: -f3"])
             .output();
@@ -131,6 +136,24 @@ fn detect_gpu() -> Option<String> {
             let name = String::from_utf8_lossy(&out.stdout).trim().to_string();
             if !name.is_empty() {
                 return Some(name);
+            }
+        }
+    }
+    None
+}
+
+fn detect_gpu_usage() -> Option<f32> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let output = std::process::Command::new("nvidia-smi")
+            .args(["--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"])
+            .creation_flags(0x08000000u32)
+            .output();
+        if let Ok(out) = output {
+            let text = String::from_utf8_lossy(&out.stdout);
+            if let Ok(val) = text.trim().parse::<f32>() {
+                return Some(val);
             }
         }
     }
@@ -157,6 +180,12 @@ fn get_live_stats() -> LiveStats {
 
     let gpu_vendor = detect_gpu();
 
+    #[cfg(target_os = "windows")]
+    let gpu_utilization = detect_gpu_usage();
+
+    #[cfg(not(target_os = "windows"))]
+    let gpu_utilization = None;
+
     let components = sysinfo::Components::new_with_refreshed_list();
     let temperatures: Vec<TempReading> = components
         .iter()
@@ -168,12 +197,12 @@ fn get_live_stats() -> LiveStats {
         .collect();
 
     LiveStats {
-        cpu_percent: (cpu_percent * 100.0).min(100.0),
+        cpu_percent: cpu_percent.min(100.0),
         memory_used_gb: used_mem / 1024.0 / 1024.0 / 1024.0,
         memory_total_gb: total_mem / 1024.0 / 1024.0 / 1024.0,
         memory_percent: mem_percent,
         gpu_vendor,
-        gpu_utilization: None,
+        gpu_utilization,
         temperatures,
         fan_speed_rpm: None,
         hostname: System::host_name().unwrap_or_default(),

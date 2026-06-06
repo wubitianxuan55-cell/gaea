@@ -10,17 +10,16 @@ async function ocrScreen(args: Record<string, any>, context?: any): Promise<stri
 
   // Resolve vision-capable provider
   const g = context?.llmGetters || {};
-  const provider = g.getOpenAI?.() ? 'openai' : g.getGemini?.() ? 'gemini' : g.getQwen?.() ? 'qwen' : null;
+  const provider = g.getOpenAI?.() ? 'openai' : g.getQwen?.() ? 'qwen' : g.getArk?.() ? 'ark' : g.getGemini?.() ? 'gemini' : null;
   if (!provider) {
-    // No vision model available — return raw base64 so the LLM can at least pass it to vision if available
-    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No vision-capable model key configured (OpenAI/Gemini/Qwen). Provide the key in Settings → Voice Services.' });
+    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No vision-capable model key configured (OpenAI/Qwen/Ark/Gemini). Provide the key in Settings → API Matrix.' });
   }
 
+  const model = provider === 'openai' ? 'gpt-4o' : provider === 'qwen' ? 'qwen-vl-max' : provider === 'ark' ? 'doubao-1-5-vision-pro-32k' : 'gemini-2.0-flash';
   try {
-    const description = await analyzeScreen(base64, query, { provider, model: provider === 'openai' ? 'gpt-4o' : provider === 'gemini' ? 'gemini-2.0-flash' : 'qwen-vl-max' }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen);
+    const description = await analyzeScreen(base64, query, { provider, model }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen, g.getOllama, g.getArk);
     return description;
   } catch (err: any) {
-    // Fallback: return base64 so caller can try
     return JSON.stringify({ format: 'screenshot_base64', data: base64, error: err.message });
   }
 }
@@ -34,13 +33,14 @@ async function ocrRegion(args: Record<string, any>, context?: any): Promise<stri
   const base64 = await context.desktopRelay('desktop_capture_screen', { quality: 70 });
 
   const g = context?.llmGetters || {};
-  const provider = g.getOpenAI?.() ? 'openai' : g.getGemini?.() ? 'gemini' : g.getQwen?.() ? 'qwen' : null;
+  const provider = g.getOpenAI?.() ? 'openai' : g.getQwen?.() ? 'qwen' : g.getArk?.() ? 'ark' : g.getGemini?.() ? 'gemini' : null;
   if (!provider) {
     return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No vision-capable model key configured.' });
   }
 
+  const model = provider === 'openai' ? 'gpt-4o' : provider === 'qwen' ? 'qwen-vl-max' : provider === 'ark' ? 'doubao-1-5-vision-pro-32k' : 'gemini-2.0-flash';
   try {
-    const description = await analyzeScreen(base64, query, { provider, model: provider === 'openai' ? 'gpt-4o' : provider === 'gemini' ? 'gemini-2.0-flash' : 'qwen-vl-max' }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen);
+    const description = await analyzeScreen(base64, query, { provider, model }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen, g.getOllama, g.getArk);
     return description;
   } catch (err: any) {
     return JSON.stringify({ format: 'screenshot_base64', data: base64, error: err.message });

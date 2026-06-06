@@ -1,6 +1,7 @@
 import { TTSConfig, TTSResult, TTSProvider, VoiceCloneRequest, VoiceListItem } from './types';
 import * as gptsovits from './providers/gptsovits';
 import * as cosyvoice from './providers/cosyvoice';
+import * as ark from './providers/ark';
 import { getKey } from '../config/keys';
 import { getVoicePreference } from '../config/voice_preference';
 
@@ -10,6 +11,8 @@ export async function synthesizeSpeech(text: string, config: TTSConfig): Promise
       return gptsovits.synthesizeSpeech(text, config.voiceId, config.signal);
     case 'cosyvoice':
       return cosyvoice.synthesizeSpeech(text, config.voiceId, config.signal, config.speechRate, config.pitch, config.volume);
+    case 'ark':
+      return ark.synthesizeSpeech(text, config.voiceId, config.signal, config.speechRate, config.pitch, config.volume);
     default:
       throw new Error(`Unknown TTS provider: ${config.provider}`);
   }
@@ -39,6 +42,8 @@ export async function listVoices(provider: TTSProvider): Promise<VoiceListItem[]
       return cosyvoice.listVoices();
     case 'gptsovits':
       return gptsovits.listVoices();
+    case 'ark':
+      return ark.listVoices();
     default:
       throw new Error(`Unknown TTS provider: ${provider}`);
   }
@@ -46,10 +51,12 @@ export async function listVoices(provider: TTSProvider): Promise<VoiceListItem[]
 
 export function getActiveProvider(): TTSProvider | null {
   const pref = getVoicePreference();
-  // If user explicitly chose a provider and it's available, use it
   if (pref.tts === 'gptsovits' && (process.env.GPTSOVITS_API_URL || process.env.GPTSOVITS_ENABLED === 'true')) return 'gptsovits';
   if (pref.tts === 'cosyvoice') return 'cosyvoice';
+  if (pref.tts === 'ark') return 'ark';
   // Auto mode — pick based on what's available
+  const arkKey = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
+  if (arkKey) return 'ark';
   const dashscopeKey = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
   if (dashscopeKey) return 'cosyvoice';
   if (process.env.GPTSOVITS_API_URL || process.env.GPTSOVITS_ENABLED === 'true') return 'gptsovits';

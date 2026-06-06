@@ -6,12 +6,10 @@ import {
   Cpu,
   Database,
   Radio,
-  Key,
   BrainCircuit,
   ChevronDown,
   Music,
   Headphones,
-  Volume2,
   MessagesSquare,
   Sparkle,
   Zap,
@@ -20,7 +18,8 @@ import {
   CheckCircle,
   AlertCircle,
   LogOut,
-  Terminal
+  Terminal,
+  Cloud
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -47,20 +46,14 @@ function buildSidebarGroups(t: any) {
       label: t.sidebarAiNeural || 'AI & Neural',
       items: [
         { id: 'neural', label: t.neuralEngine || 'Neural Engine', icon: <BrainCircuit size={16} /> },
-        { id: 'api', label: t.sidebarApiMatrix || 'API Matrix', icon: <Key size={16} /> },
-      ],
-    },
-    {
-      label: t.sidebarVoiceMedia || 'Voice & Media',
-      items: [
-        { id: 'voice', label: t.voiceForge || 'Voice Forge', icon: <Mic size={16} /> },
-        { id: 'music', label: t.sidebarMediaServices || 'Media Services', icon: <Music size={16} /> },
+        { id: 'llm-providers', label: t.llmProviders || 'LLM Providers', icon: <BrainCircuit size={16} /> },
+        { id: 'voice-services', label: t.voiceServices || 'Voice Services', icon: <Mic size={16} /> },
+        { id: 'skills-tools', label: t.skillServices || 'Skills & Tools', icon: <Sparkle size={16} /> },
       ],
     },
     {
       label: t.sidebarSystem || 'System',
       items: [
-        { id: 'sync', label: t.sidebarSyncHub || 'Sync Hub', icon: <Radio size={16} /> },
         { id: 'security', label: t.settings || 'Security', icon: <Shield size={16} /> },
         { id: 'hardware', label: t.settingsHardware || 'Hardware', icon: <Camera size={16} /> },
         { id: 'mcp', label: t.settingsMCP || 'MCP', icon: <Cpu size={16} /> },
@@ -199,45 +192,12 @@ export function Settings({
         );
       case 'voice':
         return <VoiceForge t={t} />;
-      case 'api':
-        return <ApiMatrixPage t={t} providerStatus={providerStatus} />;
-      case 'music':
-        return (
-          <div className="space-y-8">
-            <SettingsSection title={t.audioOutput || "Audio & Voice Output"} icon={<Music size={18} className="text-celestial-saturn" />}>
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-white/80">{t.ttsEngine || 'TTS Engine'}</span>
-                  </div>
-                  <p className="text-[10px] text-white/40">
-                    {t.ttsEngineDesc || 'GPT-SoVITS + DashScope CosyVoice configured. Voice synthesis ready for all agents.'}
-                  </p>
-                </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-white/80">{t.sttEngine || 'STT Engine'}</span>
-                  </div>
-                  <p className="text-[10px] text-white/40">
-                    {t.sttEngineDesc || 'Deepgram speech recognition active. Real-time transcription available.'}
-                  </p>
-                </div>
-                <VoiceProviderSwitch t={t} />
-                <button
-                  onClick={() => onSectionChange?.('voice')}
-                  className="w-full p-4 rounded-2xl bg-celestial-saturn/5 border border-celestial-saturn/20 hover:bg-celestial-saturn/10 transition-all text-left"
-                >
-                  <span className="text-[10px] font-bold text-celestial-saturn uppercase tracking-widest">
-                    {t.voiceSettings || 'Voice Settings'} →
-                  </span>
-                  <p className="text-[10px] text-white/30 mt-1">{t.voiceSettingsDesc || 'Configure speech models, voices, and audio devices.'}</p>
-                </button>
-              </div>
-            </SettingsSection>
-          </div>
-        );
+      case 'llm-providers':
+        return <LLMProvidersPage t={t} providerStatus={providerStatus} />;
+      case 'voice-services':
+        return <VoiceServicesPage t={t} />;
+      case 'skills-tools':
+        return <SkillsToolsPage t={t} />;
       case 'sync':
         return (
           <div className="space-y-8">
@@ -679,153 +639,86 @@ function AlwaysOnVoiceToggle() {
   );
 }
 
-function ApiMatrixPage({ t, providerStatus }: { t: any; providerStatus: Record<string, { available: boolean; model: string }> }) {
-  const [tab, setTab] = useState<'llm' | 'voice' | 'skills'>('llm');
-
+function LLMProvidersPage({ t, providerStatus }: { t: any; providerStatus: Record<string, { available: boolean; model: string }> }) {
   return (
     <div className="space-y-8">
-      <SettingsSection title={t.neuralApiMatrix || "API Key Matrix"} icon={<Key size={18} className="text-celestial-saturn" />}>
-        {/* Sub-tabs */}
-        <div className="flex gap-1 mb-6 p-1 bg-white/5 rounded-xl border border-white/5">
-          <button
-            onClick={() => setTab('llm')}
-            className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              tab === 'llm' ? 'bg-celestial-saturn text-black' : 'text-white/30 hover:text-white/60'
-            }`}
-          >
-            {t.llmProviders || 'LLM Providers'}
-          </button>
-          <button
-            onClick={() => setTab('voice')}
-            className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              tab === 'voice' ? 'bg-celestial-saturn text-black' : 'text-white/30 hover:text-white/60'
-            }`}
-          >
-            {t.voiceServices || 'Voice Services'}
-          </button>
-          <button
-            onClick={() => setTab('skills')}
-            className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              tab === 'skills' ? 'bg-celestial-saturn text-black' : 'text-white/30 hover:text-white/60'
-            }`}
-          >
-            {t.skillServices || 'Skills & Tools'}
-          </button>
+      <SettingsSection title={t.llmProviders || "LLM Providers"} icon={<BrainCircuit size={18} className="text-celestial-saturn" />}>
+        <p className="text-sm text-white/40 max-w-xl mb-6">
+          {t.apiMatrixLLMDesc || 'Configure API keys and preferred models for each LLM provider.'}
+        </p>
+        <div className="grid grid-cols-1 gap-6">
+          <LLMProviderRow icon={<BrainCircuit size={18} className="text-blue-400" />} label="DeepSeek" providerId="deepseek" models={['deepseek-chat', 'deepseek-reasoner']} placeholder="sk-..." serverKey="DEEPSEEK_API_KEY" t={t} />
+          <LLMProviderRow icon={<Zap size={18} className="text-violet-400" />} label="Qwen / DashScope (Alibaba Cloud)" providerId="qwen" models={['qwen-plus', 'qwen-max', 'qwen-turbo']} placeholder="sk-..." serverKey="DASHSCOPE_API_KEY" t={t} />
+          <LLMProviderRow icon={<Cloud size={18} className="text-cyan-400" />} label="Doubao / 豆包 (Ark)" providerId="ark" models={['doubao-1-5-pro-32k', 'doubao-1-5-lite-32k', 'doubao-1-5-vision-pro-32k']} placeholder="Enter Ark API key..." serverKey="ARK_API_KEY" t={t} />
+          <LLMProviderRow icon={<BrainCircuit size={18} className="text-blue-400" />} label={`Google Gemini${providerStatus.gemini?.available ? ` (${providerStatus.gemini.model})` : ''}`} providerId="gemini" models={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']} placeholder={providerStatus.gemini?.available ? (t.connectedViaEnv || 'Connected via environment') : (t.noKeyConfigured || 'No key configured')} serverKey="GEMINI_API_KEY" t={t} />
+          <LLMProviderRow icon={<MessagesSquare size={18} className="text-green-400" />} label="OpenAI" providerId="openai" models={['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']} placeholder="sk-..." serverKey="OPENAI_API_KEY" t={t} />
+          <LLMProviderRow icon={<Sparkle size={18} className="text-purple-400" />} label="Anthropic Claude" providerId="anthropic" models={['claude-sonnet-4-6', 'claude-opus-4-7', 'claude-haiku-4-5']} placeholder="sk-ant-..." serverKey="ANTHROPIC_API_KEY" t={t} />
         </div>
+      </SettingsSection>
+    </div>
+  );
+}
 
-        {tab === 'llm' ? (
-          <>
-            <p className="text-sm text-white/40 max-w-xl mb-6">
-              {t.apiMatrixLLMDesc || 'Configure API keys and preferred models for each LLM provider. These keys are stored server-side and shared across all devices.'}
-            </p>
-            <div className="grid grid-cols-1 gap-6">
-              <LLMProviderRow
-                icon={<BrainCircuit size={18} className="text-blue-400" />}
-                label="DeepSeek"
-                providerId="deepseek"
-                models={['deepseek-chat', 'deepseek-reasoner']}
-                placeholder="sk-..."
-                serverKey="DEEPSEEK_API_KEY"
-                t={t}
-              />
-              <LLMProviderRow
-                icon={<Zap size={18} className="text-violet-400" />}
-                label="Qwen / DashScope (Alibaba Cloud)"
-                providerId="qwen"
-                models={['qwen-plus', 'qwen-max', 'qwen-turbo']}
-                placeholder="sk-..."
-                serverKey="DASHSCOPE_API_KEY"
-                t={t}
-              />
-              <LLMProviderRow
-                icon={<BrainCircuit size={18} className="text-blue-400" />}
-                label={`Google Gemini${providerStatus.gemini?.available ? ` (${providerStatus.gemini.model})` : ''}`}
-                providerId="gemini"
-                models={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']}
-                placeholder={providerStatus.gemini?.available ? (t.connectedViaEnv || 'Connected via environment') : (t.noKeyConfigured || 'No key configured')}
-                serverKey="GEMINI_API_KEY"
-                t={t}
-              />
-              <LLMProviderRow
-                icon={<MessagesSquare size={18} className="text-green-400" />}
-                label="OpenAI"
-                providerId="openai"
-                models={['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']}
-                placeholder="sk-..."
-                serverKey="OPENAI_API_KEY"
-                t={t}
-              />
-              <LLMProviderRow
-                icon={<Sparkle size={18} className="text-purple-400" />}
-                label="Anthropic Claude"
-                providerId="anthropic"
-                models={['claude-sonnet-4-6', 'claude-opus-4-7', 'claude-haiku-4-5']}
-                placeholder="sk-ant-..."
-                serverKey="ANTHROPIC_API_KEY"
-                t={t}
-              />
+function VoiceServicesPage({ t }: { t: any }) {
+  return (
+    <div className="space-y-8">
+      <SettingsSection title={t.audioOutput || "Audio & Voice Output"} icon={<Music size={18} className="text-celestial-saturn" />}>
+        <div className="space-y-4 mb-6">
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-white/80">{t.ttsEngine || 'TTS Engine'}</span>
             </div>
-          </>
-        ) : tab === 'skills' ? (
-          <>
-            <p className="text-sm text-white/40 max-w-xl mb-6">
-              {t.apiMatrixSkillsDesc || 'API keys for premium skill services. These enable creative generation, music, video, code sandboxing, and more.'}
-            </p>
-            <div className="grid grid-cols-1 gap-6">
-              <ApiKeyField
-                icon={<Sparkle size={18} className="text-amber-400" />}
-                label={t.minimaxLabel || 'MiniMax (Music + Video + TTS + Voice Clone)'}
-                placeholder={t.minimaxPlaceholder || 'Enter MiniMax API key...'}
-                storageKey="lumi_minimax_key"
-                serverKey="MINIMAX_API_KEY"
-                hint={t.minimaxHint || 'Powers music generation, video creation, image synthesis, text-to-speech, and voice cloning. Get your key at platform.minimaxi.com'}
-                t={t}
-              />
-              <ApiKeyField
-                icon={<Terminal size={18} className="text-green-400" />}
-                label={t.e2bLabel || 'E2B (Code Sandbox)'}
-                placeholder={t.e2bPlaceholder || 'Enter E2B API key...'}
-                storageKey="lumi_e2b_key"
-                serverKey="E2B_API_KEY"
-                hint={t.e2bHint || 'Secure cloud sandbox for executing Python and JavaScript code. Get your key at e2b.dev'}
-                t={t}
-              />
+            <p className="text-[10px] text-white/40">{t.ttsEngineDesc || 'GPT-SoVITS + DashScope CosyVoice configured.'}</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-white/80">{t.sttEngine || 'STT Engine'}</span>
             </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-white/40 max-w-xl mb-6">
-              {t.voiceServicesDesc || 'Both speech recognition (Qwen ASR) and speech synthesis (CosyVoice TTS) run on DashScope. One key covers everything.'}
-            </p>
-            <div className="grid grid-cols-1 gap-6">
-              <ApiKeyField
-                icon={<Zap size={18} className="text-violet-400" />}
-                label={t.dashscopeLabel || 'DashScope (STT + TTS)'}
-                placeholder="sk-..."
-                storageKey="lumi_dashscope_key"
-                serverKey="DASHSCOPE_API_KEY"
-                hint={t.dashscopeHint || 'Powers Qwen ASR for speech recognition and CosyVoice for speech synthesis. Get your key at dashscope.aliyun.com'}
-                t={t}
-              />
+            <p className="text-[10px] text-white/40">{t.sttEngineDesc || 'Deepgram speech recognition active.'}</p>
+          </div>
+          <VoiceProviderSwitch t={t} />
+        </div>
+        <p className="text-sm text-white/40 max-w-xl mb-6">
+          {t.voiceServicesDesc || 'Speech recognition (ASR) and speech synthesis (TTS). Ark (Doubao) is auto-prioritized when configured.'}
+        </p>
+        <div className="grid grid-cols-1 gap-6">
+          <ApiKeyField icon={<Cloud size={18} className="text-cyan-400" />} label={t.arkVoiceLabel || 'Doubao / Ark (TTS + ASR)'} placeholder="Enter Ark API key..." storageKey="lumi_ark_key" serverKey="ARK_API_KEY" hint={t.arkVoiceHint || 'Doubao TTS (6 voices) + ASR. Get your key at console.volcengine.com/ark'} t={t} />
+          <ApiKeyField icon={<Zap size={18} className="text-violet-400" />} label={t.dashscopeLabel || 'DashScope (STT + TTS)'} placeholder="sk-..." storageKey="lumi_dashscope_key" serverKey="DASHSCOPE_API_KEY" hint={t.dashscopeHint || 'Powers Qwen ASR and CosyVoice TTS. Get your key at dashscope.aliyun.com'} t={t} />
+        </div>
+        <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-white/80">{t.proactiveVoiceGreeting || '允许Lumi主动语音问候'}</p>
+              <p className="text-[10px] text-white/30 mt-0.5">{t.proactiveVoiceGreetingDesc || '开启后，Lumi会在检测到异常或长时间不活动时主动开口说话'}</p>
             </div>
-            <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-white/80">{t.proactiveVoiceGreeting || '允许Lumi主动语音问候'}</p>
-                  <p className="text-[10px] text-white/30 mt-0.5">{t.proactiveVoiceGreetingDesc || '开启后，Lumi会在检测到异常或长时间不活动时主动开口说话'}</p>
-                </div>
-                <ProactiveVoiceToggle />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-white/80">{t.alwaysOnVoiceLabel || '持续语音通道 (Always-On Voice)'}</p>
-                  <p className="text-[10px] text-white/30 mt-0.5">{t.alwaysOnVoiceDesc || '开启后麦克风不会自动断开，Lumi始终在听。像贾维斯一样随时插话'}</p>
-                </div>
-                <AlwaysOnVoiceToggle />
-              </div>
+            <ProactiveVoiceToggle />
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <p className="text-xs font-bold text-white/80">{t.alwaysOnVoiceLabel || '持续语音通道 (Always-On Voice)'}</p>
+              <p className="text-[10px] text-white/30 mt-0.5">{t.alwaysOnVoiceDesc || '开启后麦克风不会自动断开，Lumi始终在听。'}</p>
             </div>
-          </>
-        )}
+            <AlwaysOnVoiceToggle />
+          </div>
+        </div>
+      </SettingsSection>
+    </div>
+  );
+}
+
+function SkillsToolsPage({ t }: { t: any }) {
+  return (
+    <div className="space-y-8">
+      <SettingsSection title={t.skillServices || "Skills & Tools"} icon={<Sparkle size={18} className="text-celestial-saturn" />}>
+        <p className="text-sm text-white/40 max-w-xl mb-6">
+          {t.apiMatrixSkillsDesc || 'API keys for premium skill services — music, video, code sandboxing, and more.'}
+        </p>
+        <div className="grid grid-cols-1 gap-6">
+          <ApiKeyField icon={<Sparkle size={18} className="text-amber-400" />} label={t.minimaxLabel || 'MiniMax (Music + Video + TTS + Voice Clone)'} placeholder={t.minimaxPlaceholder || 'Enter MiniMax API key...'} storageKey="lumi_minimax_key" serverKey="MINIMAX_API_KEY" hint={t.minimaxHint || 'Powers music, video, image, TTS, and voice cloning. Get your key at platform.minimaxi.com'} t={t} />
+          <ApiKeyField icon={<Terminal size={18} className="text-green-400" />} label={t.e2bLabel || 'E2B (Code Sandbox)'} placeholder={t.e2bPlaceholder || 'Enter E2B API key...'} storageKey="lumi_e2b_key" serverKey="E2B_API_KEY" hint={t.e2bHint || 'Secure cloud sandbox for executing Python and JavaScript code. Get your key at e2b.dev'} t={t} />
+        </div>
       </SettingsSection>
     </div>
   );

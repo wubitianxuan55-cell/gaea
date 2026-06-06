@@ -206,12 +206,11 @@ export function NeuralSynthesisMonitor({ t, onOpenTokens }: { t?: any; onOpenTok
   const memFmt = liveStats
     ? `${Math.round(liveStats.memory_percent)}% (${liveStats.memory_used_gb.toFixed(1)}/${liveStats.memory_total_gb.toFixed(1)}G)`
     : '--';
-  const gpuFmt = liveStats?.gpu_vendor
-    ? (liveStats.gpu_utilization != null ? `${Math.round(liveStats.gpu_utilization)}%` : 'N/A')
-    : (liveStats ? 'No GPU' : '--');
-  const gpuLabel = liveStats?.gpu_vendor
-    ? liveStats.gpu_vendor.split(' ').slice(0, 2).join(' ')
-    : 'GPU';
+  const gpuShort = liveStats?.gpu_vendor
+    ? liveStats.gpu_vendor.replace(/NVIDIA GeForce /, '').replace(/AMD Radeon /, '').replace(/Intel /, '')
+    : null;
+  const gpuFmt = liveStats?.gpu_utilization != null ? `${Math.round(liveStats.gpu_utilization)}%` : (gpuShort || '--');
+  const gpuLabel = gpuShort || 'GPU';
 
   const modelLabel = aiConfig ? `${aiConfig.provider}/${aiConfig.model}` : '--';
   const tokenSpeedFmt = tokenSpeed > 0 ? `${Math.round(tokenSpeed)} tok/s` : '--';

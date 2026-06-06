@@ -2,6 +2,7 @@ import { STTConfig, STTResult, STTProvider } from './types';
 import * as deepgram from './providers/deepgram';
 import * as whisper from './providers/whisper';
 import * as qwen from './providers/qwen';
+import * as ark from './providers/ark';
 import * as localWhisper from './providers/local-whisper';
 import { getKey } from '../config/keys';
 import { getVoicePreference } from '../config/voice_preference';
@@ -21,6 +22,9 @@ export async function transcribe(audioBuffer: Buffer, config: STTConfig): Promis
       break;
     case 'whisper':
       result = await whisper.transcribe(audioBuffer, config.language);
+      break;
+    case 'ark':
+      result = await ark.transcribe(audioBuffer, config.language);
       break;
     case 'deepgram':
       result = await new Promise((resolve, reject) => {
@@ -74,12 +78,15 @@ export function getActiveSTTProvider(): STTProvider | null {
   // If user explicitly chose a provider, use it
   if (pref.stt === 'local-whisper' && localWhisper.isLocalWhisperAvailable()) return 'local-whisper';
   if (pref.stt === 'qwen') return 'qwen';
+  if (pref.stt === 'ark') return 'ark';
   if (pref.stt === 'deepgram') return 'deepgram';
   if (pref.stt === 'whisper') return 'whisper';
   // Auto mode — prefer local, fall back to cloud
   try {
     if (localWhisper.isLocalWhisperAvailable()) return 'local-whisper';
   } catch {}
+  const arkKey = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
+  if (arkKey) return 'ark';
   const qwenKey = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY
     || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
   if (qwenKey) return 'qwen';
