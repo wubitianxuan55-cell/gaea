@@ -160,6 +160,106 @@ const patterns: QuickPattern[] = [
     }),
   },
 
+  // ── Lumi Status / Health ──
+  {
+    patterns: [/^\/status$|^状态$|^系统状态$|^健康检查$|^lumi.*状态|^检查.*系统/i],
+    handler: async (_, userId) => {
+      try {
+        const { runHealthAudit } = await import('../agents/health_audit');
+        const report = runHealthAudit(userId);
+        const lines = [
+          `## Lumi 系统状态: ${report.overallStatus === 'healthy' ? '✅ 健康' : report.overallStatus === 'degraded' ? '⚠️ 部分降级' : '❌ 异常'}`,
+          '',
+          ...report.checks.map(c =>
+            `- **${c.name}**: ${c.status === 'ok' ? '✅' : c.status === 'warn' ? '⚠️' : '❌'} ${c.detail}`
+          ),
+          '',
+        ];
+        if (report.recommendations.length > 0) {
+          lines.push('### 建议');
+          report.recommendations.forEach(r => lines.push(`- ${r}`));
+        }
+        if (report.evolutionInsight) {
+          lines.push('', `> ${report.evolutionInsight}`);
+        }
+        return { responseText: lines.join('\n'), matched: true };
+      } catch (e: any) {
+        return { responseText: `状态检查失败: ${e.message}`, matched: true };
+      }
+    },
+  },
+
+  // ── Evolution / Self-awareness ──
+  {
+    patterns: [/^(你学到了什么|你有什么变化|你进化了吗|你变了吗|你更懂我了吗|你的成长|你的记忆|你记得什么|what.*learn|what.*change|how.*evolve)[。！？.!?]*$/i],
+    handler: async (_, userId) => {
+      try {
+        const { personalityRegistry } = await import('../personality');
+        const personality = personalityRegistry.get('lumi');
+        if (!personality) return { responseText: '我还是出厂设置，还没开始学习呢。多和我互动吧！', matched: true };
+
+        const history = (personality as any).evolutionHistory;
+        const lines: string[] = [];
+
+        // Memory stats
+        try {
+          const db = readDB();
+          const memories = (db as any).memories || [];
+          const byType: Record<string, number> = {};
+          for (const m of memories) {
+            const t = m.type || 'other';
+            byType[t] = (byType[t] || 0) + 1;
+          }
+          const memSummary = Object.entries(byType)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ');
+          lines.push(`**记忆**: ${memories.length} 条 (${memSummary || 'empty'})`);
+        } catch {
+          lines.push('**记忆**: 暂时无法读取');
+        }
+
+        // Agent team
+        try {
+          const db = readDB();
+          const agents = (db as any).agents || [];
+          const internal = agents.filter((a: any) => a.runtime !== 'external');
+          const external = agents.filter((a: any) => a.runtime === 'external');
+          lines.push(`**团队**: ${agents.length} 个 Agent (${internal.length} 内置, ${external.length} 外部)`);
+        } catch {
+          lines.push('**团队**: 暂时无法读取');
+        }
+
+        // Workflow count
+        try {
+          const db = readDB();
+          const wfs = (db as any).workflows || [];
+          lines.push(`**工作流**: ${wfs.length} 个已保存的自动化流程`);
+        } catch {
+          lines.push('**工作流**: 暂时无法读取');
+        }
+
+        // Personality evolution
+        if (history && history.length > 0) {
+          const last = history[history.length - 1];
+          const daysAgo = Math.round((Date.now() - new Date(last.timestamp).getTime()) / 86400000);
+          lines.push(`**人格演化**: ${history.length} 次进化，最近一次 ${daysAgo} 天前`);
+          if (last.narrative) {
+            lines.push(`> "${last.narrative.slice(0, 200)}"`);
+          }
+        } else {
+          lines.push('**人格演化**: 还在出厂设置，多聊天我会自动调整风格');
+        }
+
+        const version = personality.version || '2.3';
+        lines.push('', `*Lumi ${version} · 持续进化中*`);
+
+        return { responseText: lines.join('\n'), matched: true };
+      } catch (e: any) {
+        return { responseText: `抱歉，暂时无法读取进化数据: ${e.message}`, matched: true };
+      }
+    },
+  },
+
   // ── Simple Yes/No ──
   {
     patterns: [/^(好的|ok|okay|好|嗯|知道了|收到|明白了|懂了|got\s*it|alright|fine)[。！？.!?]*$/i],

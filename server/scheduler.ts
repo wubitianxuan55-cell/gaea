@@ -881,7 +881,18 @@ Rules:
       try {
         const created = await autoGenerateWorkflows();
         if (created > 0) {
-          return `I noticed some patterns in how we work together and created ${created} new workflow${created > 1 ? 's' : ''}. You can say "run [name]" to use them.`;
+          const userIds = getAllUserIds();
+          for (const userId of userIds) {
+            if (scheduler.io) {
+              scheduler.io.to(userId).emit('agent:proactive', {
+                type: 'workflow_auto_generated',
+                message: `我发现了你的 ${created} 个操作习惯模式，已自动创建为工作流。你可以说"运行[名称]"来快速复用。`,
+                count: created,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          }
+          return `Created ${created} new workflow(s) from repeated patterns`;
         }
       } catch (err) {
         console.error('[Scheduler] auto_workflow_gen failed:', err);
