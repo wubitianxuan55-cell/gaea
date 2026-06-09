@@ -25,6 +25,7 @@ import { recordTokenUsage } from "../llm/token_tracker";
 import { runOrchestratedTask, shouldDistillSkill, buildSkillDescription } from "../agents/orchestrator";
 import { runNLChainer, shouldChainTask } from "../agents/nl_chainer";
 import { autoInstallForTask } from "../agents/auto_installer";
+import { emitMusicAtmosphere } from "../socket/music";
 import { searchKnowledgeBase } from "../org/kb";
 import { getWorkflow, recordWorkflowRun, listWorkflows } from "../agents/workflows";
 
@@ -463,6 +464,43 @@ export function registerChatHandler(
       }
 
       const allToolRecords: { name: string; args: string; result?: string; error?: string }[] = [];
+
+      // Path B1.5: Music intent — detect "放歌/放音乐/来首歌" and trigger atmosphere layer
+      if (!responseText && /放.*歌|放.*音乐|来首歌|播放.*音乐|听.*歌|来点音乐|给我放|随便放点/.test(text)) {
+        try {
+          const emotionalState = loadEmotionalState(uid);
+          const mood = emotionalState.dominantMood || 'peaceful';
+          const moodSearchMap: Record<string, string> = {
+            happy: '欢快 流行', playful: '轻松 治愈', warm: '温暖 民谣',
+            sad: '伤感 安静', melancholic: '怀旧 老歌', tired: '轻音乐 纯音乐',
+            curious: '新歌 推荐', focused: '专注 纯音乐', contemplative: '安静 钢琴',
+            excited: '热歌 嗨', peaceful: '治愈 轻松',
+          };
+          const searchKeyword = moodSearchMap[mood] || '推荐 热门';
+          const searchUrl = `https://music.163.com/api/search/get/web?csrf_token=hlpretag=&hlposttag=&s=${encodeURIComponent(searchKeyword)}&type=1&limit=5&offset=0`;
+          const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://music.163.com/' } });
+          const searchData = await searchRes.json();
+          const songs = searchData?.result?.songs || [];
+          if (songs.length > 0) {
+            const pick = songs[Math.floor(Math.random() * songs.length)];
+            const trackInfo = {
+              name: pick.name,
+              artists: (pick.artists || []).map((a: any) => a.name),
+              album: pick.album?.name,
+              duration: pick.duration || pick.dt,
+            };
+            emitMusicAtmosphere(socket, {
+              track: trackInfo,
+              mood,
+              lumiReason: `你现在心情${mood === 'tired' ? '有点累' : mood === 'sad' ? '不太好' : mood === 'happy' ? '很开心' : '还不错'}，选了这首给你听。`,
+            });
+            responseText = `正在播放「${trackInfo.name}」— ${trackInfo.artists.join('、')}`;
+            llmWasCalled = true;
+          }
+        } catch (musicErr: any) {
+          console.warn('[Music Intent] Failed:', musicErr.message);
+        }
+      }
 
       // Path B2: NL Task Chainer — for office workflows that chain tools (search→read→create etc.)
       if (!responseText && shouldChainTask(text)) {

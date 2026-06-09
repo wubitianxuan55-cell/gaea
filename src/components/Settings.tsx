@@ -883,9 +883,63 @@ function SkillsToolsPage({ t }: { t: any }) {
           <ApiKeyField icon={<Sparkle size={18} className="text-amber-400" />} label={t.minimaxLabel || 'MiniMax (Music + Video + TTS + Voice Clone)'} placeholder={t.minimaxPlaceholder || 'Enter MiniMax API key...'} storageKey="lumi_minimax_key" serverKey="MINIMAX_API_KEY" hint={t.minimaxHint || 'Powers music, video, image, TTS, and voice cloning. Get your key at platform.minimaxi.com'} t={t} />
           <ApiKeyField icon={<Music size={18} className="text-red-400" />} label={t.neteaseAppIdLabel || '网易云音乐 App ID'} placeholder={t.neteaseAppIdPlaceholder || 'Enter NetEase App ID...'} storageKey="lumi_netease_appid" serverKey="NETEASE_APP_ID" hint={t.neteaseAppIdHint || '网易云开放平台凭证。前往 developer.music.163.com 获取。'} t={t} />
           <ApiKeyField icon={<Music size={18} className="text-red-400" />} label={t.neteasePrivateKeyLabel || '网易云音乐 Private Key'} placeholder={t.neteasePrivateKeyPlaceholder || 'Enter NetEase Private Key...'} storageKey="lumi_netease_privatekey" serverKey="NETEASE_PRIVATE_KEY" hint={t.neteasePrivateKeyHint || 'RSA 私钥，从开放平台应用详情中复制完整内容。'} t={t} />
+          <NeteaseLoginButton t={t} />
           <ApiKeyField icon={<Terminal size={18} className="text-green-400" />} label={t.e2bLabel || 'E2B (Code Sandbox)'} placeholder={t.e2bPlaceholder || 'Enter E2B API key...'} storageKey="lumi_e2b_key" serverKey="E2B_API_KEY" hint={t.e2bHint || 'Secure cloud sandbox for executing Python and JavaScript code. Get your key at e2b.dev'} t={t} />
         </div>
       </SettingsSection>
+    </div>
+  );
+}
+
+function NeteaseLoginButton({ t }: { t?: any }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'scan' | 'done'>('idle');
+  const [qrUrl, setQrUrl] = useState('');
+
+  const handleLogin = async () => {
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message: '登录网易云音乐', agentId: null }),
+      });
+      const data = await res.json();
+      const text = data?.response || data?.text || '';
+      const urlMatch = text.match(/https?:\/\/[^\s"']+/);
+      if (urlMatch) {
+        setQrUrl(urlMatch[0]);
+        setStatus('scan');
+      } else {
+        setStatus('idle');
+      }
+    } catch {
+      setStatus('idle');
+    }
+  };
+
+  return (
+    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-red-500/10 rounded-lg"><Music size={14} className="text-red-400" /></div>
+          <span className="text-xs font-bold text-white/70">{t?.neteaseLogin || '网易云音乐登录'}</span>
+        </div>
+        {status === 'idle' && (
+          <button onClick={handleLogin} className="px-4 py-1.5 bg-red-500/10 border border-red-500/20 rounded-xl text-[11px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/20 transition-all">
+            {t?.scanLogin || '扫码登录'}
+          </button>
+        )}
+        {status === 'loading' && <span className="text-xs text-white/30">获取中...</span>}
+        {status === 'done' && <span className="text-xs text-green-400 font-bold">已登录</span>}
+      </div>
+      {status === 'scan' && qrUrl && (
+        <div className="space-y-2">
+          <p className="text-[10px] text-white/40">用网易云音乐 App 扫描下方链接中的二维码：</p>
+          <a href={qrUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-cyan-400 hover:text-cyan-300 break-all underline">{qrUrl}</a>
+          <p className="text-[10px] text-white/30">扫码完成后，跟 Lumi 说"检查登录状态"即可确认。</p>
+        </div>
+      )}
     </div>
   );
 }
