@@ -1,16 +1,13 @@
 /**
  * Shared music search + play logic.
- * Uses ncm-cli for authenticated search, playback, and lyrics (supports VIP).
- * Audio plays via ncm-cli's mpv backend — frontend syncs state via WebSocket poller.
+ * Search via ncm-cli (authenticated, VIP supported).
+ * Playback via ncm-cli mpv (authenticated stream).
+ * Frontend syncs state via WebSocket poller.
  */
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import { loadEmotionalState } from '../personality/state';
 import { emitMusicAtmosphere } from '../socket/music';
 import { getFallbackScene, MusicScene } from './scene_generator';
-import { getSongUrl } from './netease_api';
-
-const execAsync = promisify(exec);
 
 const moodSearchMap: Record<string, string> = {
   happy: '欢快 流行', playful: '轻松 治愈', warm: '温暖 民谣',
@@ -39,6 +36,19 @@ function ncmExec(args: string, timeout = 15000): Promise<string> {
 
 function tryParse(text: string): any {
   try { return JSON.parse(text); } catch { return null; }
+}
+
+/** Fire-and-forget ncm-cli play — mpv handles audio, frontend syncs via poller */
+function ncmFirePlay(encryptedId: string, originalId: string): void {
+  const mpvPath = 'C:\\Program Files\\MPV Player';
+  exec(`npx @music163/ncm-cli play --song --encrypted-id "${encryptedId}" --original-id "${originalId}" --output json`, {
+    timeout: 30000,
+    env: { ...process.env, PATH: `${mpvPath};${process.env.PATH || ''}` },
+  }, (err, stdout) => {
+    if (err?.killed) {
+      // OK — long-running play, daemon/mpv continue independently
+    }
+  });
 }
 
 function extractTarget(userText: string): string | null {
@@ -74,13 +84,14 @@ export async function searchAndPlay(
     keyword = moodSearchMap[mood] || '推荐 热门';
   }
 
-  // ── Search via ncm-cli (returns encrypted IDs) ──
-  const searchRaw = await ncmExec(`search song --keyword "${keyword}" --limit 3`);
+  // Search via ncm-cli
+  const searchRaw = await ncmExec(`search song --keyword "${keyword}" --limit 5`);
   const searchData = tryParse(searchRaw);
-  const songs = searchData?.data?.records || [];
-  if (songs.length === 0) return { success: false };
+  const allSongs = searchData?.data?.records || [];
+  const playable = allSongs.filter((s: any) => s.playFlag !== false);
+  if (playable.length === 0) return { success: false };
 
-  const pick = songs[Math.floor(Math.random() * songs.length)];
+  const pick = playable[Math.floor(Math.random() * playable.length)];
   const trackInfo = {
     name: pick.name,
     artists: (pick.artists || pick.fullArtists || []).map((a: any) => a.name),
@@ -89,10 +100,13 @@ export async function searchAndPlay(
     coverUrl: pick.coverImgUrl,
   };
 
-  const audioUrl = `https://music.163.com/song/media/outer/url?id=${pick.originalId}.mp3`;
+  // Fire ncm-cli play — mpv handles audio
+  ncmFirePlay(pick.id, pick.originalId);
+
+  // No audioUrl — mpv handles audio, frontend uses local ticker for progress
   console.log(`[Music] Selected: "${trackInfo.name}"`);
 
-  // ── Lyrics (public API, no auth needed) ──
+  // Lyrics (public API)
   let lyricsData: any[] = [];
   try {
     const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${pick.originalId}&lv=-1&kv=-1&tv=-1`, {
@@ -110,7 +124,7 @@ export async function searchAndPlay(
     }
   } catch {}
 
-  // ── Scene ──
+  // Scene
   let scene: MusicScene = getFallbackScene(mood, { valence: emotionalState.valence, arousal: emotionalState.arousal });
   try {
     const { generateMusicScene } = await import('../music/scene_generator');
@@ -125,7 +139,7 @@ export async function searchAndPlay(
   emitMusicAtmosphere(socket, {
     track: trackInfo,
     mood,
-    audioUrl,
+    audioUrl: '',
     lyrics: lyricsData,
     lumiReason,
     scene,
