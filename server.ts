@@ -133,6 +133,46 @@ apiRouter.post('/ncm/login', async (_req, res) => {
   } catch {}
 })();
 
+// ── Auto-detect mpv for ncm-cli playback ──
+(async () => {
+  const { exec: execCb } = await import('child_process');
+  const { promisify: utilPromisify } = await import('util');
+  const execP = utilPromisify(execCb);
+  try {
+    // Check if mpv is already configured
+    const { stdout: existingPlayer } = await execP('npx @music163/ncm-cli config get player', { timeout: 8000 });
+    if (existingPlayer.includes('mpv') || existingPlayer.includes('orpheus')) {
+      console.log('[NCM] Player already configured:', existingPlayer.trim());
+      return;
+    }
+  } catch {
+    // config get failed — no player set, detect and configure
+  }
+  try {
+    // Find mpv in PATH or common install locations
+    const { stdout: whichOut } = await execP(process.platform === 'win32' ? 'where mpv 2>nul || echo NOT_FOUND' : 'which mpv 2>/dev/null || echo NOT_FOUND', { timeout: 5000 });
+    if (!whichOut.includes('NOT_FOUND')) {
+      await execP('npx @music163/ncm-cli config set player mpv', { timeout: 8000 });
+      console.log('[NCM] Auto-configured player: mpv');
+      return;
+    }
+    // Check common Windows install path
+    if (process.platform === 'win32') {
+      const { stdout: checkPath } = await execP('dir "C:\\Program Files\\MPV Player\\mpv.exe" 2>nul && echo FOUND || echo NOT_FOUND', { timeout: 5000 });
+      if (checkPath.includes('FOUND')) {
+        // Add to PATH for current process
+        process.env.PATH = (process.env.PATH || '') + ';C:\\Program Files\\MPV Player';
+        await execP('npx @music163/ncm-cli config set player mpv', { timeout: 8000 });
+        console.log('[NCM] Auto-configured player: mpv (C:\\Program Files\\MPV Player)');
+        return;
+      }
+    }
+    console.log('[NCM] mpv not found — music playback unavailable. Install mpv from https://mpv.io');
+  } catch (e: any) {
+    console.warn('[NCM] Failed to auto-configure player:', e.message || String(e));
+  }
+})();
+
 apiRouter.get('/ncm/login/status', (_req, res) => {
   res.json({ done: ncmLoginDone, qrUrl: ncmLoginQrUrl });
 });
