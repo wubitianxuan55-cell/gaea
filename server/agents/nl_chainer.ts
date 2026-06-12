@@ -35,25 +35,29 @@ interface LlmGetters {
 
 // Map from user intent domain to tool category filters
 const DOMAIN_TOOL_HINTS: Record<string, string[]> = {
-  office:  ['file_search', 'file_read', 'file_write', 'file_list', 'document_create',
-            'document_polish', 'pdf_merge', 'pdf_extract', 'pdf_metadata',
-            'create_presentation', 'create_spreadsheet', 'office_create',
-            'calendar_add', 'calendar_list',
-            'web_search', 'web_fetch', 'fetcher_fetch',
-            'translate', 'ocr_image_to_text', 'clipboard_read', 'clipboard_write',
-            'notes_create', 'notes_search', 'notes_update',
+  office:  ['search_files', 'read_file', 'write_file', 'list_directory',
+            'create_docx', 'create_xlsx',
+            'merge_pdf', 'pdf_to_text', 'read_pdf',
+            'create_ppt', 'create_pdf',
+            'calendar_create', 'calendar_today', 'upcoming_events',
+            'web_search', 'url_fetch',
+            'translate', 'ocr_screen', 'ocr_region', 'read_clipboard', 'write_clipboard',
+            'create_note', 'list_notes',
             'stock_search', 'stock_quote', 'stock_kline', 'market_index', 'stock_news',
-            'email_assistant_parse', 'shorturl_create',
-            'qrcode_generate', 'weather_get_weather'],
-  create:  ['document_create', 'document_polish', 'pdf_merge', 'pdf_extract',
-            'create_presentation', 'create_spreadsheet', 'office_create',
-            'code_sandbox_execute', 'image_generate',
-            'qrcode_generate', 'shorturl_create'],
-  search:  ['web_search', 'web_fetch', 'file_search', 'file_list', 'file_read',
-            'notes_search', 'stock_search', 'stock_quote', 'market_index', 'stock_news',
-            'weather_get_weather', 'fetcher_fetch'],
-  file:    ['file_search', 'file_read', 'file_write', 'file_delete', 'file_list',
-            'pdf_merge', 'pdf_extract', 'pdf_metadata', 'document_create', 'ocr_image_to_text'],
+            'email_assistant',
+            'shorten_url', 'generate_qrcode', 'get_weather'],
+  create:  ['create_docx', 'create_xlsx', 'create_ppt', 'create_pdf',
+            'merge_pdf', 'pdf_to_text',
+            'code_execution', 'generate_image',
+            'generate_qrcode', 'shorten_url'],
+  search:  ['web_search', 'url_fetch', 'search_files', 'list_directory', 'read_file',
+            'list_notes', 'stock_search', 'stock_quote', 'market_index', 'stock_news',
+            'get_weather'],
+  file:    ['search_files', 'read_file', 'write_file', 'list_directory',
+            'merge_pdf', 'pdf_to_text', 'read_pdf',
+            'create_docx', 'create_xlsx', 'create_pdf',
+            'ocr_screen', 'ocr_region',
+            'read_docx', 'read_xlsx', 'extract_document_text'],
 };
 
 function getDomainHints(userTask: string): string[] | undefined {
@@ -135,6 +139,7 @@ async function executePlan(
   executeTool: (name: string, args: Record<string, any>) => Promise<string>,
   context?: ToolContext,
   onStep?: (step: number, total: number, description: string) => void,
+  replanFn?: (failedStep: { toolName: string; args: Record<string, any>; error: string }) => Promise<{ toolName: string; args: Record<string, any> } | null>,
 ): Promise<Array<{ step: number; tool: string; output: string; success: boolean }>> {
   const results: Array<{ step: number; tool: string; output: string; success: boolean }> = [];
   let accumulatedContext = '';
@@ -168,7 +173,30 @@ async function executePlan(
       accumulatedContext += `\n## Step ${i + 1}: ${step.description}\n${output}\n`;
     } catch (err: any) {
       console.warn(`[NLChainer] Step ${i + 1} failed:`, err.message);
-      results.push({ step: i + 1, tool: step.toolName, output: err.message, success: false });
+
+      let recovered = false;
+      if (replanFn) {
+        try {
+          const alternative = await replanFn({
+            toolName: step.toolName,
+            args: step.toolArgs,
+            error: err.message,
+          });
+          if (alternative?.toolName) {
+            console.log(`[NLChainer] Replan: trying "${alternative.toolName}" instead of "${step.toolName}"`);
+            const altOutput = await executeTool(alternative.toolName, { ...enrichedArgs, ...alternative.args });
+            results.push({ step: i + 1, tool: alternative.toolName, output: altOutput, success: true });
+            accumulatedContext += `\n## Step ${i + 1}: ${step.description} (recovered via ${alternative.toolName})\n${altOutput}\n`;
+            recovered = true;
+          }
+        } catch (replanErr: any) {
+          console.warn(`[NLChainer] Replan also failed:`, replanErr.message);
+        }
+      }
+
+      if (!recovered) {
+        results.push({ step: i + 1, tool: step.toolName, output: err.message, success: false });
+      }
     }
   }
 
@@ -260,6 +288,17 @@ export async function runNLChainer(
     }
   }
 
+  // Dev-only ghost tool detection
+  if (process.env.NODE_ENV !== 'production') {
+    const registeredNames = new Set(allTools.map(d => d.function.name));
+    for (const [domain, hints] of Object.entries(DOMAIN_TOOL_HINTS)) {
+      const ghosts = hints.filter(h => !registeredNames.has(h));
+      if (ghosts.length > 0) {
+        console.warn(`[NLChainer] Ghost tools in DOMAIN_TOOL_HINTS.${domain}:`, ghosts);
+      }
+    }
+  }
+
   // Unwrap from tool declaration format to plain { name, description, parameters }
   const availableTools = availableDecls.map(d => ({
     name: d.function.name,
@@ -281,6 +320,36 @@ export async function runNLChainer(
   }
 
   // Phase 2: Execute
+  const replanFn = async (failedStep: { toolName: string; args: Record<string, any>; error: string }): Promise<{ toolName: string; args: Record<string, any> } | null> => {
+    const prompt = `The tool "${failedStep.toolName}" failed with error: ${failedStep.error}
+Original args: ${JSON.stringify(failedStep.args)}
+
+Available tools:
+${availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n')}
+
+Suggest the best alternative tool from the list above to accomplish the same goal. Output JSON:
+{ "toolName": "...", "args": {...} }
+
+If no suitable alternative exists, output: { "toolName": "" }`;
+
+    try {
+      const result = await makeLLMCall(
+        [{ role: 'user', content: prompt }],
+        [],
+        { provider: config.provider as any, model: config.model, userId: config.userId, maxTokens: 400 },
+        llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
+      );
+      const jsonMatch = result.text?.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const alt = JSON.parse(jsonMatch[0]);
+        if (alt.toolName) return alt;
+      }
+    } catch {
+      // LLM replan failed — fall through to null
+    }
+    return null;
+  };
+
   const executeTool = async (name: string, args: Record<string, any>): Promise<string> => {
     // Handle desktop relay tools
     if (config.desktopRelay && /^(desktop_|computer_)/.test(name)) {
@@ -289,7 +358,7 @@ export async function runNLChainer(
     return toolRegistry.execute(name, args, config.context);
   };
 
-  const stepResults = await executePlan(plan, executeTool, config.context, onStep);
+  const stepResults = await executePlan(plan, executeTool, config.context, onStep, replanFn);
 
   // Phase 3: Synthesize
   const finalResponse = await synthesizeResponse(

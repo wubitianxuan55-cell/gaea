@@ -9,6 +9,10 @@ import { join } from 'path';
  * These are safe-level tools that read and compose from the user's Outlook.
  */
 
+function esc(s: string): string {
+  return s.replace(/'/g, "''");
+}
+
 async function outlookCalendarToday(_args: Record<string, any>, _context?: any): Promise<string> {
   const psScript = `
 $outlook = New-Object -ComObject Outlook.Application
@@ -117,6 +121,89 @@ $outlook.Quit()
   return runPowerShell(psScript, 'recent_emails');
 }
 
+async function outlookCreateEvent(args: Record<string, any>, _context?: any): Promise<string> {
+  const subject = (args.subject || 'Untitled Event').replace(/'/g, "''");
+  const startStr = args.start || '';
+  const endStr = args.end || '';
+  const location = (args.location || '').replace(/'/g, "''");
+  const body = (args.body || '').replace(/'/g, "''");
+  const reminderMinutes = args.reminderMinutes ?? 15;
+  const allDay = args.allDay === true;
+
+  if (!startStr || !endStr) throw new Error('start and end (ISO 8601 datetime strings) are required');
+
+  const psScript = `
+$outlook = New-Object -ComObject Outlook.Application
+$item = $outlook.CreateItem(1)
+$item.Subject = '${subject}'
+$item.Start = [DateTime]::Parse('${startStr}')
+$item.End = [DateTime]::Parse('${endStr}')
+$item.Location = '${location}'
+$item.Body = @'
+${body}
+'@
+$item.ReminderSet = $true
+$item.ReminderMinutesBeforeStart = ${reminderMinutes}
+${allDay ? '$item.AllDayEvent = $true' : ''}
+$item.Save()
+$outlook.Quit()
+Write-Output "Calendar event created: ${subject} (${startStr} - ${endStr})"
+`;
+  return runPowerShell(psScript, 'calendar_create');
+}
+
+async function outlookModifyEvent(args: Record<string, any>, _context?: any): Promise<string> {
+  const { subject, newSubject, newStart, newEnd, newLocation, newBody } = args;
+  if (!subject) throw new Error('subject (to find the event) is required');
+
+  const psScript = `
+$outlook = New-Object -ComObject Outlook.Application
+$ns = $outlook.GetNamespace("MAPI")
+$calendar = $ns.GetDefaultFolder(9)
+$calendar.Items.IncludeRecurrences = $true
+$found = $null
+foreach ($item in $calendar.Items) {
+  if ($item.Subject -eq '${esc(subject)}' -and $item.Start -ge [DateTime]::Now.AddDays(-1)) {
+    $found = $item; break
+  }
+}
+if (-not $found) { Write-Output "No recent event found with subject: ${subject}"; $outlook.Quit(); exit }
+${newSubject ? `$found.Subject = '${esc(newSubject)}'` : ''}
+${newStart ? `$found.Start = [DateTime]::Parse('${newStart}')` : ''}
+${newEnd ? `$found.End = [DateTime]::Parse('${newEnd}')` : ''}
+${newLocation ? `$found.Location = '${esc(newLocation)}'` : ''}
+${newBody ? `$found.Body = @'\n${newBody.replace(/'/g, "''")}\n'@` : ''}
+$found.Save()
+$outlook.Quit()
+Write-Output "Event updated: $($found.Subject)"
+`;
+  return runPowerShell(psScript, 'calendar_modify');
+}
+
+async function outlookDeleteEvent(args: Record<string, any>, _context?: any): Promise<string> {
+  const { subject, confirmDelete } = args;
+  if (!subject) throw new Error('subject is required');
+  if (confirmDelete !== true) {
+    return `Safety check: to delete "${subject}", set confirmDelete: true.`;
+  }
+
+  const psScript = `
+$outlook = New-Object -ComObject Outlook.Application
+$ns = $outlook.GetNamespace("MAPI")
+$calendar = $ns.GetDefaultFolder(9)
+$calendar.Items.IncludeRecurrences = $true
+$found = $null
+foreach ($item in $calendar.Items) {
+  if ($item.Subject -eq '${esc(subject)}') { $found = $item; break }
+}
+if (-not $found) { Write-Output "No event found with subject: ${subject}"; $outlook.Quit(); exit }
+$found.Delete()
+$outlook.Quit()
+Write-Output "Event deleted: ${subject}"
+`;
+  return runPowerShell(psScript, 'calendar_delete');
+}
+
 function runPowerShell(script: string, toolName: string): string {
   const tmpFile = join(tmpdir(), `lumi_${toolName}_${Date.now()}.ps1`);
   try {
@@ -196,5 +283,62 @@ export function registerCalendarTools(registry: ToolRegistry): void {
     handler: outlookRecentEmails,
     permission: 'user',
     securityLevel: 'safe',
+  });
+
+  registry.register({
+    name: 'calendar_create',
+    description: 'Create a new calendar event in Microsoft Outlook. Set start/end times as ISO 8601 strings (e.g. 2026-06-15T14:00:00). Supports all-day events, location, description, and custom reminder minutes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Event title/subject' },
+        start: { type: 'string', description: 'Start time — ISO 8601, e.g. 2026-06-15T14:00:00' },
+        end: { type: 'string', description: 'End time — ISO 8601' },
+        location: { type: 'string', description: 'Event location (optional)' },
+        body: { type: 'string', description: 'Event description/notes (optional)' },
+        reminderMinutes: { type: 'number', description: 'Reminder minutes before start (default 15)' },
+        allDay: { type: 'boolean', description: 'Set true for an all-day event' },
+      },
+      required: ['subject', 'start', 'end'],
+    },
+    handler: outlookCreateEvent,
+    permission: 'user',
+    securityLevel: 'confirm',
+  });
+
+  registry.register({
+    name: 'calendar_modify',
+    description: 'Modify an existing calendar event in Outlook. Finds the event by subject (within recent events) and updates the specified fields.',
+    parameters: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Current event subject to search for' },
+        newSubject: { type: 'string', description: 'New subject (optional)' },
+        newStart: { type: 'string', description: 'New start time — ISO 8601 (optional)' },
+        newEnd: { type: 'string', description: 'New end time — ISO 8601 (optional)' },
+        newLocation: { type: 'string', description: 'New location (optional)' },
+        newBody: { type: 'string', description: 'New description body (optional)' },
+      },
+      required: ['subject'],
+    },
+    handler: outlookModifyEvent,
+    permission: 'user',
+    securityLevel: 'confirm',
+  });
+
+  registry.register({
+    name: 'calendar_delete',
+    description: 'Delete a calendar event from Outlook by subject. Requires confirmDelete: true for safety.',
+    parameters: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Event subject to search for and delete' },
+        confirmDelete: { type: 'boolean', description: 'Set to true to confirm deletion (required safety check)' },
+      },
+      required: ['subject', 'confirmDelete'],
+    },
+    handler: outlookDeleteEvent,
+    permission: 'user',
+    securityLevel: 'confirm',
   });
 }

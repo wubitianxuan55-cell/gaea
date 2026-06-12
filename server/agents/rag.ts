@@ -1,3 +1,4 @@
+import path from 'path';
 import { addMemory } from '../memory/store';
 import { Memory } from '../memory/types';
 
@@ -31,15 +32,14 @@ export function chunkText(
 
 /**
  * Ingest a document into an agent's private memory.
- * Each chunk becomes an `episodic` or `internalized` memory
- * with the agent's ID so it's scoped to that agent.
+ * Each chunk becomes an internalized memory with source citation metadata.
  */
 export async function ingestDocument(
   userId: string,
   agentId: string,
   documentTitle: string,
   content: string,
-  options?: { chunkSize?: number; tier?: 'episodic' | 'internalized' },
+  options?: { chunkSize?: number; tier?: 'episodic' | 'internalized'; filePath?: string },
 ): Promise<{ chunkCount: number; memoryIds: string[] }> {
   const chunks = chunkText(content, {
     maxChunkSize: options?.chunkSize || 500,
@@ -47,6 +47,7 @@ export async function ingestDocument(
   });
 
   const memoryIds: string[] = [];
+  const sourceFile = options?.filePath || documentTitle;
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
@@ -55,9 +56,15 @@ export async function ingestDocument(
         userId,
         type: 'knowledge',
         content: `[${documentTitle} #${i + 1}/${chunks.length}] ${chunk}`,
-        keywords: [documentTitle, 'ingested', 'document', `chunk_${i}`],
+        keywords: [
+          documentTitle,
+          `source:${path.basename(sourceFile)}`,
+          `chunk:${i + 1}/${chunks.length}`,
+          'ingested',
+          'document',
+        ],
         confidence: 0.7,
-        sourceInteractionId: '',
+        sourceInteractionId: sourceFile,
       },
       {
         tier: options?.tier || 'internalized',
@@ -75,6 +82,7 @@ export async function ingestDocument(
 
 /**
  * Retrieve relevant chunks for a query from agent-scoped knowledge.
+ * Each result includes a citation string tracking source document and chunk position.
  */
 import { queryMemories } from '../memory/store';
 
@@ -83,13 +91,24 @@ export function retrieveChunks(
   agentId: string,
   query: string,
   limit = 5,
-): Memory[] {
-  return queryMemories({
+): Array<Memory & { citation: string }> {
+  const memories = queryMemories({
     userId,
     agentId,
     type: 'knowledge',
     query,
     limit,
     minConfidence: 0.3,
+  });
+
+  return memories.map(m => {
+    const source = m.sourceInteractionId
+      ? path.basename(m.sourceInteractionId)
+      : 'unknown';
+    const chunkInfo = (m.keywords || []).find((k: string) => k.startsWith('chunk:')) || 'unknown';
+    return {
+      ...m,
+      citation: `[Source: ${source}, ${chunkInfo}]`,
+    };
   });
 }

@@ -1,5 +1,6 @@
 import { ParsedToolCall, NormalizedLLMResponse } from '../tools/types';
 import { withCloudResilience } from '../cloud/resilience';
+import { isStrictPrivacy, requireLocalProvider } from '../config/privacy';
 
 export type MessageContent =
   | string
@@ -369,6 +370,44 @@ export async function makeLLMCall(
   getLmStudio?: () => any,
   getArk?: () => any,
 ): Promise<NormalizedLLMResponse> {
+  // ── Privacy gate: strict mode blocks cloud providers ──
+  if (isStrictPrivacy()) {
+    if (config.provider === 'auto') {
+      // In strict mode, auto routes to local-only dispatch
+      const { dispatchLLMCall } = await import('./dispatch');
+      const localGetters = { getDeepSeek, getGemini, getOpenAI: getOpenAI || (() => null), getAnthropic: getAnthropic || (() => null), getQwen: getQwen || (() => null), getArk: getArk || (() => null), getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
+      if (getOllama?.()) {
+        try {
+          const req = formatDeepSeekRequest({ model: 'llama3.2', messages, toolDeclarations, maxTokens: config.maxTokens, userId: config.userId });
+          const client = getOllama();
+          const res = await withCloudResilience(
+            () => client.chat.completions.create(req),
+            { provider: 'ollama', maxRetries: 1 }
+          );
+          return parseOpenAIResponse(res);
+        } catch {
+          if (getLmStudio?.()) {
+            try {
+              const req = formatDeepSeekRequest({ model: config.model, messages, toolDeclarations, maxTokens: config.maxTokens, userId: config.userId });
+              const client = getLmStudio();
+              const res = await client.chat.completions.create(req);
+              return parseOpenAIResponse(res);
+            } catch {}
+          }
+          throw new Error('[Privacy] Strict mode: no local LLM available. Start Ollama or LM Studio.');
+        }
+      }
+      if (getLmStudio?.()) {
+        const req = formatDeepSeekRequest({ model: config.model, messages, toolDeclarations, maxTokens: config.maxTokens, userId: config.userId });
+        const client = getLmStudio();
+        const res = await client.chat.completions.create(req);
+        return parseOpenAIResponse(res);
+      }
+      throw new Error('[Privacy] Strict mode: no local LLM provider available. Set up Ollama or LM Studio.');
+    }
+    requireLocalProvider(config.provider);
+  }
+
   // ── Auto/hybrid dispatch: local Ollama → cloud DeepSeek fallback ──
   if (config.provider === 'auto' && getOllama) {
     const { dispatchLLMCall } = await import('./dispatch');
@@ -480,6 +519,11 @@ export async function makeLLMCallStreaming(
   getLmStudio?: () => any,
   getArk?: () => any,
 ): Promise<NormalizedLLMResponse> {
+  // ── Privacy gate ──
+  if (isStrictPrivacy() && config.provider !== 'auto') {
+    requireLocalProvider(config.provider);
+  }
+
   // ── Auto/hybrid dispatch: local Ollama → cloud DeepSeek fallback ──
   if (config.provider === 'auto' && getOllama) {
     const { dispatchLLMCallStreaming } = await import('./dispatch');

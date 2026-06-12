@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, MicOff, CheckCircle, XCircle, Loader2, MessageSquare, Plus, Square, Copy, Trash2, Wifi, WifiOff, Check, Sparkles, ChevronRight } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 
 export interface ChatMessage {
   id: string;
@@ -447,7 +450,11 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                 {msg.type === 'user-text' && (
                   <div className="flex justify-end group">
                     <div className="max-w-[80%] bg-celestial-glow/20 border border-celestial-glow/30 rounded-lg px-3 py-1.5 relative">
-                      <p className="text-white/90 whitespace-pre-wrap">{msg.content}</p>
+                      <div className="markdown-body text-white/80 text-sm leading-relaxed">
+                          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                            {msg.content}
+                          </Markdown>
+                        </div>
                       {showTime && <span className="text-white/55 text-xs">{formatTime(msg.timestamp)}</span>}
                       {msg.content && (
                         <button
@@ -467,7 +474,11 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                       <div className="flex items-center gap-1 text-purple-300/60 text-xs mb-0.5">
                         <Mic size={10} /> {t?.voice || 'voice'}
                       </div>
-                      <p className="text-white/90 whitespace-pre-wrap">{msg.content}</p>
+                      <div className="markdown-body text-white/80 text-sm leading-relaxed">
+                          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                            {msg.content}
+                          </Markdown>
+                        </div>
                       {showTime && <span className="text-white/55 text-xs">{formatTime(msg.timestamp)}</span>}
                     </div>
                   </div>
@@ -476,7 +487,11 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                 {msg.type === 'lumi' && (
                   <div className="flex justify-start group">
                     <div className="max-w-[85%] bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 relative">
-                      <p className="text-white/80 whitespace-pre-wrap">{msg.content}</p>
+                      <div className="markdown-body text-white/80 text-sm leading-relaxed">
+                        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                          {msg.content}
+                        </Markdown>
+                      </div>
                       {showTime && <span className="text-white/55 text-xs">{formatTime(msg.timestamp)}</span>}
                       {msg.content && (
                         <button
@@ -527,7 +542,11 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                 className="flex justify-start"
               >
                 <div className="max-w-[85%] bg-white/5 border border-celestial-glow/20 rounded-lg px-3 py-1.5">
-                  <p className="text-white/80 whitespace-pre-wrap">{streamingText}</p>
+                  <div className="markdown-body text-white/80 text-sm leading-relaxed">
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                      {streamingText}
+                    </Markdown>
+                  </div>
                   <span className="inline-block w-1.5 h-3 bg-celestial-glow/60 animate-pulse ml-0.5 align-middle" />
                 </div>
               </motion.div>

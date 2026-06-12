@@ -11,6 +11,7 @@
 
 import { getKey } from '../config/keys';
 import { withCloudResilience } from '../cloud/resilience';
+import { requireNotStrict } from '../config/privacy';
 
 // ── Face: Aliyun CompareFace ──
 
@@ -24,6 +25,8 @@ export async function verifyFaceCloud(
   sourceBase64: string,
   targetBase64: string,
 ): Promise<FaceVerifyCloudResult> {
+  requireNotStrict('Cloud face verification');
+
   const akId = process.env.ALIYUN_AK_ID || getKey('ALIYUN_AK_ID');
   const akSecret = process.env.ALIYUN_AK_SECRET || getKey('ALIYUN_AK_SECRET');
 
@@ -76,6 +79,8 @@ export async function verifyVoiceprintCloud(
   audioBase64: string,
   enrolledVoiceprintId: string,
 ): Promise<VoiceVerifyCloudResult> {
+  requireNotStrict('Cloud voice verification');
+
   const akId = process.env.ALIYUN_AK_ID || getKey('ALIYUN_AK_ID');
   const akSecret = process.env.ALIYUN_AK_SECRET || getKey('ALIYUN_AK_SECRET');
 
