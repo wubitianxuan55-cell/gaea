@@ -1094,7 +1094,7 @@ export const translations: TranslationMap = {
     canvasStageExecuting: "Executing",
     canvasStageComplete: "Complete",
     // ── Org ──
-    orgWorkbench: "Workbench",
+    orgWorkbench: "Organization",
     orgDashboard: "Dashboard",
     orgKB: "Knowledge Base",
     orgTemplates: "Templates",
@@ -2626,7 +2626,7 @@ export const translations: TranslationMap = {
     canvasStageExecuting: "执行",
     canvasStageComplete: "完成",
     // ── Org ──
-    orgWorkbench: "工作台",
+    orgWorkbench: "组织",
     orgDashboard: "仪表盘",
     orgKB: "知识库",
     orgTemplates: "模板市场",
