@@ -18,6 +18,8 @@ interface KeyStore {
   DOUBAO_SPEECH_KEY?: string;
   NETEASE_APP_ID?: string;
   NETEASE_PRIVATE_KEY?: string;
+  ALIYUN_AK_ID?: string;
+  ALIYUN_AK_SECRET?: string;
 }
 
 /** Which circuit-breaker provider(s) a given key name affects */
@@ -86,5 +88,7 @@ export function getAllKeyNames(): (keyof KeyStore)[] {
     'DOUBAO_SPEECH_KEY',
     'NETEASE_APP_ID',
     'NETEASE_PRIVATE_KEY',
+    'ALIYUN_AK_ID',
+    'ALIYUN_AK_SECRET',
   ];
 }

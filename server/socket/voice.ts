@@ -20,6 +20,7 @@ import { queryMemories, addMemory } from "../memory/store";
 import { matchQuickCommand } from "../cognition/quick_commands";
 import { recordTokenUsage } from "../llm/token_tracker";
 import { getOperationModeConfig } from "../cognition/operation_modes";
+import { updatePresence } from "../biometrics/presence";
 
 interface AudioSession {
   sttSession: ReturnType<typeof createStreamingSession> | null;
@@ -48,6 +49,9 @@ interface AudioSession {
   lastChunkTime: number;
   /** Timer to auto-close STT session after prolonged silence (5min) */
   silenceTimer: ReturnType<typeof setTimeout> | null;
+  /** Voiceprint verification: true when owner's voice is recognized */
+  voiceprintMatched: boolean;
+  voiceprintConfidence: number;
 }
 
 // Module-level ambient noise tracking — used by both processVoiceInput and registerVoiceHandlers
@@ -134,6 +138,8 @@ function getAudioSession(socket: Socket): AudioSession {
       silenceTimer: null,
       userId: '',
       agentId: 'lumi',
+      voiceprintMatched: true,  // default: allow (no voiceprints enrolled yet)
+      voiceprintConfidence: 0,
     };
   }
   return socket.data.audioSession as AudioSession;
@@ -152,6 +158,20 @@ async function processVoiceInput(
   },
   sensoryFn: (uid: string) => any,
 ): Promise<void> {
+  // ── Voiceprint gate: ignore speech from unrecognized speakers ──
+  // Only active when voiceprints are enrolled for this user AND at least one
+  // recent voiceprint:result has been received with confidence data.
+  if (session.voiceprintMatched === false && session.voiceprintConfidence > 0) {
+    logger.info(`[Voiceprint] Stranger voice detected (conf=${session.voiceprintConfidence.toFixed(2)}) — ignoring`);
+    session.isSpeaking = false;
+    session.isProcessing = false;
+    session.accumulatedText = '';
+    socket.emit('audio:status', { status: 'idle' });
+    // Send a silent response so the UI doesn't hang in "thinking" state
+    socket.emit('agent:response', { text: '' });
+    return;
+  }
+
   session.isSpeaking = true;
   session.isProcessing = true;
   session.pipelineAbortController = new AbortController();
@@ -846,6 +866,20 @@ export function registerVoiceHandlers(
         logger.info(`[Audio] Sent ${chunkCount} chunks (${data.length} bytes each)`);
       }
     }
+  });
+
+  // ── Voiceprint: receive MFCC match results from frontend hook ──
+  socket.on("voiceprint:result", (data: { isOwnerSpeaking: boolean; confidence: number }) => {
+    const session = getAudioSession(socket);
+    session.voiceprintMatched = data.isOwnerSpeaking;
+    session.voiceprintConfidence = data.confidence;
+  });
+
+  // ── Presence: periodic heartbeat from usePresence hook ──
+  socket.on("presence:heartbeat", (data: { facePresent: boolean; faceConfidence: number; voiceprintMatched: boolean; voiceprintConfidence: number; userId: string }) => {
+    const state = updatePresence(data.userId, data);
+    const status = state.isAway ? 'away' : (state.facePresent || state.voiceprintMatched ? 'present' : 'uncertain');
+    socket.emit('presence:state_change', { isAway: state.isAway, status });
   });
 
   socket.on("audio:interrupt", () => {

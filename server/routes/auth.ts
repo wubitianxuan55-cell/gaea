@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { readDB, writeDB } from "../../db_layer";
 import { syncUserToSupabase } from "../config/supabase";
 import { getMember, listUserOrgs } from "../org/db";
+import { saveVoiceprint, saveFace, getVoiceprints, getFaces, deleteVoiceprint, deleteFace } from "../biometrics/store";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -212,6 +213,117 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
         orgId: membership.orgId,
         orgRole: membership.role,
       });
+    } catch (e) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // ── Biometric enrollment ──
+
+  // Enroll a voiceprint: receives MFCC features extracted in-browser
+  router.put("/auth/biometric/voiceprint/enroll", (req, res) => {
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.slice(7);
+    if (!token) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const { label, mfccFeatures, sampleCount } = req.body;
+      if (!label || !mfccFeatures || !Array.isArray(mfccFeatures)) {
+        return res.status(400).json({ error: "label and mfccFeatures (array of 13-dim vectors) are required" });
+      }
+      const vp = saveVoiceprint(decoded.uid, {
+        voiceprintId: `vp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        label,
+        mfccFeatures,
+        sampleCount: sampleCount || mfccFeatures.length,
+      });
+      res.json({ success: true, voiceprint: { id: vp.voiceprintId, label: vp.label, sampleCount: vp.sampleCount } });
+    } catch (e) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // Enroll a face: receives embedding extracted in-browser via MediaPipe
+  router.put("/auth/biometric/face/enroll", (req, res) => {
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.slice(7);
+    if (!token) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const { label, embedding } = req.body;
+      if (!label || !embedding || !Array.isArray(embedding)) {
+        return res.status(400).json({ error: "label and embedding (number array) are required" });
+      }
+      const face = saveFace(decoded.uid, {
+        faceId: `face_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        label,
+        embedding,
+      });
+      res.json({ success: true, face: { id: face.faceId, label: face.label } });
+    } catch (e) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // List enrolled biometrics for current user
+  router.get("/auth/biometric/list", (req, res) => {
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.slice(7);
+    if (!token) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const voiceprints = getVoiceprints(decoded.uid).map(v => ({ id: v.voiceprintId, label: v.label, sampleCount: v.sampleCount, createdAt: v.createdAt }));
+      const faces = getFaces(decoded.uid).map(f => ({ id: f.faceId, label: f.label, createdAt: f.createdAt }));
+      res.json({ voiceprints, faces });
+    } catch (e) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // Delete a biometric item
+  router.delete("/auth/biometric/:type/:id", (req, res) => {
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.slice(7);
+    if (!token) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const { type, id } = req.params;
+      if (type === 'voiceprint') {
+        const ok = deleteVoiceprint(decoded.uid, id);
+        return res.json({ success: ok, error: ok ? undefined : 'Not found' });
+      }
+      if (type === 'face') {
+        const ok = deleteFace(decoded.uid, id);
+        return res.json({ success: ok, error: ok ? undefined : 'Not found' });
+      }
+      res.status(400).json({ error: "Type must be 'voiceprint' or 'face'" });
+    } catch (e) {
+      res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+  // Switch to another user (biometric-triggered multi-user mode)
+  router.post("/auth/switch-user", (req, res) => {
+    let token = req.cookies.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.slice(7);
+    if (!token) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const decoded: any = jwt.verify(token, jwtSecret);
+      const { targetUid } = req.body;
+      if (!targetUid) return res.status(400).json({ error: "targetUid is required" });
+
+      const db = readDB();
+      const targetUser = db.users.find((u: any) => u.uid === targetUid);
+      if (!targetUser) return res.status(404).json({ error: "Target user not found" });
+
+      const newToken = jwt.sign(
+        { uid: targetUser.uid, username: targetUser.username, role: targetUser.role },
+        jwtSecret,
+        { expiresIn: "24h" },
+      );
+      res.cookie("token", newToken, getCookieOptions());
+      const { password: _, ...userWithoutPassword } = targetUser;
+      res.json({ success: true, user: userWithoutPassword, token: newToken });
     } catch (e) {
       res.status(401).json({ error: "Invalid token" });
     }

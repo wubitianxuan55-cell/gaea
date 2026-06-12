@@ -123,3 +123,17 @@ export function requireOrgMember(req: Request, res: Response, next: NextFunction
   }
   next();
 }
+
+/** Require biometric verification for sensitive operations.
+ *  Placeholder — Phase 3 enables voiceprint+face gating.
+ *  Currently logs intent and passes through (soft enforcement). */
+export function requireBiometric(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  // Phase 3+: check biometric session token / presence heartbeat
+  // For now: log and pass through (soft enforcement)
+  console.log(`[Biometric] requireBiometric check for ${req.user.uid} — soft pass (not yet enforced)`);
+  next();
+}

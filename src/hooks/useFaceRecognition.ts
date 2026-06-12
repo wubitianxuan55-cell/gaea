@@ -1,0 +1,289 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { initMediaPipe, detectFaceLandmarks, extractFaceEmbedding, isMediaPipeReady } from '../lib/mediapipe/loader';
+
+// ── Cosine similarity ──
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA < 1e-10 || normB < 1e-10) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// ── Types ──
+
+export interface FaceMatch {
+  faceId: string;
+  uid: string;
+  label: string;
+  confidence: number;
+}
+
+export interface FaceRecognitionResult {
+  facePresent: boolean;
+  ownerPresent: boolean;
+  confidence: number;
+  bestMatch: FaceMatch | null;
+  allMatches: FaceMatch[];
+  threshold: 'high' | 'medium' | 'low' | 'reject';
+  faceCount: number;
+}
+
+interface FaceTemplate {
+  uid: string;
+  label: string;
+  faceId: string;
+  embedding: number[];
+}
+
+// ── Hook ──
+
+interface UseFaceRecognitionOptions {
+  enabled?: boolean;
+  socket?: any;
+}
+
+export function useFaceRecognition(options?: UseFaceRecognitionOptions) {
+  const enabled = options?.enabled ?? true;
+  const socketRef = useRef(options?.socket);
+
+  const [result, setResult] = useState<FaceRecognitionResult>({
+    facePresent: false,
+    ownerPresent: false,
+    confidence: 0,
+    bestMatch: null,
+    allMatches: [],
+    threshold: 'reject',
+    faceCount: 0,
+  });
+
+  const templatesRef = useRef<FaceTemplate[]>([]);
+  const animRef = useRef(0);
+  const faceTickRef = useRef(0);
+  const faceLostRef = useRef(0);           // consecutive frames without face
+  const lastKnownFaceResult = useRef<FaceRecognitionResult | null>(null);
+  const isEnrollingRef = useRef(false);
+
+  // ── Load templates from server ──
+  const loadTemplates = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/biometric/list', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        templatesRef.current = (data.faces || []) as FaceTemplate[];
+      }
+    } catch {}
+  }, []);
+
+  // ── Face recognition loop ──
+  useEffect(() => {
+    if (!enabled) return;
+    let stream: MediaStream | null = null;
+    let running = true;
+
+    const start = async () => {
+      try {
+        await initMediaPipe();
+        await loadTemplates();
+
+        const video = document.createElement('video');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('autoplay', '');
+        video.muted = true;
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 480, height: 360, facingMode: 'user' },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        const loop = () => {
+          if (!running) return;
+          faceTickRef.current++;
+
+          // Run face recognition every 10 frames (~150ms at 60fps)
+          if (faceTickRef.current % 10 === 0 && video.readyState >= 2 && isMediaPipeReady()) {
+            const faces = detectFaceLandmarks(video);
+
+            if (faces.length > 0) {
+              faceLostRef.current = 0;
+              const bestMatches: FaceMatch[] = [];
+
+              for (const face of faces) {
+                const embedding = extractFaceEmbedding(face.landmarks);
+                if (embedding.length === 0) continue;
+
+                // Compare against all stored templates
+                for (const tpl of templatesRef.current) {
+                  if (!tpl.embedding || tpl.embedding.length === 0) continue;
+                  const sim = cosineSimilarity(embedding, tpl.embedding);
+                  bestMatches.push({
+                    faceId: tpl.faceId,
+                    uid: tpl.uid,
+                    label: tpl.label,
+                    confidence: Math.round(sim * 100) / 100,
+                  });
+                }
+              }
+
+              bestMatches.sort((a, b) => b.confidence - a.confidence);
+              const best = bestMatches[0] || null;
+              const bestConf = best?.confidence ?? 0;
+
+              let threshold: FaceRecognitionResult['threshold'] = 'reject';
+              if (bestConf >= 0.80) threshold = 'high';
+              else if (bestConf >= 0.60) threshold = 'medium';
+              else if (bestConf >= 0.45) threshold = 'low';
+
+              const faceResult: FaceRecognitionResult = {
+                facePresent: true,
+                ownerPresent: bestConf >= 0.60,
+                confidence: bestConf,
+                bestMatch: best,
+                allMatches: bestMatches.slice(0, 5),
+                threshold,
+                faceCount: faces.length,
+              };
+
+              lastKnownFaceResult.current = faceResult;
+              setResult(faceResult);
+
+              // Emit to socket
+              socketRef.current?.emit('face:result', {
+                facePresent: true,
+                ownerPresent: faceResult.ownerPresent,
+                confidence: bestConf,
+                faceCount: faces.length,
+              });
+            } else {
+              // Face lost counting
+              faceLostRef.current++;
+              const stillPresent = faceLostRef.current < 20; // ~3s grace period at 10-frame intervals
+              const lastKnown = lastKnownFaceResult.current;
+
+              if (stillPresent && lastKnown) {
+                // Grace period: keep last known state but mark facePresent as fading
+                setResult({ ...lastKnown, facePresent: true });
+              } else {
+                // Face definitely gone
+                const goneResult: FaceRecognitionResult = {
+                  facePresent: false,
+                  ownerPresent: false,
+                  confidence: 0,
+                  bestMatch: null,
+                  allMatches: [],
+                  threshold: 'reject',
+                  faceCount: 0,
+                };
+                lastKnownFaceResult.current = goneResult;
+                setResult(goneResult);
+                socketRef.current?.emit('face:result', {
+                  facePresent: false,
+                  ownerPresent: false,
+                  confidence: 0,
+                  faceCount: 0,
+                });
+              }
+            }
+          }
+
+          animRef.current = requestAnimationFrame(loop);
+        };
+
+        animRef.current = requestAnimationFrame(loop);
+      } catch (err) {
+        console.warn('[FaceRecognition] Camera or MediaPipe init failed:', err);
+      }
+    };
+
+    start();
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(animRef.current);
+      if (stream) stream.getTracks().forEach(t => t.stop());
+    };
+  }, [enabled, loadTemplates]);
+
+  // ── Enrollment ──
+  const enrollFace = useCallback(async (label: string): Promise<{ success: boolean; faceId?: string }> => {
+    // Use the last known face detection
+    // In practice, this should capture a fresh embedding from the next detection tick
+    return new Promise(async (resolve) => {
+      try {
+        await initMediaPipe();
+
+        const video = document.createElement('video');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('autoplay', '');
+        video.muted = true;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 480, height: 360, facingMode: 'user' },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        // Wait for a good face detection
+        let attempts = 0;
+        const captureInterval = setInterval(() => {
+          attempts++;
+          if (attempts > 60 || !isMediaPipeReady()) {
+            clearInterval(captureInterval);
+            stream.getTracks().forEach(t => t.stop());
+            resolve({ success: false });
+            return;
+          }
+
+          const faces = detectFaceLandmarks(video);
+          if (faces.length > 0) {
+            clearInterval(captureInterval);
+            const embedding = extractFaceEmbedding(faces[0].landmarks);
+            stream.getTracks().forEach(t => t.stop());
+
+            if (embedding.length === 0) {
+              resolve({ success: false });
+              return;
+            }
+
+            // Submit to server
+            fetch('/api/auth/biometric/face/enroll', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ label, embedding }),
+            }).then(async (res) => {
+              if (res.ok) {
+                const data = await res.json();
+                templatesRef.current.push({
+                  uid: 'owner',
+                  label,
+                  faceId: data.face.id,
+                  embedding,
+                });
+                resolve({ success: true, faceId: data.face.id });
+              } else {
+                resolve({ success: false });
+              }
+            }).catch(() => resolve({ success: false }));
+          }
+        }, 300);
+      } catch {
+        resolve({ success: false });
+      }
+    });
+  }, []);
+
+  return {
+    result,
+    loadTemplates,
+    enrollFace,
+    isEnrolling: isEnrollingRef.current,
+  };
+}
