@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Sparkles, Volume2, Box, User as UserIcon, Pause, Wifi, WifiOff, Clock } from 'lucide-react';
 import { Button } from './ui/button';
@@ -20,13 +20,8 @@ export function LocalAgentSphere({
   onInterrupt,
   onToggleMute,
   reaction,
-  handOpenness = 0,
-  handPosition = { x: 0, y: 0 },
-  gesture = 'none',
-  handVisible = false,
   facePresent = false,
   gesturesDisabled = false,
-  diffused = false,
   isLightMode = false,
 }: {
   t: any;
@@ -44,13 +39,8 @@ export function LocalAgentSphere({
   onInterrupt?: () => void;
   onToggleMute?: () => void;
   reaction?: string | null;
-  handOpenness?: number;
-  handPosition?: { x: number; y: number };
-  gesture?: string;
-  handVisible?: boolean;
   facePresent?: boolean;
   gesturesDisabled?: boolean;
-  diffused?: boolean;
   isLightMode?: boolean;
 }) {
   const [interactionPulse, setInteractionPulse] = useState(0);
@@ -69,7 +59,6 @@ export function LocalAgentSphere({
 
   const [spatialMode, setSpatialMode] = useState<'geometric' | 'humanoid'>('geometric');
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
-  const portalCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef({ x: 0, y: 0, isDown: false });
   const rotationRef = useRef({ x: 0, y: 0 });
@@ -79,9 +68,6 @@ export function LocalAgentSphere({
   const particlesRef = useRef<any[]>([]);
 
   // Gesture refs (synced to latest props)
-  const opennessRef = useRef(0);
-  const fingerDirRef = useRef({ x: 0, y: 0 });
-  const handVisibleRef = useRef(false);
   const facePresentRef = useRef(false);
   const callStateRef = useRef(callState);
   const sentimentRef = useRef(sentiment);
@@ -90,9 +76,6 @@ export function LocalAgentSphere({
   const lightModeRef = useRef(isLightMode);
   useEffect(() => { lightModeRef.current = isLightMode; }, [isLightMode]);
 
-  useEffect(() => { opennessRef.current = handOpenness; }, [handOpenness]);
-  useEffect(() => { fingerDirRef.current = handPosition; }, [handPosition]);
-  useEffect(() => { handVisibleRef.current = handVisible; }, [handVisible]);
   useEffect(() => { facePresentRef.current = facePresent; }, [facePresent]);
   useEffect(() => { callStateRef.current = callState; }, [callState]);
   useEffect(() => { sentimentRef.current = sentiment; }, [sentiment]);
@@ -100,10 +83,6 @@ export function LocalAgentSphere({
   useEffect(() => { highPerfRef.current = highPerformance; }, [highPerformance]);
   const disabledRef = useRef(gesturesDisabled);
   useEffect(() => { disabledRef.current = gesturesDisabled; }, [gesturesDisabled]);
-  const diffusedRef = useRef(diffused);
-  useEffect(() => { diffusedRef.current = diffused; }, [diffused]);
-  const gestureRef = useRef(gesture);
-  useEffect(() => { gestureRef.current = gesture; }, [gesture]);
 
   const handleSphereClick = () => setInteractionPulse(prev => prev + 1);
 
@@ -260,33 +239,19 @@ export function LocalAgentSphere({
         const currentCallState = callStateRef.current;
         const isCallActive = currentCallState !== 'idle';
 
-        // Sphere scale: toggle by gesture (open→big, fist→normal)
-        if (disabledRef.current) {
-          sphereScaleRef.current += (1 - sphereScaleRef.current) * 0.05;
-        } else {
-          const targetScale = isCallActive ? 1 : diffusedRef.current ? 4.0 : 1;
-          const lerpRate = 0.04;
-          sphereScaleRef.current += (targetScale - sphereScaleRef.current) * lerpRate;
-        }
+        // Sphere scale
+        sphereScaleRef.current += (1 - sphereScaleRef.current) * 0.05;
         const sphereScale = sphereScaleRef.current;
 
-        // Rotation: finger-point driven or auto-rotate
+        // Rotation: auto-rotate
         if (!mouseRef.current.isDown) {
-          if (gestureRef.current === 'point') {
-            const fd = fingerDirRef.current;
-            rotationRef.current.y += fd.x * 0.015;
-            rotationRef.current.x += fd.y * 0.015;
-          } else {
-            const speedFactor = currentCallState === 'thinking' ? 4 : sentimentRef.current === 'excited' ? 3 : sentimentRef.current === 'focused' ? 2 : sentimentRef.current === 'zen' ? 0.5 : 1;
-            rotationRef.current.y += 0.005 * speedFactor;
-            rotationRef.current.x += 0.002 * speedFactor;
-          }
+          const speedFactor = currentCallState === 'thinking' ? 4 : sentimentRef.current === 'excited' ? 3 : sentimentRef.current === 'focused' ? 2 : sentimentRef.current === 'zen' ? 0.5 : 1;
+          rotationRef.current.y += 0.005 * speedFactor;
+          rotationRef.current.x += 0.002 * speedFactor;
         }
 
         const pts = particlesRef.current;
         if (pts.length === 0) { animId = requestAnimationFrame(render); return; }
-
-        const isParticleSea = sphereScale > 2.0;
 
         // Face present glow — warm breathing pulse around orb
         if (facePresentRef.current) {
@@ -307,98 +272,11 @@ export function LocalAgentSphere({
         // Sort for proper z-ordering
         pts.sort((a, b) => a.z - b.z);
 
-        // Connection lines (particle sea) — main canvas only
-        if (isParticleSea) {
-          const projected: { x: number; y: number }[] = [];
-          for (const p of pts) {
-            const pz = Math.max(-300, Math.min(p.z, 590));
-            const perspective = 600 / (600 - pz);
-            projected.push({ x: p.x * perspective + centerX, y: p.y * perspective + centerY });
-          }
-          const checkRange = Math.min(15, pts.length - 1);
-          const threshold = 60 + (sphereScale - 1) * 80;
-          for (let i = 0; i < pts.length; i++) {
-            const pi = projected[i];
-            for (let j = i + 1; j <= i + checkRange && j < pts.length; j++) {
-              const pj = projected[j];
-              const dist = Math.hypot(pi.x - pj.x, pi.y - pj.y);
-              if (dist < threshold) {
-                const alpha = (1 - dist / threshold) * (sphereScale - 1) * 0.25;
-                mainCtx.strokeStyle = `rgba(0,200,255,${alpha.toFixed(2)})`;
-                mainCtx.lineWidth = 0.4;
-                mainCtx.beginPath(); mainCtx.moveTo(pi.x, pi.y); mainCtx.lineTo(pj.x, pj.y); mainCtx.stroke();
-              }
-            }
-          }
-        }
-
         // Draw particles on main canvas
         for (const p of pts) {
-          p.drawLocal(mainCtx, centerX, centerY, isParticleSea);
+          p.drawLocal(mainCtx, centerX, centerY, false);
         }
         mainCtx.globalAlpha = 1;
-
-        // ---- Render portal canvas (sphere overflow beyond container) ----
-        {
-          const portalCanvas = portalCanvasRef.current;
-          if (portalCanvas) {
-            const portalCtx = portalCanvas.getContext('2d');
-            if (portalCtx) {
-              if (portalCanvas.width !== window.innerWidth || portalCanvas.height !== window.innerHeight) {
-                portalCanvas.width = window.innerWidth;
-                portalCanvas.height = window.innerHeight;
-              }
-
-              const rect = containerRef.current?.getBoundingClientRect();
-              const pcx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-              const pcy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
-
-              if (sphereScale > 1.05) {
-                portalCtx.clearRect(0, 0, portalCanvas.width, portalCanvas.height);
-                const containerWidth = rect ? rect.width : 500;
-                const portalScale = containerWidth / 600;
-
-                // Compute projected positions
-                const projected: { sx: number; sy: number }[] = [];
-                for (const p of pts) {
-                  const ppz = Math.max(-300, Math.min(p.z, 590));
-                  const pp = 600 / (600 - ppz);
-                  projected.push({
-                    sx: pcx + p.x * pp * portalScale,
-                    sy: pcy + p.y * pp * portalScale,
-                  });
-                }
-
-                // Connection lines (particle sea)
-                const connThreshold = 50 + (sphereScale - 1) * 70;
-                const checkRange = Math.min(12, pts.length - 1);
-                for (let i = 0; i < pts.length; i++) {
-                  const pi = projected[i];
-                  for (let j = i + 1; j <= i + checkRange && j < pts.length; j++) {
-                    const pj = projected[j];
-                    const dist = Math.hypot(pi.sx - pj.sx, pi.sy - pj.sy);
-                    if (dist < connThreshold) {
-                      const a = (1 - dist / connThreshold) * (sphereScale - 1) * 0.18;
-                      portalCtx.strokeStyle = `rgba(0,200,255,${a.toFixed(3)})`;
-                      portalCtx.lineWidth = 0.3;
-                      portalCtx.beginPath();
-                      portalCtx.moveTo(pi.sx, pi.sy);
-                      portalCtx.lineTo(pj.sx, pj.sy);
-                      portalCtx.stroke();
-                    }
-                  }
-                }
-
-                // Draw particles
-                for (const p of pts) {
-                  p.drawPortal(portalCtx, pcx, pcy, portalScale);
-                }
-              } else {
-                portalCtx.clearRect(0, 0, portalCanvas.width, portalCanvas.height);
-              }
-            }
-          }
-        }
       } catch (e) {
         // never let an exception kill the render loop
       }
@@ -409,17 +287,6 @@ export function LocalAgentSphere({
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
   }, []);
-
-  // Portal to document.body — escapes CSS transform ancestors (only when gestures active)
-  const portal = createPortal(
-    <canvas
-      ref={portalCanvasRef}
-      width={window.innerWidth}
-      height={window.innerHeight}
-      className="fixed inset-0 z-[1] pointer-events-none"
-    />,
-    document.body,
-  );
 
   // Mouse/touch handlers
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
@@ -442,7 +309,6 @@ export function LocalAgentSphere({
 
   return (
     <>
-      {portal}
       <div className={`relative w-full flex flex-col items-center justify-center py-20 transition-all duration-1000 ${isWallpaperMode ? 'opacity-40 scale-[0.8] blur-[1px]' : 'opacity-100 scale-100'}`}>
         <div className="absolute inset-0 pointer-events-none" />
 

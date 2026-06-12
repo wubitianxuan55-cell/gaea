@@ -100,6 +100,11 @@ import { TerminalWindow } from './Terminal';
 import { MusicMoodLayer } from './MusicMoodLayer';
 import { MusicCenter } from './MusicCenter';
 import { useMusicVisible } from '../hooks/useMusicPlayer';
+import { useVoiceprint } from '../hooks/useVoiceprint';
+import { useFaceRecognition } from '../hooks/useFaceRecognition';
+import { usePresence } from '../hooks/usePresence';
+import { PresenceIndicator } from './biometrics/PresenceIndicator';
+import { UserSwitchPrompt } from './biometrics/UserSwitchPrompt';
 import { systemService } from '@/services/systemService';
 import { usePlatform } from '@/hooks/usePlatform';
 
@@ -778,7 +783,7 @@ export function DesktopUI({
     cameraZ.set(viewMode === 'personal' ? 0 : -1000);
   }, [viewMode]);
 
-  // Mouse parallax and hand gestures removed — will be re-added with face recognition
+  // Biometrics: face recognition + voiceprint activated via useFaceRecognition / useVoiceprint
 
   const personalScale = useTransform(cameraZ, [0, -1000], [1, 0.4]);
   const personalOpacity = useTransform(cameraZ, [0, -400], [1, 0]);
@@ -950,14 +955,18 @@ export function DesktopUI({
     onInterrupt: () => interrupt(),
   });
 
-  // Gesture detection via webcam — open hand / fist (confirm gesture), face presence
-  const { handOpenness, handPosition, gesture, handVisible, facePresent } = useGestureDetector({ enabled: false });
+  // Gesture detection via webcam
+  const { facePresent } = useGestureDetector({ enabled: true });
 
-  const [diffused, setDiffused] = useState(false);
-  useEffect(() => {
-    if (gesture === 'open') setDiffused(true);
-    else if (gesture === 'fist') setDiffused(false);
-  }, [gesture]);
+  // ── Biometrics: voiceprint + face recognition + presence ──
+  const voiceprint = useVoiceprint({ socket });
+  const faceRecognition = useFaceRecognition({ enabled: true, socket });
+  const presence = usePresence({
+    socket,
+    faceResult: faceRecognition.result,
+    voiceprintResult: voiceprint.result,
+    userId: user?.uid,
+  });
 
   // Idle→active return greeting — listens for ambient idle reports and fires on return
   const lastIdleRef = useRef<number>(0);
@@ -1930,7 +1939,15 @@ export function DesktopUI({
               </div>
             ) : (
               <>
-              <LocalAgentSphere
+              {/* Biometrics presence indicator — above particle sphere */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-30">
+              <PresenceIndicator
+                status={presence.status}
+                faceConfidence={faceRecognition.result.confidence}
+                voiceConfidence={voiceprint.result.confidence}
+              />
+            </div>
+            <LocalAgentSphere
                 t={t}
                 sentiment={sphereSentiment}
                 callState={callState}
@@ -1943,13 +1960,8 @@ export function DesktopUI({
                 onInterrupt={interrupt}
                 onToggleMute={toggleMute}
                 onMessage={() => {}}
-                handOpenness={handOpenness}
-                handPosition={handPosition}
-                gesture={gesture}
-                handVisible={handVisible}
                 facePresent={facePresent}
-                gesturesDisabled={true}
-                diffused={diffused}
+                gesturesDisabled={false}
                 isLightMode={isLightMode}
               />
               {/* Operation Mode selector — sphere mode */}
@@ -2397,6 +2409,7 @@ export function DesktopUI({
       </AnimatePresence>
 
       <ToolConfirmDialog socket={socket} isWallpaperMode={isWallpaperMode} />
+      <UserSwitchPrompt socket={socket} />
 
     </div>
   );

@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 
 import { usePlatform } from '@/hooks/usePlatform';
 import { DeviceSyncCenter } from './DeviceSyncCenter';
+import { BiometricsEnrollPanel } from './biometrics/BiometricsEnrollPanel';
 import { useApp } from '@/contexts/AppContext';
 import { VoiceForge } from './VoiceForge';
 import { VoiceProviderSwitch } from './VoiceProviderSwitch';
@@ -57,6 +58,7 @@ function buildSidebarGroups(t: any) {
       label: t.sidebarSystem || 'System',
       items: [
         { id: 'security', label: t.settings || 'Security', icon: <Shield size={16} /> },
+        { id: 'biometrics', label: '生物特征', icon: <Shield size={16} /> },
         { id: 'hardware', label: t.settingsHardware || 'Hardware', icon: <Camera size={16} /> },
         { id: 'mcp', label: t.settingsMCP || 'MCP', icon: <Cpu size={16} /> },
         { id: 'remote-mcp', label: t.remoteMCPSidebar || 'Remote MCP', icon: <Globe size={16} /> },
@@ -226,6 +228,16 @@ export function Settings({
                 <SettingsItem label={t.systemTrayMode || "System Tray Mode"} desc={t.systemTrayModeDesc || "Keep Lumi running in the background."} storageKey="lumi_sec_system_tray" t={t} />
               </SettingsSection>
             )}
+          </div>
+        );
+      case 'biometrics':
+        return (
+          <div className="space-y-8">
+            <SettingsSection title="生物特征录入" icon={<Shield size={18} className="text-amber-400" />}>
+              <div className="p-6 bg-white/5 rounded-[2.5rem] border border-white/5">
+                <BiometricsEnrollPanel />
+              </div>
+            </SettingsSection>
           </div>
         );
       case 'hardware':
