@@ -47,6 +47,7 @@ function buildSidebarGroups(t: any) {
       items: [
         { id: 'neural', label: t.neuralEngine || 'Neural Engine', icon: <BrainCircuit size={16} /> },
         { id: 'llm-providers', label: t.llmProviders || 'LLM Providers', icon: <BrainCircuit size={16} /> },
+        { id: 'voice', label: t.voiceForge || 'Voice Forge', icon: <Music size={16} /> },
         { id: 'voice-services', label: t.voiceServices || 'Voice Services', icon: <Mic size={16} /> },
       ],
     },
@@ -55,6 +56,7 @@ function buildSidebarGroups(t: any) {
       items: [
         { id: 'security', label: t.settings || 'Security', icon: <Shield size={16} /> },
         { id: 'hardware', label: t.settingsHardware || 'Hardware', icon: <Camera size={16} /> },
+        { id: 'sync', label: t.distributedIntelligenceHub || 'Device Sync', icon: <Radio size={16} /> },
         { id: 'mcp', label: t.settingsMCP || 'MCP', icon: <Cpu size={16} /> },
         { id: 'messaging', label: t.messaging || 'Messaging', icon: <MessagesSquare size={16} /> },
       ],
@@ -586,7 +588,31 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
 
 function ProactiveVoiceToggle() {
   const storageKey = 'lumi_allow_proactive_voice';
-  const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) !== 'false');
+  const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) === 'true');
+
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    localStorage.setItem(storageKey, String(next));
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className={`w-11 h-6 rounded-full transition-all relative ${enabled ? 'bg-celestial-saturn' : 'bg-white/10 border border-white/20'}`}
+    >
+      <motion.div
+        animate={{ x: enabled ? 20 : 2 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-md"
+      />
+    </button>
+  );
+}
+
+function WakeWordToggle() {
+  const storageKey = 'lumi_wake_word_enabled';
+  const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) === 'true');
 
   const toggle = () => {
     const next = !enabled;
@@ -850,6 +876,13 @@ function VoiceServicesPage({ t }: { t: any }) {
               <p className="text-xs text-white/55 mt-0.5">{t.proactiveVoiceGreetingDesc || '开启后，Lumi会在检测到异常或长时间不活动时主动开口说话'}</p>
             </div>
             <ProactiveVoiceToggle />
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <p className="text-xs font-bold text-white/80">{t.wakeWordLabel || '唤醒词检测 (Wake Word)'}</p>
+              <p className="text-xs text-white/55 mt-0.5">{t.wakeWordDesc || '持续监听"Lumi"唤醒词。开启后麦克风持续上传音频做ASR识别，会产生费用。'}</p>
+            </div>
+            <WakeWordToggle />
           </div>
           <div className="flex items-center justify-between mt-3">
             <div>

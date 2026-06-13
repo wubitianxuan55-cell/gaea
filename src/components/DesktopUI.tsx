@@ -700,12 +700,15 @@ function KernelMonitorApp({ t }: { t: any }) {
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="flex items-center gap-2 text-white/70 text-sm font-medium mb-3"><Briefcase size={14} className="text-amber-400" />Detected Professions</div>
               <div className="space-y-1.5">
-                {profiles.map((p: any) => (
-                  <div key={p.profession} className="flex items-center justify-between text-xs">
-                    <span className="text-white">{p.profession}</span>
-                    <span className="text-white/35">{Math.round(p.score * 100)}%</span>
-                  </div>
-                ))}
+                {profiles.map((p: any) => {
+                  const confidence = Number(p.confidence ?? p.score ?? 0);
+                  return (
+                    <div key={p.profession} className="flex items-center justify-between text-xs">
+                      <span className="text-white">{p.profession}</span>
+                      <span className="text-white/35">{Math.round(confidence * 100)}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1077,10 +1080,12 @@ export function DesktopUI({
   const canvasOpenRef = useRef(canvasOpen);
   useEffect(() => { canvasOpenRef.current = canvasOpen; }, [canvasOpen]);
   // Wake word detection — server-side Qwen ASR (DASHSCOPE_API_KEY), falls back to Picovoice
+  // Default off — user must explicitly enable in Settings to avoid continuous ASR charges
+  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('lumi_wake_word_enabled') === 'true');
   const wakeWord = useWakeWord({
     socket,
     startCallRef,
-    enabled: true,
+    enabled: wakeEnabled,
     keyword: 'Lumi',
     voiceId: selectedVoiceId,
     personalityId: 'lumi',
@@ -1584,7 +1589,7 @@ export function DesktopUI({
         break;
       case 'display_settings':
         toggleWindow('settings');
-        setSettingsSection('appearance');
+        setSettingsSection('general');
         break;
       case 'open_terminal':
         toggleWindow('terminal');
@@ -1868,7 +1873,7 @@ export function DesktopUI({
                 }} className="w-full text-left px-4 py-2 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
                   {editMode ? (t.doneEditing || 'Done Editing') : (t.editDesktop || 'Edit Desktop')}
                 </button>
-                <button onClick={() => { toggleWindow('settings'); setSettingsSection('personalization'); }} className="w-full text-left px-4 py-2 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.theme || 'Theme'}</button>
+                <button onClick={() => { toggleWindow('settings'); setSettingsSection('general'); }} className="w-full text-left px-4 py-2 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.theme || 'Theme'}</button>
               </TopMenuButton>
             </div>
           </div>
@@ -2485,7 +2490,7 @@ export function DesktopUI({
                         <button onClick={() => { toggleWindow('settings'); setSettingsSection('voice'); }} className="px-6 py-3 bg-celestial-saturn/10 border border-celestial-saturn/30 rounded-2xl text-xs font-black uppercase tracking-widest text-celestial-saturn hover:bg-celestial-saturn/20 transition-all">
                           {t.voiceForge || 'Voice Forge'}
                         </button>
-                        <button onClick={() => { toggleWindow('settings'); setSettingsSection('music'); }} className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-white/40 hover:bg-white/10 transition-all">
+                        <button onClick={() => { toggleWindow('settings'); setSettingsSection('voice-services'); }} className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-white/40 hover:bg-white/10 transition-all">
                           {t.mediaServices || 'Media Services'}
                         </button>
                       </div>

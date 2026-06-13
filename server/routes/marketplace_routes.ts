@@ -353,11 +353,23 @@ export function mountMarketplaceRoutes(
   router.get("/marketplace/discover/npm", async (req, res) => {
     try {
       const q = req.query.q || 'lumi-skill';
-      const url = `https://registry.npmjs.org/-/v2/search?text=${encodeURIComponent(String(q))}+keywords:lumi-skill&size=20`;
-      const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!resp.ok) throw new Error(`npm registry returned ${resp.status}`);
-      const data: any = await resp.json();
-      const results = (data.objects || []).map((obj: any) => ({
+      const searchNpm = async (text: string) => {
+        const params = new URLSearchParams({ text, size: '20' });
+        const resp = await fetch(`https://registry.npmjs.org/-/v1/search?${params}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!resp.ok) throw new Error(`npm registry returned ${resp.status}`);
+        return resp.json() as Promise<any>;
+      };
+
+      const primary = await searchNpm(`${String(q)} keywords:lumi-skill`);
+      let objects = primary.objects || [];
+      if (objects.length === 0 && String(q).trim() !== 'lumi-skill') {
+        const fallback = await searchNpm(String(q));
+        objects = fallback.objects || [];
+      }
+
+      const results = objects.map((obj: any) => ({
         id: `npm-${obj.package?.name}`,
         name: obj.package?.name,
         description: obj.package?.description || '',

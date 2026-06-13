@@ -21,7 +21,7 @@ export function ProactiveNotifications() {
 
       // Voice-appropriate proactive events: also trigger spoken output
       const voiceTasks = new Set(['proactive_lumi_scan', 'greeting', 'daily_summary', 'evening_wrapup']);
-      if (voiceTasks.has(taskId) && localStorage.getItem('lumi_allow_proactive_voice') !== 'false') {
+      if (voiceTasks.has(taskId) && localStorage.getItem('lumi_allow_proactive_voice') === 'true') {
         socket.emit('proactive:request_speak', { message: data.message });
       }
 

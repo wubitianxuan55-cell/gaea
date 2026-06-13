@@ -143,8 +143,8 @@ export function VoiceForge({ t, compact, onCloneSuccess }: { t: any; compact?: b
     }
   };
 
-  const clonedVoices = voices.filter(v => v.provider !== 'elevenlabs_premade' && v.provider !== 'azure_premade');
-  const premadeVoices = voices.filter(v => v.provider === 'elevenlabs_premade' || v.provider === 'azure_premade');
+  const clonedVoices = voices.filter(v => (v.category || 'cloned') === 'cloned');
+  const premadeVoices = voices.filter(v => v.category === 'premade');
 
   return (
     <div className="space-y-8 h-full flex flex-col">

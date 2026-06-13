@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { toast } from 'sonner';
 import { useSocket } from '@/hooks/useSocket';
+import { TeamHub } from './TeamHub';
 
 const ICON_CLASSES: Record<string, string> = {
   CloudSun: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
@@ -62,7 +63,7 @@ interface ExternalResult {
   npmPackage?: string; repoUrl?: string;
 }
 
-type Tab = 'featured' | 'marketplace' | 'installed' | 'generate';
+type Tab = 'featured' | 'marketplace' | 'installed' | 'generate' | 'team';
 type SortKey = 'downloads' | 'rating' | 'newest';
 
 const FEATURED_SKILLS = [
@@ -89,6 +90,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
   const [npmResults, setNpmResults] = useState<ExternalResult[]>([]);
   const [githubResults, setGithubResults] = useState<ExternalResult[]>([]);
   const [searchingExternal, setSearchingExternal] = useState(false);
+  const [externalError, setExternalError] = useState('');
   const [installProgress, setInstallProgress] = useState<{ skillId: string; stage: string } | null>(null);
   const [detailSkill, setDetailSkill] = useState<MarketplaceSkill | InstalledSkill | null>(null);
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({});
@@ -100,14 +102,14 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
 
   const fetchMarketplace = useCallback(async () => {
     try {
-      const res = await fetch(`/api/marketplace/skills?lang=${lang}`);
+      const res = await fetch(`/api/marketplace/skills?lang=${lang}`, { credentials: 'include' });
       if (res.ok) setMarketSkills(await res.json());
     } catch {}
   }, [lang]);
 
   const fetchInstalled = useCallback(async () => {
     try {
-      const res = await fetch('/api/skills');
+      const res = await fetch('/api/skills', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setInstalledSkills(data.skills || []);
@@ -118,7 +120,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch(`/api/marketplace/categories?lang=${lang}`);
+      const res = await fetch(`/api/marketplace/categories?lang=${lang}`, { credentials: 'include' });
       if (res.ok) setCategories((await res.json()).map((c: any) => c.name));
     } catch {}
   }, [lang]);
@@ -127,15 +129,29 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
   const fetchExternal = useCallback(async (q: string) => {
     if (!q || q.length < 2) { setNpmResults([]); setGithubResults([]); return; }
     setSearchingExternal(true);
+    setExternalError('');
     const qClean = encodeURIComponent(q);
     try {
-      const [npmRes, ghRes] = await Promise.all([
-        fetch(`/api/marketplace/discover/npm?q=${qClean}`).then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch(`/api/marketplace/discover/github?topic=${qClean}`).then(r => r.ok ? r.json() : null).catch(() => null),
+      const [npmRes, ghRes] = await Promise.allSettled([
+        fetch(`/api/marketplace/discover/npm?q=${qClean}`).then(async r => {
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `npm search failed (${r.status})`);
+          return r.json();
+        }),
+        fetch(`/api/marketplace/discover/github?topic=${qClean}`).then(async r => {
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `GitHub search failed (${r.status})`);
+          return r.json();
+        }),
       ]);
-      setNpmResults((npmRes?.results || []).slice(0, 6));
-      setGithubResults((ghRes?.results || []).slice(0, 6));
-    } catch {}
+      setNpmResults((npmRes.status === 'fulfilled' ? npmRes.value?.results || [] : []).slice(0, 6));
+      setGithubResults((ghRes.status === 'fulfilled' ? ghRes.value?.results || [] : []).slice(0, 6));
+      const errors = [npmRes, ghRes]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map(r => r.reason?.message)
+        .filter(Boolean);
+      if (errors.length) setExternalError(errors.join(' / '));
+    } catch (err: any) {
+      setExternalError(err.message || 'External search failed');
+    }
     setSearchingExternal(false);
   }, []);
 
@@ -200,6 +216,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -216,21 +233,30 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
 
   const handleUninstall = async (name: string) => {
     try {
-      const res = await fetch(`/api/skills/${name}`, { method: 'DELETE' });
+      const res = await fetch(`/api/skills/${name}`, { method: 'DELETE', credentials: 'include' });
       if (res.ok) {
         toast.success(`"${name}" ${t.skillUninstalledToast}`);
         if (socket) socket.emit('skill:uninstalled', { name });
         fetchInstalled(); fetchMarketplace();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Uninstall failed');
       }
     } catch (err: any) { toast.error(err.message); }
   };
 
   const handleToggle = async (name: string, enabled: boolean) => {
     try {
-      await fetch(`/api/skills/${name}/${enabled ? 'enable' : 'disable'}`, { method: 'POST' });
+      const res = await fetch(`/api/skills/${name}/${enabled ? 'enable' : 'disable'}`, { method: 'POST', credentials: 'include' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Toggle failed');
+      }
       toast.success(`${enabled ? t.skillEnabledToast : t.skillDisabledToast} ${name}`);
       fetchInstalled();
-    } catch {}
+    } catch (err: any) {
+      toast.error(err.message || 'Toggle failed');
+    }
   };
 
   const handleSaveKey = async (envKey: string, value: string) => {
@@ -258,6 +284,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: genDescription }),
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -306,6 +333,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
     { id: 'marketplace', label: t.marketplaceTab || 'Marketplace', icon: <ShoppingBag size={14} /> },
     { id: 'installed', label: t.installedTab || 'Installed', icon: <Cpu size={14} /> },
     { id: 'generate', label: t.generateTab || 'Generate', icon: <Sparkles size={14} /> },
+    { id: 'team', label: t.team || 'Team', icon: <Bot size={14} /> },
   ];
 
   const SAMPLE_PROMPTS = [
@@ -656,6 +684,12 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
                 </motion.div>
               )}
 
+              {externalError && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs text-red-300/80 bg-red-500/10 border border-red-500/15 rounded-xl px-3 py-2">
+                  {externalError}
+                </motion.div>
+              )}
+
               {/* npm registry results */}
               {npmResults.length > 0 && (
                 <motion.div key="npm-section" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-2">
@@ -831,6 +865,12 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
                 ))}
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'team' && (
+          <motion.div key="team" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            <TeamHub t={t} />
           </motion.div>
         )}
 

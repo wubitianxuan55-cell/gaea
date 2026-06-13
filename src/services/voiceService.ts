@@ -1,6 +1,25 @@
 import { getBackendOrigin } from './apiBridge';
+import { getStoredToken } from './authService';
 
 const BASE = `${getBackendOrigin()}/api/voice`;
+
+function withVoiceAuth(init: RequestInit = {}): RequestInit {
+  const headers = new Headers(init.headers);
+  const token = getStoredToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return { ...init, credentials: 'include', headers };
+}
+
+async function voiceFetch(path: string, init: RequestInit = {}) {
+  return fetch(`${BASE}${path}`, withVoiceAuth(init));
+}
+
+async function readError(res: Response, fallback: string): Promise<string> {
+  const data = await res.json().catch(() => null);
+  return data?.error || fallback;
+}
 
 export async function uploadSamples(files: File[]): Promise<{ urls: string[]; filenames: string[]; count: number }> {
   const form = new FormData();
@@ -9,11 +28,10 @@ export async function uploadSamples(files: File[]): Promise<{ urls: string[]; fi
   console.log('[VoiceService] Uploading', files.length, 'samples, sizes:', files.map(f => f.size));
   const url = `${BASE}/samples`;
   console.log('[VoiceService] POST', url);
-  const res = await fetch(url, { method: 'POST', body: form });
+  const res = await voiceFetch('/samples', { method: 'POST', body: form });
   console.log('[VoiceService] Upload response:', res.status, res.statusText);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-    throw new Error(err.error || 'Upload failed');
+    throw new Error(await readError(res, 'Upload failed'));
   }
   const data = await res.json();
   console.log('[VoiceService] Upload result:', data);
@@ -22,15 +40,14 @@ export async function uploadSamples(files: File[]): Promise<{ urls: string[]; fi
 
 export async function cloneVoice(sampleUrls: string[], name: string, provider?: string): Promise<{ voiceId: string; name: string; provider: string }> {
   console.log('[VoiceService] Cloning voice with name:', name, 'urls:', sampleUrls);
-  const res = await fetch(`${BASE}/clone`, {
+  const res = await voiceFetch('/clone', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sampleUrls, name, provider }),
+    body: JSON.stringify({ sampleUrls, name, provider: provider || 'cosyvoice' }),
   });
   console.log('[VoiceService] Clone response:', res.status, res.statusText);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Clone failed' }));
-    throw new Error(err.error || 'Clone failed');
+    throw new Error(await readError(res, 'Clone failed'));
   }
   const data = await res.json();
   console.log('[VoiceService] Clone result:', data);
@@ -38,22 +55,22 @@ export async function cloneVoice(sampleUrls: string[], name: string, provider?: 
 }
 
 export async function listVoices(): Promise<{ cloned: any[]; premade: any[] }> {
-  const res = await fetch(`${BASE}/voices`);
-  if (!res.ok) throw new Error('Failed to fetch voices');
+  const res = await voiceFetch('/voices');
+  if (!res.ok) throw new Error(await readError(res, 'Failed to fetch voices'));
   return res.json();
 }
 
 export async function deleteVoice(voiceId: string): Promise<void> {
-  const res = await fetch(`${BASE}/${voiceId}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete voice');
+  const res = await voiceFetch(`/${voiceId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await readError(res, 'Failed to delete voice'));
 }
 
 export async function synthesizeSpeech(text: string, voiceId: string, provider?: string): Promise<ArrayBuffer> {
-  const res = await fetch(`${BASE}/synthesize`, {
+  const res = await voiceFetch('/synthesize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, voiceId, provider }),
   });
-  if (!res.ok) throw new Error('Speech synthesis failed');
+  if (!res.ok) throw new Error(await readError(res, 'Speech synthesis failed'));
   return res.arrayBuffer();
 }

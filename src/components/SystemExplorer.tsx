@@ -13,7 +13,7 @@ interface Snapshot {
 }
 
 interface ProfessionProfile {
-  profession: string; score: number; confidence: string;
+  profession: string; score?: number; confidence?: number | string;
 }
 
 interface Plan {
@@ -158,12 +158,15 @@ export function SystemExplorer() {
                 <button onClick={installProfession} className="px-3 py-1.5 text-xs bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors">安装专业代理</button>
               </div>
               <div className="space-y-2">
-                {profiles.map(p => (
-                  <div key={p.profession} className="flex items-center justify-between">
-                    <span className="text-white text-sm">{p.profession}</span>
-                    <span className="text-white/40 text-xs">{Math.round(p.score * 100)}% 置信度</span>
-                  </div>
-                ))}
+                {profiles.map(p => {
+                  const confidence = Number(p.confidence ?? p.score ?? 0);
+                  return (
+                    <div key={p.profession} className="flex items-center justify-between">
+                      <span className="text-white text-sm">{p.profession}</span>
+                      <span className="text-white/40 text-xs">{Math.round(confidence * 100)}% 置信度</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

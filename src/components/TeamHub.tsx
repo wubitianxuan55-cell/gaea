@@ -18,7 +18,7 @@ export function TeamHub({ t }: { t?: any }) {
   const fetchAgents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/agents');
+      const res = await fetch('/api/agents', { credentials: 'include' });
       if (res.ok) setAgents(await res.json());
     } catch {}
     setLoading(false);
@@ -76,17 +76,17 @@ export function TeamHub({ t }: { t?: any }) {
   };
 
   const handleToggle = async (agent: any) => {
-    const nextActive = !(agent.isFrozen ?? false);
+    const nextFrozen = !(agent.isFrozen ?? false);
     try {
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isFrozen: !nextActive }),
+        body: JSON.stringify({ isFrozen: nextFrozen }),
         credentials: 'include',
       });
       if (res.ok) {
-        setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, isFrozen: !nextActive } : a));
-        toast.info(nextActive ? (t?.agentActivated || 'Agent activated') : (t?.agentFrozen || 'Agent frozen'));
+        setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, isFrozen: nextFrozen } : a));
+        toast.info(nextFrozen ? (t?.agentFrozen || 'Agent frozen') : (t?.agentActivated || 'Agent activated'));
       }
     } catch (err: any) {
       toast.error(err.message || t?.toggleFailed || 'Toggle failed');

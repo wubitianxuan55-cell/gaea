@@ -7,7 +7,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
   const [active, setActive] = useState<{ stt: string; tts: string }>({ stt: '?', tts: '?' });
 
   const load = () => {
-    fetch('/api/voice/active-provider')
+    fetch('/api/voice/active-provider', { credentials: 'include' })
       .then(r => r.json())
       .then(d => { setPref(d.pref); setActive(d.active); })
       .catch(() => {});
@@ -19,6 +19,7 @@ export function VoiceProviderSwitch({ t }: { t?: any }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stt, tts }),
+      credentials: 'include',
     });
     load();
   };

@@ -9,6 +9,7 @@ import { getKey } from '../server/config/keys';
 import { logger } from '../logger';
 import { recordLatency } from '../server/monitor/latency_store';
 import { getDataPath } from '../server/config/data_path';
+import { requireAuth } from '../server/middleware/auth';
 
 const router = Router();
 
@@ -17,7 +18,7 @@ fs.mkdirSync(samplesDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const userId = (_req as any).userId || 'anonymous';
+    const userId = (_req as any).user?.uid || (_req as any).userId || 'anonymous';
     const userDir = path.join(samplesDir, userId);
     fs.mkdirSync(userDir, { recursive: true });
     cb(null, userDir);
@@ -48,7 +49,7 @@ function getUserId(req: Request): string {
 }
 
 // POST /api/voice/samples — Upload voice sample(s) for cloning
-router.post('/voice/samples', upload.array('samples', 5), (req: Request, res: Response) => {
+router.post('/voice/samples', requireAuth, upload.array('samples', 5), (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     console.log('[Voice Upload] Received files:', files?.length, 'userId:', getUserId(req));
@@ -68,7 +69,10 @@ router.post('/voice/samples', upload.array('samples', 5), (req: Request, res: Re
 });
 
 // GET /api/voice/samples/:userId/:filename — Serve uploaded samples
-router.get('/voice/samples/:userId/:filename', (req: Request, res: Response) => {
+router.get('/voice/samples/:userId/:filename', requireAuth, (req: Request, res: Response) => {
+  if (req.params.userId !== req.user!.uid) {
+    return res.status(403).json({ error: 'Sample not found' });
+  }
   const filePath = path.join(samplesDir, req.params.userId, req.params.filename);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Sample not found' });
@@ -77,7 +81,7 @@ router.get('/voice/samples/:userId/:filename', (req: Request, res: Response) => 
 });
 
 // POST /api/voice/clone — Trigger voice cloning
-router.post('/voice/clone', async (req: Request, res: Response) => {
+router.post('/voice/clone', requireAuth, async (req: Request, res: Response) => {
   try {
     const { sampleUrls, name, provider } = req.body;
 
@@ -88,16 +92,12 @@ router.post('/voice/clone', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Voice name is required' });
     }
 
-    const activeProvider = provider || getActiveProvider();
-    if (!activeProvider) {
-      return res.status(400).json({ error: 'No TTS provider configured. Add an API key in Settings → Voice Services or Settings → API Matrix.' });
-    }
-
-    // GPT-SoVITS doesn't support cloud cloning; CosyVoice (DashScope) does
-    if (activeProvider === 'gptsovits') {
+    const activeProvider = (provider || 'cosyvoice') as TTSProvider;
+    if (activeProvider !== 'cosyvoice') {
       return res.status(400).json({
-        error: 'GPT-SoVITS does not support cloud cloning. Use CosyVoice (DashScope) for voice cloning.',
+        error: 'Voice cloning currently supports CosyVoice only. Choose CosyVoice in the cloning flow or add a provider adapter.',
         activeProvider,
+        supportedProviders: ['cosyvoice'],
       });
     }
 
@@ -120,12 +120,13 @@ router.post('/voice/clone', async (req: Request, res: Response) => {
       voiceId,
       name,
       provider: activeProvider,
+      category: 'cloned',
       createdAt: new Date().toISOString(),
     });
     writeDB(db);
     console.log('[Voice Clone] DB written, responding with voiceId:', voiceId);
 
-    res.json({ voiceId, name, provider: activeProvider });
+    res.json({ voiceId, name, provider: activeProvider, category: 'cloned' });
   } catch (err: any) {
     logger.error('[Voice Clone Error]', err);
     res.status(500).json({ error: err.message || 'Voice cloning service unavailable' });
@@ -133,7 +134,7 @@ router.post('/voice/clone', async (req: Request, res: Response) => {
 });
 
 // POST /api/voice/design — Design a new voice from text description
-router.post('/voice/design', async (req: Request, res: Response) => {
+router.post('/voice/design', requireAuth, async (req: Request, res: Response) => {
   try {
     const { prompt, name } = req.body;
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 10) {
@@ -142,9 +143,9 @@ router.post('/voice/design', async (req: Request, res: Response) => {
     if (!name || typeof name !== 'string') {
       return res.status(400).json({ error: 'Voice name is required' });
     }
-    const activeProvider = getActiveProvider() || 'cosyvoice';
-    if (activeProvider === 'gptsovits') {
-      return res.status(400).json({ error: 'GPT-SoVITS does not support voice design. Use CosyVoice (DashScope).' });
+    const activeProvider = ((req.body?.provider as TTSProvider | undefined) || 'cosyvoice') as TTSProvider;
+    if (activeProvider !== 'cosyvoice') {
+      return res.status(400).json({ error: 'Voice design currently supports CosyVoice only. Use CosyVoice (DashScope).' });
     }
 
     const voiceId = await designVoice(prompt.trim(), name, activeProvider);
@@ -157,12 +158,13 @@ router.post('/voice/design', async (req: Request, res: Response) => {
       voiceId,
       name,
       provider: activeProvider,
+      category: 'cloned',
       prompt: prompt.trim(),
       createdAt: new Date().toISOString(),
     });
     writeDB(db);
 
-    res.json({ voiceId, name, provider: activeProvider });
+    res.json({ voiceId, name, provider: activeProvider, category: 'cloned' });
   } catch (err: any) {
     logger.error('[Voice Design Error]', err);
     res.status(500).json({ error: err.message || 'Voice design service unavailable' });
@@ -170,11 +172,14 @@ router.post('/voice/design', async (req: Request, res: Response) => {
 });
 
 // GET /api/voice/voices — List user's cloned voices + ALL provider premade voices
-router.get('/voice/voices', async (req: Request, res: Response) => {
+router.get('/voice/voices', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
     const db = readDB();
-    const userVoices = db.voiceProfiles?.[userId] || [];
+    const userVoices = (db.voiceProfiles?.[userId] || []).map((voice: any) => ({
+      ...voice,
+      category: 'cloned' as const,
+    }));
 
     // Fetch premade voices from ALL available providers, not just the active one
     let premadeVoices: any[] = [];
@@ -204,7 +209,7 @@ router.get('/voice/voices', async (req: Request, res: Response) => {
       try {
         const voices = await listVoices(provider);
         // Tag each voice with its provider so the frontend can show it
-        premadeVoices.push(...voices.map(v => ({ ...v, provider })));
+        premadeVoices.push(...voices.map(v => ({ ...v, category: v.category || 'premade', provider })));
       } catch {
         // Provider not available — skip
       }
@@ -220,7 +225,7 @@ router.get('/voice/voices', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/voice/:voiceId — Delete a cloned voice
-router.delete('/voice/:voiceId', async (req: Request, res: Response) => {
+router.delete('/voice/:voiceId', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
     const db = readDB();

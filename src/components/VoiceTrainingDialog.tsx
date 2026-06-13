@@ -27,7 +27,7 @@ export function VoiceTrainingDialog({ isOpen, onClose, onSuccess }: VoiceTrainin
   const [step, setStep] = useState<'upload' | 'naming' | 'cloning' | 'success'>('upload');
   const [files, setFiles] = useState<File[]>([]);
   const [voiceName, setVoiceName] = useState('');
-  const [provider, setProvider] = useState<'elevenlabs' | 'fishaudio'>('elevenlabs');
+  const [provider, setProvider] = useState<'cosyvoice'>('cosyvoice');
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,9 +224,9 @@ export function VoiceTrainingDialog({ isOpen, onClose, onSuccess }: VoiceTrainin
 
                   <div className="space-y-4">
                     <label className="text-xs font-black text-white/40 uppercase tracking-[0.3em]">Engine Architecture</label>
-                    <p className="text-[12px] text-white/45 leading-relaxed">CosyVoice and GPT-SoVITS provide premade voices but don't support custom cloning. Use ElevenLabs or FishAudio to create a custom voice from your samples.</p>
+                    <p className="text-[12px] text-white/45 leading-relaxed">CosyVoice is the supported cloning engine for custom voices. Add a DashScope key in Voice Services before cloning.</p>
                     <div className="grid grid-cols-2 gap-4">
-                      {(['elevenlabs', 'fishaudio'] as const).map((p) => (
+                      {(['cosyvoice'] as const).map((p) => (
                         <button
                           key={p}
                           onClick={() => setProvider(p)}
@@ -239,8 +239,8 @@ export function VoiceTrainingDialog({ isOpen, onClose, onSuccess }: VoiceTrainin
                           {provider === p && (
                             <motion.div layoutId="provider-bg" className="absolute inset-0 bg-celestial-saturn/5" />
                           )}
-                          <p className="text-xs font-black uppercase tracking-widest relative z-10">{p}</p>
-                          <p className="text-xs font-medium opacity-60 mt-1 relative z-10">{p === 'elevenlabs' ? 'Multilingual' : 'Zero-shot'}</p>
+                          <p className="text-xs font-black uppercase tracking-widest relative z-10">CosyVoice</p>
+                          <p className="text-xs font-medium opacity-60 mt-1 relative z-10">DashScope clone</p>
                         </button>
                       ))}
                     </div>
