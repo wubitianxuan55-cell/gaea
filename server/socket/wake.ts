@@ -44,4 +44,11 @@ export function registerWakeHandlers(socket: Socket, getUserId: (s: Socket) => s
       wakeDetector = null;
     }
   });
+
+  socket.on("disconnect", () => {
+    if (wakeDetector) {
+      try { wakeDetector.stop(); } catch {}
+      wakeDetector = null;
+    }
+  });
 }

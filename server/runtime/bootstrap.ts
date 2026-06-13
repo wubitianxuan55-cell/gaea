@@ -153,9 +153,12 @@ export async function bootstrap(ctx: BootstrapContext) {
   });
 
   // Cleanup on exit
+  let cleaningUp = false;
   const cleanup = async () => {
+    if (cleaningUp) return;
+    cleaningUp = true;
     console.log('[Shutdown] Cleaning up...');
-    // Flush dirty in-memory database before exit
+    scheduler.stop();
     try {
       await flushDB();
       console.log('[Shutdown] Database flushed');
@@ -170,8 +173,7 @@ export async function bootstrap(ctx: BootstrapContext) {
       console.log('[GPT-SoVITS] Stopping API server...');
       gptSovitsProcess.kill();
     }
-    process.exit(0);
   };
-  process.on('SIGINT', () => { cleanup(); });
-  process.on('SIGTERM', () => { cleanup(); });
+  process.on('SIGINT', () => { cleanup().then(() => process.exit(0)); });
+  process.on('SIGTERM', () => { cleanup().then(() => process.exit(0)); });
 }

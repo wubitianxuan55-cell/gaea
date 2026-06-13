@@ -2,8 +2,22 @@
 // / → personal AI OS desktop
 // /index.org.html → org workbench (create/manage orgs, legal tools)
 import "dotenv/config";
+
+// ── Global exception handlers (must be first — before any async setup) ──
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason);
+  if (reason instanceof Error) console.error(reason.stack);
+  process.exit(1);
+});
+
 import { fileURLToPath } from "url";
 import path from "path";
+import { execSync } from "child_process";
 import express from "express";
 import { createApp } from "./server/runtime/core";
 import { createLLMRuntime } from "./server/runtime/llm";
@@ -200,24 +214,11 @@ setupMessaging(apiRouter, llm);
 setupMcpServer(app, server, io, llm, path.join(__dirname, 'server'));
 initSocketRuntime({ io, jwtSecret: JWT_SECRET, llm });
 
-// ── Global exception handlers (must be registered first) ──
-process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught exception:', err.message);
-  console.error(err.stack);
-  process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] Unhandled rejection:', reason);
-  if (reason instanceof Error) console.error(reason.stack);
-  process.exit(1);
-});
-
 // Cleanup mpv on exit so music stops when server shuts down
 process.on('exit', () => {
-  try { require('child_process').execSync('taskkill //F //IM "mpv.exe"', { timeout: 3000, stdio: 'ignore' }); } catch {}
+  try { execSync('taskkill //F //IM "mpv.exe"', { timeout: 3000, stdio: 'ignore' }); } catch {}
 });
-process.on('SIGINT', () => process.exit());
-process.on('SIGTERM', () => process.exit());
+// SIGINT/SIGTERM are handled by bootstrap.ts with proper cleanup + flushDB
 
 async function start() {
   await setupStatic(app, __filename, __dirname, ROLE);

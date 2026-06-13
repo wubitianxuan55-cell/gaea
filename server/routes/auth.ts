@@ -17,6 +17,7 @@ const authLimiter = rateLimit({
 
 export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOptions: () => any) {
   router.post("/auth/register", authLimiter, async (req, res) => {
+    try {
     const { username, password, phone } = req.body;
     if (!username || !password || !phone) {
       return res.status(400).json({ error: "Username, password and phone are required" });
@@ -49,9 +50,14 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
 
     const { password: _, ...userWithoutPassword } = newUser;
     return res.json({ success: true, user: userWithoutPassword, token });
+    } catch (err: any) {
+      console.error('[Auth] register error:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   router.post("/auth/login", authLimiter, async (req, res) => {
+    try {
     const { username, password } = req.body;
     const db = readDB();
     const user = db.users.find((u: any) => u.username === username);
@@ -73,6 +79,10 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
       return res.json({ success: true, user: userWithoutPassword, token });
     }
     res.status(401).json({ error: "Invalid credentials" });
+    } catch (err: any) {
+      console.error('[Auth] login error:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   router.get("/auth/me", (req, res) => {
@@ -105,6 +115,7 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
   // Bootstrap endpoint: auto-login for local admin account
   // Only active when AUTO_LOGIN_PASSWORD env var is configured
   router.get("/auth/bootstrap", async (req, res) => {
+    try {
     const adminPassword = process.env.AUTO_LOGIN_PASSWORD || 'lumi_admin_2026';
 
     const db = readDB();
@@ -152,40 +163,45 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
     const userResp: any = { ...userWithoutPassword };
     if (membership) { userResp.orgId = membership.orgId; userResp.orgRole = membership.role; }
     return res.json({ success: true, user: userResp, token });
+    } catch (err: any) {
+      console.error('[Auth] bootstrap error:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   router.post("/auth/change-password", async (req, res) => {
+    try {
     const token = req.cookies.token;
     if (!token) return res.status(401).json({ error: "Unauthorized" });
 
-    try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const { currentPassword, newPassword } = req.body;
+    const decoded: any = jwt.verify(token, jwtSecret);
+    const { currentPassword, newPassword } = req.body;
 
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: "Current and new passwords are required" });
-      }
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current and new passwords are required" });
+    }
 
-      const db = readDB();
-      const userIndex = db.users.findIndex((u: any) => u.uid === decoded.uid);
+    const db = readDB();
+    const userIndex = db.users.findIndex((u: any) => u.uid === decoded.uid);
 
-      if (userIndex === -1) {
-        return res.status(404).json({ error: "User not found" });
-      }
+    if (userIndex === -1) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-      const storedPassword = db.users[userIndex].password || "";
-      const passwordMatches = await bcrypt.compare(currentPassword, storedPassword);
+    const storedPassword = db.users[userIndex].password || "";
+    const passwordMatches = await bcrypt.compare(currentPassword, storedPassword);
 
-      if (!passwordMatches) {
-        return res.status(400).json({ error: "Incorrect current password" });
-      }
+    if (!passwordMatches) {
+      return res.status(400).json({ error: "Incorrect current password" });
+    }
 
-      db.users[userIndex].password = await bcrypt.hash(newPassword, 10);
-      writeDB(db);
+    db.users[userIndex].password = await bcrypt.hash(newPassword, 10);
+    writeDB(db);
 
-      res.json({ success: true });
-    } catch (e) {
-      res.status(401).json({ error: "Invalid token" });
+    res.json({ success: true });
+    } catch (err: any) {
+      console.error('[Auth] change-password error:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
     }
   });
 

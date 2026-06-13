@@ -37,7 +37,20 @@ export function registerAmbientHandlers(socket: Socket, getUserId: (s: Socket) =
     } catch {}
   }
 
-  socket.on("ambient:window_update", (data: { title: string; process_name: string; pid: number }) => {
+  function guard(fn: (...args: any[]) => void | Promise<void>) {
+    return (...args: any[]) => {
+      try {
+        const ret = fn(...args);
+        if (ret && typeof (ret as any).catch === 'function') {
+          (ret as any).catch((e: any) => console.error('[Ambient] Handler error:', e.message || String(e)));
+        }
+      } catch (e: any) {
+        console.error('[Ambient] Handler error:', e.message || String(e));
+      }
+    };
+  }
+
+  socket.on("ambient:window_update", guard((data: { title: string; process_name: string; pid: number }) => {
     const uid = getUserId(socket);
     if (!uid) return;
     const prev = getLastEvent(uid, 'window_changed');
@@ -49,9 +62,9 @@ export function registerAmbientHandlers(socket: Socket, getUserId: (s: Socket) =
     if (changed) {
       processActivityEvent(event, uid, io);
     }
-  });
+  }));
 
-  socket.on("ambient:idle_report", (data: { idle_ms: number; idle_seconds: number }) => {
+  socket.on("ambient:idle_report", guard((data: { idle_ms: number; idle_seconds: number }) => {
     const uid = getUserId(socket);
     if (!uid) return;
     const isIdle = data.idle_seconds > 60;
@@ -86,15 +99,15 @@ export function registerAmbientHandlers(socket: Socket, getUserId: (s: Socket) =
         }
       }
     }
-  });
+  }));
 
-  socket.on("ambient:noise_level", (data: { rms: number; isSpeaking: boolean; callState: string; timestamp: string }) => {
+  socket.on("ambient:noise_level", guard((data: { rms: number; isSpeaking: boolean; callState: string; timestamp: string }) => {
     const uid = getUserId(socket);
     if (!uid) return;
     ambientNoise.set(uid, { rms: data.rms, lastUpdate: data.timestamp });
-  });
+  }));
 
-  socket.on("ambient:clipboard_report", (data: { text: string }) => {
+  socket.on("ambient:clipboard_report", guard((data: { text: string }) => {
     const uid = getUserId(socket);
     if (!uid) return;
     const result = detectClipboardChange(uid, data.text || '');
@@ -104,5 +117,5 @@ export function registerAmbientHandlers(socket: Socket, getUserId: (s: Socket) =
         processActivityEvent(event, uid, io);
       }
     }
-  });
+  }));
 }

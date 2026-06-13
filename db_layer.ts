@@ -52,43 +52,49 @@ export async function initDatabase(): Promise<void> {
   });
 }
 
+function onAlter(err: Error | null) {
+  if (err && !err.message.includes('duplicate column name')) {
+    console.warn('[DB] Schema migration error:', err.message);
+  }
+}
+
 // Add missing columns to existing tables (safe on old DB)
 function migrateSchema(): Promise<void> {
   return new Promise((resolve) => {
     // Add 'phone' column to users if it doesn't exist (old DB lacks it)
-    db!.run("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''", onAlter);
     // Add 'status' column to agents if it doesn't exist
-    db!.run("ALTER TABLE agents ADD COLUMN status TEXT DEFAULT 'active'", () => {});
+    db!.run("ALTER TABLE agents ADD COLUMN status TEXT DEFAULT 'active'", onAlter);
     // Add 'role' column to interactions if it doesn't exist
-    db!.run("ALTER TABLE interactions ADD COLUMN role TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN role TEXT DEFAULT ''", onAlter);
     // Add 'personality' column to interactions if it doesn't exist
-    db!.run("ALTER TABLE interactions ADD COLUMN personality TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN personality TEXT DEFAULT ''", onAlter);
     // Add 'mode' column to interactions if it doesn't exist
-    db!.run("ALTER TABLE interactions ADD COLUMN mode TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN mode TEXT DEFAULT ''", onAlter);
     // Add 'toolCalls' column to interactions if it doesn't exist
-    db!.run("ALTER TABLE interactions ADD COLUMN toolCalls TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN toolCalls TEXT DEFAULT ''", onAlter);
     // Add 'conversationId' column to interactions if it doesn't exist
-    db!.run("ALTER TABLE interactions ADD COLUMN conversationId TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN conversationId TEXT DEFAULT ''", onAlter);
     // Add agent framework columns
-    db!.run("ALTER TABLE agents ADD COLUMN personalityId TEXT DEFAULT 'lumi'", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN modelPreference TEXT DEFAULT ''", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'shared'", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN autonomyLevel TEXT DEFAULT 'reactive'", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN runtimeConfig TEXT DEFAULT '{}'", () => {});
+    db!.run("ALTER TABLE agents ADD COLUMN personalityId TEXT DEFAULT 'lumi'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN modelPreference TEXT DEFAULT ''", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'shared'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN autonomyLevel TEXT DEFAULT 'reactive'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN runtimeConfig TEXT DEFAULT '{}'", onAlter);
     // Add runtime + externalCommand to agents
-    db!.run("ALTER TABLE agents ADD COLUMN runtime TEXT DEFAULT 'internal'", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN externalCommand TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE agents ADD COLUMN runtime TEXT DEFAULT 'internal'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN externalCommand TEXT DEFAULT ''", onAlter);
     // Add agentId to memories for agent-private memory
-    db!.run("ALTER TABLE memories ADD COLUMN agentId TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE memories ADD COLUMN agentId TEXT DEFAULT ''", onAlter);
     // Add location to memories for spatial context
-    db!.run("ALTER TABLE memories ADD COLUMN location TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE memories ADD COLUMN location TEXT DEFAULT ''", onAlter);
     // Org: domain + orgId for data classification
-    db!.run("ALTER TABLE memories ADD COLUMN domain TEXT DEFAULT 'personal'", () => {});
-    db!.run("ALTER TABLE memories ADD COLUMN orgId TEXT DEFAULT ''", () => {});
-    db!.run("ALTER TABLE interactions ADD COLUMN domain TEXT DEFAULT 'personal'", () => {});
-    db!.run("ALTER TABLE interactions ADD COLUMN orgId TEXT DEFAULT ''", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN domain TEXT DEFAULT 'personal'", () => {});
-    db!.run("ALTER TABLE agents ADD COLUMN orgId TEXT DEFAULT ''", () => {});
+    db!.run("ALTER TABLE memories ADD COLUMN domain TEXT DEFAULT 'personal'", onAlter);
+    db!.run("ALTER TABLE memories ADD COLUMN orgId TEXT DEFAULT ''", onAlter);
+    db!.run("ALTER TABLE interactions ADD COLUMN domain TEXT DEFAULT 'personal'", onAlter);
+    db!.run("ALTER TABLE interactions ADD COLUMN orgId TEXT DEFAULT ''", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN domain TEXT DEFAULT 'personal'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN orgId TEXT DEFAULT ''", onAlter);
     // Add memories table if it doesn't exist
     db!.run(`CREATE TABLE IF NOT EXISTS memories (
       id TEXT PRIMARY KEY,
@@ -110,13 +116,13 @@ function migrateSchema(): Promise<void> {
       nodeType TEXT NOT NULL DEFAULT 'leaf',
       domain TEXT DEFAULT 'personal',
       orgId TEXT DEFAULT ''
-    )`, () => {});
+    )`, onAlter);
     // Migrate: add new columns to existing memories table
-    db!.run("ALTER TABLE memories ADD COLUMN tier TEXT NOT NULL DEFAULT 'episodic'", () => {});
-    db!.run("ALTER TABLE memories ADD COLUMN perspective TEXT NOT NULL DEFAULT 'owner_trait'", () => {});
-    db!.run("ALTER TABLE memories ADD COLUMN importance REAL NOT NULL DEFAULT 0.3", () => {});
-    db!.run("ALTER TABLE memories ADD COLUMN parentId TEXT", () => {});
-    db!.run("ALTER TABLE memories ADD COLUMN nodeType TEXT NOT NULL DEFAULT 'leaf'", () => {});
+    db!.run("ALTER TABLE memories ADD COLUMN tier TEXT NOT NULL DEFAULT 'episodic'", onAlter);
+    db!.run("ALTER TABLE memories ADD COLUMN perspective TEXT NOT NULL DEFAULT 'owner_trait'", onAlter);
+    db!.run("ALTER TABLE memories ADD COLUMN importance REAL NOT NULL DEFAULT 0.3", onAlter);
+    db!.run("ALTER TABLE memories ADD COLUMN parentId TEXT", onAlter);
+    db!.run("ALTER TABLE memories ADD COLUMN nodeType TEXT NOT NULL DEFAULT 'leaf'", onAlter);
     // Add token_usage table if it doesn't exist
     db!.run(`CREATE TABLE IF NOT EXISTS token_usage (
       id TEXT PRIMARY KEY,
@@ -129,10 +135,10 @@ function migrateSchema(): Promise<void> {
       mode TEXT DEFAULT 'chat',
       interactionId TEXT DEFAULT '',
       timestamp TEXT NOT NULL
-    )`, () => {});
+    )`, onAlter);
     // Add cognitiveIntent and llmWasCalled columns to interactions
-    db!.run("ALTER TABLE interactions ADD COLUMN cognitiveIntent TEXT DEFAULT ''", () => {});
-    db!.run("ALTER TABLE interactions ADD COLUMN llmWasCalled INTEGER DEFAULT 0", () => {});
+    db!.run("ALTER TABLE interactions ADD COLUMN cognitiveIntent TEXT DEFAULT ''", onAlter);
+    db!.run("ALTER TABLE interactions ADD COLUMN llmWasCalled INTEGER DEFAULT 0", onAlter);
     // Add reminders table if it doesn't exist
     db!.run(`CREATE TABLE IF NOT EXISTS reminders (
       id TEXT PRIMARY KEY,
@@ -143,21 +149,21 @@ function migrateSchema(): Promise<void> {
       sourceInteractionId TEXT NOT NULL DEFAULT '',
       createdAt TEXT NOT NULL,
       firedAt TEXT
-    )`, () => {});
+    )`, onAlter);
     // Indexes — safe to create repeatedly with IF NOT EXISTS
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_user_conv ON interactions(userId, conversationId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_agent ON interactions(agentId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_type_tier ON memories(userId, type, tier)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_agent ON memories(userId, agentId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_parent ON memories(userId, parentId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_conversations_user_status ON conversations(userId, status)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_user_ts ON token_usage(userId, timestamp)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_domain ON memories(userId, domain)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_org ON memories(orgId, userId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_user_domain ON interactions(userId, domain)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_org ON interactions(orgId, userId)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_agents_user_domain ON agents(userId, domain)`, () => {});
-    db!.run(`CREATE INDEX IF NOT EXISTS idx_agents_org ON agents(orgId, userId)`, () => {});
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_user_conv ON interactions(userId, conversationId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_agent ON interactions(agentId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_type_tier ON memories(userId, type, tier)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_agent ON memories(userId, agentId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_parent ON memories(userId, parentId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_conversations_user_status ON conversations(userId, status)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_token_usage_user_ts ON token_usage(userId, timestamp)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_user_domain ON memories(userId, domain)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_memories_org ON memories(orgId, userId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_user_domain ON interactions(userId, domain)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_interactions_org ON interactions(orgId, userId)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_agents_user_domain ON agents(userId, domain)`, onAlter);
+    db!.run(`CREATE INDEX IF NOT EXISTS idx_agents_org ON agents(orgId, userId)`, onAlter);
     resolve();
   });
 }

@@ -2,8 +2,21 @@ import { Socket, Server } from "socket.io";
 import { perceptionEvents, MAX_PERCEPTION_EVENTS } from "./shared";
 import { loadEmotionalState, saveEmotionalState, updateEmotionalState } from "../personality/state";
 
+function socketGuard(fn: (...args: any[]) => void | Promise<void>) {
+  return (...args: any[]) => {
+    try {
+      const ret = fn(...args);
+      if (ret && typeof (ret as any).catch === 'function') {
+        (ret as any).catch((e: any) => console.error('[Perception] Handler error:', e.message || String(e)));
+      }
+    } catch (e: any) {
+      console.error('[Perception] Handler error:', e.message || String(e));
+    }
+  };
+}
+
 export function registerPerceptionHandlers(socket: Socket, getUserId: (s: Socket) => string, _io: Server) {
-  socket.on("perception:visual_scene", (data: { description: string; objects?: string[]; faces?: number }) => {
+  socket.on("perception:visual_scene", socketGuard((data: { description: string; objects?: string[]; faces?: number }) => {
     const uid = getUserId(socket);
     const events = perceptionEvents.get(uid) || [];
     events.push({
@@ -14,9 +27,9 @@ export function registerPerceptionHandlers(socket: Socket, getUserId: (s: Socket
     });
     if (events.length > MAX_PERCEPTION_EVENTS) events.shift();
     perceptionEvents.set(uid, events);
-  });
+  }));
 
-  socket.on("perception:audio_emotion", (data: { emotion: string; intensity?: number }) => {
+  socket.on("perception:audio_emotion", socketGuard((data: { emotion: string; intensity?: number }) => {
     const uid = getUserId(socket);
     const events = perceptionEvents.get(uid) || [];
     events.push({
@@ -47,9 +60,9 @@ export function registerPerceptionHandlers(socket: Socket, getUserId: (s: Socket
         saveEmotionalState(uid, updated);
       }
     }
-  });
+  }));
 
-  socket.on("perception:spatial_update", (data: { roomType?: string; dimensions?: { x: number; y: number; z: number } }) => {
+  socket.on("perception:spatial_update", socketGuard((data: { roomType?: string; dimensions?: { x: number; y: number; z: number } }) => {
     const uid = getUserId(socket);
     const events = perceptionEvents.get(uid) || [];
     events.push({
@@ -60,5 +73,5 @@ export function registerPerceptionHandlers(socket: Socket, getUserId: (s: Socket
     });
     if (events.length > MAX_PERCEPTION_EVENTS) events.shift();
     perceptionEvents.set(uid, events);
-  });
+  }));
 }

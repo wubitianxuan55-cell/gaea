@@ -19,9 +19,22 @@ function getShell(): { cmd: string; args: string[] } {
   return { cmd: sh, args: ['--login'] };
 }
 
+function socketGuard(fn: (...args: any[]) => void | Promise<void>) {
+  return (...args: any[]) => {
+    try {
+      const ret = fn(...args);
+      if (ret && typeof (ret as any).catch === 'function') {
+        (ret as any).catch((e: any) => console.error('[Terminal] Handler error:', e.message || String(e)));
+      }
+    } catch (e: any) {
+      console.error('[Terminal] Handler error:', e.message || String(e));
+    }
+  };
+}
+
 export function registerTerminalHandlers(socket: any, _getUserId: (s: any) => string) {
   // Create a new terminal session
-  socket.on('terminal:create', () => {
+  socket.on('terminal:create', socketGuard(() => {
     const sessionId = socket.id;
 
     // Clean up existing session for this socket
@@ -66,22 +79,20 @@ export function registerTerminalHandlers(socket: any, _getUserId: (s: any) => st
 
     socket.emit('terminal:ready', { sessionId });
     console.log(`[Terminal] Session created for socket ${socket.id}, shell: ${cmd}`);
-  });
+  }));
 
   // User input from xterm
-  socket.on('terminal:input', (payload: { data: string }) => {
+  socket.on('terminal:input', socketGuard((payload: { data: string }) => {
     const session = sessions.get(socket.id);
     if (session && session.proc.stdin?.writable) {
       session.proc.stdin.write(payload.data);
     }
-  });
+  }));
 
   // Resize pty
-  socket.on('terminal:resize', (payload: { cols: number; rows: number }) => {
+  socket.on('terminal:resize', socketGuard((payload: { cols: number; rows: number }) => {
     const session = sessions.get(socket.id);
     if (session) {
-      // Signal resize to the process (works on Unix with SIGWINCH)
-      // For Windows/PowerShell, we set console buffer via mode command
       if (process.platform === 'win32') {
         try {
           session.proc.stdin?.write(
@@ -91,7 +102,6 @@ export function registerTerminalHandlers(socket: any, _getUserId: (s: any) => st
         } catch {}
       } else {
         try {
-          // Resize the pty if possible (node-pty provides this better)
           const stdin = (session.proc as any).stdin;
           if (stdin) {
             stdin.columns = payload.cols;
@@ -101,24 +111,24 @@ export function registerTerminalHandlers(socket: any, _getUserId: (s: any) => st
         } catch {}
       }
     }
-  });
+  }));
 
   // Clean up on disconnect
-  socket.on('terminal:destroy', () => {
+  socket.on('terminal:destroy', socketGuard(() => {
     const session = sessions.get(socket.id);
     if (session) {
       try { session.proc.kill(); } catch {}
       sessions.delete(socket.id);
       console.log(`[Terminal] Session destroyed for socket ${socket.id}`);
     }
-  });
+  }));
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', socketGuard(() => {
     const session = sessions.get(socket.id);
     if (session) {
       try { session.proc.kill(); } catch {}
       sessions.delete(socket.id);
       console.log(`[Terminal] Cleaned up session for disconnected socket ${socket.id}`);
     }
-  });
+  }));
 }
