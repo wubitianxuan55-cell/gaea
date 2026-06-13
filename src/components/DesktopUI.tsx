@@ -1617,8 +1617,8 @@ export function DesktopUI({
     if (windowId === 'kernel') return { w: '1050px', h: '720px' };
     if (windowId === 'personality') return { w: '1050px', h: '720px' };
     if (windowId === 'generate') return { w: '1050px', h: '720px' };
-    if (windowId === 'music') return { w: '850px', h: '620px' };
-    if (windowId === 'music-center') return { w: '420px', h: '520px' };
+    if (windowId === 'music') return { w: '1050px', h: '720px' };
+    if (windowId === 'music-center') return { w: '800px', h: '600px' };
     if (windowId === 'tools') return { w: '850px', h: '620px' };
     if (windowId === 'team') return { w: '900px', h: '700px' };
     if (windowId === 'github-mcp') return { w: '850px', h: '620px' };
@@ -1870,9 +1870,6 @@ export function DesktopUI({
                 </button>
                 <button onClick={() => { toggleWindow('settings'); setSettingsSection('personalization'); }} className="w-full text-left px-4 py-2 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">{t.theme || 'Theme'}</button>
               </TopMenuButton>
-              <TopMenuButton label={t.kernel || 'Kernel'} onClick={() => toggleWindow('kernel')} />
-              <TopMenuButton label={t.view || 'View'} onClick={() => setViewMode(viewMode === 'personal' ? 'world' : 'personal')} />
-              <TopMenuButton label={t.matrix || 'Matrix'} onClick={() => setIsSearchOpen(true)} />
             </div>
           </div>
 
