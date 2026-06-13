@@ -19,6 +19,8 @@ import { getSameMonthDayPast, getMonthDayFromISO } from './time/utils';
 import { detectSpatiotemporalPatterns } from './time/spatiotemporal';
 import { cleanupEphemeralAgents } from './agents/orchestrator';
 import { getRecentActivity } from './context/activity_stream';
+import { runDailyScan, isFirstBootComplete } from './autonomy/system_explorer';
+import { getTodayPlanSummary } from './autonomy/planner';
 
 interface ScheduledTask {
   id: string;
@@ -1638,6 +1640,32 @@ Output ONLY the prediction message — no preamble, no labels.`;
         return `Generated ${totalGenerated} tasks, executed ${totalExecuted}`;
       }
       return null;
+    },
+  });
+
+  // ── Daily System Scan — Lumi checks the PC's health ──
+  scheduler.register({
+    id: 'daily_system_scan',
+    cron: 'every_24h',
+    lastRun: null,
+    handler: async () => {
+      if (!isFirstBootComplete()) return null;
+      const snapshot = runDailyScan();
+      if (!snapshot) return null;
+
+      // Emit the scan result to all connected clients
+      if (scheduler.io) {
+        scheduler.io.emit('system:scan_result', {
+          timestamp: snapshot.timestamp,
+          hostname: snapshot.hardware.hostname,
+          summary: snapshot.changeSummary,
+          diskFree: snapshot.hardware.disks.map(d => `${d.name}: ${d.freeGB.toFixed(1)}GB free`),
+          appCount: snapshot.software.installedApps.length,
+          planSummary: getTodayPlanSummary(),
+        });
+      }
+
+      return snapshot.changeSummary || 'Scan complete';
     },
   });
 }

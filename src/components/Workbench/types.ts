@@ -1,5 +1,3 @@
-// Infinite Canvas Workbench — type definitions
-
 export type CardType =
   | 'user_request'
   | 'stage_header'
@@ -20,6 +18,15 @@ export interface CanvasCard {
   parentId?: string;
   status?: 'running' | 'done' | 'error';
   metadata?: Record<string, any>;
+}
+
+export interface CanvasEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  label?: string;
+  dashed?: boolean;
+  color?: string;
 }
 
 export interface CanvasSession {

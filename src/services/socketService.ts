@@ -1,19 +1,31 @@
 import { io, Socket } from "socket.io-client";
 import { getSocketOrigin } from "./apiBridge";
+import { getStoredToken } from "./authService";
 
 class SocketService {
   private socket: Socket | null = null;
 
   connect() {
     if (!this.socket) {
-      this.socket = io(getSocketOrigin(), { withCredentials: true });
-      
-      this.socket.on("connect", () => {
-        console.log("[Socket] Connected to server");
+      const token = getStoredToken();
+      this.socket = io(getSocketOrigin(), {
+        withCredentials: true,
+        auth: token ? { token } : undefined,
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
       });
 
-      this.socket.on("disconnect", () => {
-        console.log("[Socket] Disconnected from server");
+      this.socket.on("connect", () => {
+        console.log("[SocketService] Connected, id:", this.socket?.id);
+      });
+
+      this.socket.on("disconnect", (reason) => {
+        console.log("[SocketService] Disconnected:", reason);
+      });
+
+      this.socket.on("connect_error", (err) => {
+        console.error("[SocketService] Connect error:", err.message);
       });
     }
     return this.socket;

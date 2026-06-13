@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Send, Loader2, ArrowLeft, Ghost, Zap, Cpu, Sparkles, Upload, FileText, Mic, Video, CheckCircle2, Pause, Play, Square, ChevronDown, ChevronRight, XCircle, Copy, Check, Layers } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { socketService } from '@/services/socketService';
 import { useTTS } from '@/hooks/useTTS';
 import { GlassCard, PulseCounter } from './SharedUI';
 import { toast } from 'sonner';
@@ -14,7 +13,7 @@ import { usePlatform } from '@/hooks/usePlatform';
 import { runAgentLogic, AgentResponse } from '@/services/agentService';
 import { useApp } from '@/contexts/AppContext';
 import { VoiceCallButton } from './VoiceCallButton';
-import { useSocket } from '@/hooks/useSocket';
+import { socketService } from '@/services/socketService';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
 import { listVoices } from '@/services/voiceService';
@@ -24,7 +23,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
   const [agentMetadata, setAgentMetadata] = useState<Partial<AgentResponse>>({});
   const { platform, isElectron } = usePlatform();
   const { aiConfig, orgConnection, workDomain } = useApp();
-  const socket = useSocket();
+  const socket = socketService.connect();
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>();
   const [voices, setVoices] = useState<any[]>([]);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
@@ -162,9 +161,21 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
   }, []);
 
   useEffect(() => {
-    if (agentId && !isFounder) {
-      // Load the single active conversation messages
-      fetch('/api/conversations/active')
+    if (!agentId || isFounder) return;
+
+    // On agent switch, reset and reload
+    if (agentId !== lastAgentIdRef.current) {
+      lastAgentIdRef.current = agentId;
+      initialLoadDoneRef.current = false;
+      setMessages([]);
+    }
+
+    // Only load once — don't overwrite live conversation
+    if (initialLoadDoneRef.current) return;
+    initialLoadDoneRef.current = true;
+
+    // Load the single active conversation messages
+    fetch('/api/conversations/active')
         .then(r => r.json())
         .then(async (data) => {
           const conv = data.activeConversation;
@@ -172,10 +183,23 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
             const msgRes = await fetch(`/api/conversations/${conv.id}/messages?limit=500`);
             const msgData = await msgRes.json();
             if (msgData.messages && Array.isArray(msgData.messages)) {
-              setMessages(msgData.messages.map((m: any) => ({
+              // Filter tool messages and keep only user + assistant
+              const cleaned = msgData.messages.filter((m: any) =>
+                m.role === 'user' || m.role === 'assistant'
+              );
+              // Deduplicate by content+role to prevent double-display if a message
+              // was already added locally before the API response arrived
+              const seen = new Set<string>();
+              const deduped = cleaned.filter((m: any) => {
+                const key = `${m.role}|${(m.content || m.message || '').slice(0, 80)}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              });
+              setMessages(deduped.map((m: any) => ({
                 id: m.id || crypto.randomUUID(),
                 text: m.content || m.message || m.response || '',
-                userName: m.role === 'assistant' ? agentName : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
+                userName: m.role === 'assistant' ? (agentNameRef.current || 'Lumi') : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
                 timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
                 type: m.role === 'assistant' ? 'agent' : 'user',
               })));
@@ -183,10 +207,12 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
           }
         })
         .catch(() => {});
-    }
-  }, [agentId, agentName, user, isFounder, t.chatUserFallback, t.failedToLoadChatHistory]);
+  }, [agentId, isFounder]);
 
   const streamingMsgId = useRef<string | null>(null);
+  const textChatActiveRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
+  const lastAgentIdRef = useRef<string>('');
 
   useEffect(() => {
     if (isFounder || !socket) return;
@@ -284,11 +310,12 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
       toast.error(data.message);
     });
 
-    // Text chat state is managed by agent:chunk/agent:response — API reload ONLY for voice/other channels.
-    // conversation_updated now arrives AFTER agent:response (fixed order in chat.ts).
-    // streamingMsgId is null by then for text chat → no-op. For voice it's still set → reload.
+    // conversation_updated: only reload for non-text-chat channels (voice, etc.)
+    // Text chat state is managed live via agent:chunk/agent:response — API reload here
+    // would replace messages with different ids, causing React to remount & re-animate them.
     socket.on("chat:conversation_updated", (data: { conversationId: string; agentId: string }) => {
       if (data.agentId !== agentId) return;
+      if (textChatActiveRef.current) return;
       if (!streamingMsgId.current) return;
       streamingMsgId.current = null;
       fetch(`/api/conversations/${data.conversationId}/messages?limit=100`)
@@ -345,6 +372,8 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
   const sendText = async (text: string) => {
     if (!text || !user) return;
 
+    textChatActiveRef.current = true;
+
     const userMsg = {
       id: Date.now().toString(),
       text,
@@ -358,40 +387,39 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
     stop();
     setIsTyping(true);
 
-    // Safety timeout: reset typing state if no response within 30s
+    let resolved = false;
     const safetyTimer = setTimeout(() => {
-      setIsTyping(false);
-      streamingMsgId.current = null;
+      if (!resolved) { setIsTyping(false); streamingMsgId.current = null; textChatActiveRef.current = false; }
     }, 30000);
 
-    if (socket?.connected) {
-      socket.emit("agent:chat", {
-        text,
-        history: messages.map(m => ({ role: m.type === 'agent' ? 'assistant' : 'user', content: m.text })),
-        personalityId: 'lumi',
-        category: agentCategory,
-        agentId,
-        domain: workDomain,
-        orgId: orgConnection?.orgId || null,
-      });
+    // Always try socket first
+    socket.emit("agent:chat", {
+      text,
+      history: messages.map(m => ({ role: m.type === 'agent' ? 'assistant' : 'user', content: m.text })),
+      personalityId: 'lumi',
+      category: agentCategory,
+      agentId,
+      domain: workDomain,
+      orgId: orgConnection?.orgId || null,
+    });
 
-      // Clear safety timer when response arrives
-      const onResponse = () => { clearTimeout(safetyTimer); setIsTyping(false); };
-      const onError = () => { clearTimeout(safetyTimer); setIsTyping(false); };
-      const onStatus = (data: { status: string }) => {
-        if (data.status === 'idle' || data.status === 'error') {
-          clearTimeout(safetyTimer);
-          setIsTyping(false);
-        }
-      };
-      socket.once('agent:response', onResponse);
-      socket.once('agent:error', onError);
-      socket.once('agent:status', onStatus);
-    } else {
-      clearTimeout(safetyTimer);
-      // Fallback to REST if socket not connected
+    const resolve = () => { resolved = true; clearTimeout(safetyTimer); setIsTyping(false); textChatActiveRef.current = false; };
+    const onResponse = () => resolve();
+    const onError = () => resolve();
+    const onStatus = (data: { status: string }) => {
+      if (data.status === 'idle' || data.status === 'error') resolve();
+    };
+    socket.once('agent:response', onResponse);
+    socket.once('agent:error', onError);
+    socket.once('agent:status', onStatus);
+
+    // Parallel REST fallback after 5s if socket hasn't responded
+    const restFallbackTimer = setTimeout(async () => {
+      if (resolved) return;
       try {
         const response = await runAgentLogic(text, { platform, aiConfig });
+        if (resolved) return;
+        resolve();
         setAgentMetadata(response);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
@@ -401,11 +429,10 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
           type: 'agent'
         }]);
       } catch (err) {
+        resolve();
         toast.error(t.failedToRouteNeuralMesh || "Failed to route through Neural Mesh.");
-      } finally {
-        setIsTyping(false);
       }
-    }
+    }, 5000);
   };
 
   // When prefillMessage comes from notification center, show it as a Lumi message

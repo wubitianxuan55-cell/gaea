@@ -1,19 +1,21 @@
-// Socket event listener hook — converts existing agent:* events into canvas cards
 import { useCallback, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
-import { CanvasCard } from './types';
+import { CanvasCard, CanvasEdge } from './types';
 
 interface UseCanvasSocketOptions {
   socket: Socket | null;
   onCards: (cards: CanvasCard[]) => void;
+  onEdges: (edges: CanvasEdge[]) => void;
   onStatusChange: (status: string) => void;
 }
 
-export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSocketOptions) {
+export function useCanvasSocket({ socket, onCards, onEdges, onStatusChange }: UseCanvasSocketOptions) {
   const cardsRef = useRef<CanvasCard[]>([]);
+  const edgesRef = useRef<CanvasEdge[]>([]);
   const groupIdRef = useRef<string>('');
   const pendingChunkRef = useRef<string>('');
   const chunkCardIdRef = useRef<string | null>(null);
+  const lastCardIdRef = useRef<string | null>(null);
   const rafRef = useRef<number>(0);
   const pendingRef = useRef(false);
 
@@ -21,7 +23,8 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
     if (!pendingRef.current) return;
     pendingRef.current = false;
     onCards([...cardsRef.current]);
-  }, [onCards]);
+    onEdges([...edgesRef.current]);
+  }, [onCards, onEdges]);
 
   const scheduleFlush = useCallback(() => {
     pendingRef.current = true;
@@ -32,10 +35,28 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
     });
   }, [flush]);
 
-  const addCard = useCallback((card: CanvasCard) => {
-    cardsRef.current = [...cardsRef.current, card];
+  const addEdge = useCallback((sourceId: string, targetId: string, opts?: { dashed?: boolean; color?: string }) => {
+    const existing = edgesRef.current.find(e => e.sourceId === sourceId && e.targetId === targetId);
+    if (existing) return;
+    edgesRef.current = [...edgesRef.current, {
+      id: `edge_${sourceId}_${targetId}`,
+      sourceId,
+      targetId,
+      dashed: opts?.dashed,
+      color: opts?.color,
+    }];
     scheduleFlush();
   }, [scheduleFlush]);
+
+  const addCard = useCallback((card: CanvasCard) => {
+    cardsRef.current = [...cardsRef.current, card];
+    // Draw edge from previous card in group
+    if (lastCardIdRef.current) {
+      addEdge(lastCardIdRef.current, card.id);
+    }
+    lastCardIdRef.current = card.id;
+    scheduleFlush();
+  }, [scheduleFlush, addEdge]);
 
   const updateCard = useCallback((cardId: string, updates: Partial<CanvasCard>) => {
     cardsRef.current = cardsRef.current.map(c =>
@@ -46,13 +67,17 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
 
   const clearCards = useCallback(() => {
     cardsRef.current = [];
+    edgesRef.current = [];
     chunkCardIdRef.current = null;
     pendingChunkRef.current = '';
+    lastCardIdRef.current = null;
     onCards([]);
-  }, [onCards]);
+    onEdges([]);
+  }, [onCards, onEdges]);
 
   const newGroupId = useCallback(() => {
     groupIdRef.current = `group_${Date.now()}`;
+    lastCardIdRef.current = null;
     return groupIdRef.current;
   }, []);
 
@@ -74,7 +99,6 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
       }
 
       if (data.status === 'idle' || data.status === 'error') {
-        // Flush any pending reasoning chunk
         if (chunkCardIdRef.current && pendingChunkRef.current) {
           updateCard(chunkCardIdRef.current, {
             text: pendingChunkRef.current,
@@ -83,7 +107,6 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
           chunkCardIdRef.current = null;
           pendingChunkRef.current = '';
         }
-        // Mark running tool calls as done/error
         cardsRef.current = cardsRef.current.map(c =>
           c.status === 'running' && c.type === 'stage_header'
             ? { ...c, status: data.status === 'error' ? 'error' as const : 'done' as const }
@@ -132,27 +155,13 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
       });
     };
 
-    // Both event names are used by different server paths
     const onToolCall = (data: { name: string; arguments?: any; result?: string; error?: string }) => {
       onTool(data);
-    };
-
-    const onTaskChunk = (data: { text: string; agentName?: string }) => {
-      if (!data.text) return;
-      const prefix = data.agentName === 'Lumi Orchestrator' || data.text.includes('[Orchestrator]') ? '' : '';
-      addCard({
-        id: `task_${Date.now()}`,
-        type: 'reasoning_text',
-        text: prefix ? `${prefix} ${data.text}` : data.text,
-        timestamp: Date.now(),
-        groupId: groupIdRef.current,
-      });
     };
 
     const onResponse = (data: { text: string; agentName?: string }) => {
       if (!data.text) return;
 
-      // Finalize any running stream chunk
       if (chunkCardIdRef.current) {
         updateCard(chunkCardIdRef.current, { status: 'done' });
         chunkCardIdRef.current = null;
@@ -199,7 +208,6 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
     socket.on('agent:chunk', onChunk);
     socket.on('agent:tool', onTool);
     socket.on('agent:tool_call', onToolCall);
-    socket.on('task:chunk', onTaskChunk);
     socket.on('agent:response', onResponse);
     socket.on('agent:error', onError);
     socket.on('agent:proactive', onProactive);
@@ -209,7 +217,6 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
       socket.off('agent:chunk', onChunk);
       socket.off('agent:tool', onTool);
       socket.off('agent:tool_call', onToolCall);
-      socket.off('task:chunk', onTaskChunk);
       socket.off('agent:response', onResponse);
       socket.off('agent:error', onError);
       socket.off('agent:proactive', onProactive);
@@ -218,25 +225,25 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
         rafRef.current = 0;
       }
     };
-  }, [socket, addCard, updateCard, scheduleFlush, onStatusChange]);
+  }, [socket, addCard, updateCard, scheduleFlush, onStatusChange, addEdge]);
 
   const submitTask = useCallback((text: string) => {
-    if (!socket?.connected || !text.trim()) return;
+    if (!text.trim()) return;
 
+    // Start a new group WITHOUT clearing old cards — canvas accumulates
     const groupId = newGroupId();
-    clearCards();
 
-    // Add user request card
-    addCard({
+    const userCard: CanvasCard = {
       id: `user_${Date.now()}`,
       type: 'user_request',
       text: text.trim(),
       timestamp: Date.now(),
       groupId,
       status: 'done',
-    });
+    };
 
-    socket.emit('agent:chat', {
+    // Emit via socket
+    socket?.emit('agent:chat', {
       text: text.trim(),
       history: [],
       personalityId: 'lumi',
@@ -244,8 +251,78 @@ export function useCanvasSocket({ socket, onCards, onStatusChange }: UseCanvasSo
       agentId: undefined,
       domain: undefined,
       orgId: null,
+      source: 'canvas',
     });
-  }, [socket, newGroupId, clearCards, addCard]);
 
-  return { submitTask, clearCards };
+    // Add user card after emit to avoid clearing race
+    addCard(userCard);
+
+    // REST fallback after 4s
+    const fallbackTimer = setTimeout(async () => {
+      try {
+        const r = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: 'deepseek', model: 'deepseek-chat', prompt: text.trim() }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          addCard({
+            id: `output_${Date.now()}`,
+            type: 'final_output',
+            text: data.text || data.error || 'No response',
+            timestamp: Date.now(),
+            groupId,
+            status: data.error ? 'error' : 'done',
+          });
+        }
+      } catch {}
+    }, 4000);
+
+    const onSocketDone = () => { clearTimeout(fallbackTimer); };
+    socket?.once('agent:response', onSocketDone);
+    socket?.once('agent:error', onSocketDone);
+  }, [socket, newGroupId, addCard]);
+
+  const retryFromCard = useCallback((cardId: string) => {
+    // Find the card and its group, re-submit the user request for that group
+    const card = cardsRef.current.find(c => c.id === cardId);
+    if (!card) return;
+
+    // Find the user_request card in the same group
+    const userRequest = cardsRef.current.find(
+      c => c.groupId === card.groupId && c.type === 'user_request'
+    );
+    if (userRequest) {
+      // Mark all subsequent cards in the group as stale by fading their edges
+      const groupCards = cardsRef.current.filter(c => c.groupId === card.groupId);
+      const cardIdx = groupCards.findIndex(c => c.id === cardId);
+      const afterCards = groupCards.slice(cardIdx);
+
+      // Remove cards after the retry point (including the errored card if error)
+      cardsRef.current = cardsRef.current.filter(
+        c => !afterCards.some(ac => ac.id === c.id) || c.id === cardId
+      );
+      // Keep the card being retried, mark it as running
+      updateCard(cardId, { status: 'running', text: card.text + '\n[Retrying...]' });
+
+      // Remove edges to removed cards
+      edgesRef.current = edgesRef.current.filter(
+        e => !afterCards.some(ac => ac.id === e.sourceId || ac.id === e.targetId)
+      );
+      lastCardIdRef.current = cardId;
+
+      scheduleFlush();
+
+      // Re-emit
+      socket?.emit('agent:chat', {
+        text: userRequest.text,
+        history: [],
+        personalityId: 'lumi',
+        source: 'canvas',
+      });
+    }
+  }, [socket, updateCard, scheduleFlush]);
+
+  return { submitTask, clearCards, retryFromCard };
 }

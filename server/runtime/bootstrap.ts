@@ -6,6 +6,8 @@ import { toolRegistry } from "../tools/registry";
 import { registerAllTools } from "../tools/definitions/index";
 import { mcpManager, registerMCPTools } from "../mcp";
 import { scheduler, registerScheduledTasks } from "../scheduler";
+import { runFirstBootExploration, isFirstBootComplete } from "../autonomy/system_explorer";
+import { installProfessionAgents } from "../autonomy/profession_templates";
 import bcrypt from "bcryptjs";
 
 interface BootstrapContext {
@@ -62,6 +64,19 @@ export async function bootstrap(ctx: BootstrapContext) {
     }
   }
 
+  // ── First-boot system exploration — Lumi surveys its new home ──
+  try {
+    if (!isFirstBootComplete()) {
+      console.log('[Bootstrap] First boot detected — running system exploration...');
+      const snapshot = runFirstBootExploration();
+      console.log(`[Bootstrap] Exploration complete: ${snapshot.hardware.cpus.model}, ${snapshot.hardware.totalMemoryGB}GB RAM, ${snapshot.software.installedApps.length} apps, ${snapshot.filesystem.totalUserFiles} user files`);
+      // Install profession-specialist agents based on detected trade
+      const installed = installProfessionAgents();
+      if (installed > 0) console.log(`[Bootstrap] Installed ${installed} profession agents`);
+    }
+  } catch (err) {
+    console.warn('[Bootstrap] System exploration failed:', (err as Error).message);
+  }
 
   // Register all agent tools
   registerAllTools(toolRegistry, { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen });

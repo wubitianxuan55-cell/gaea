@@ -1,13 +1,19 @@
-// Canvas card renderer — renders a single card based on its type
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   User, Layers, Wrench, Link, FileImage, MessageSquare,
-  AlertCircle, CheckCircle2, Loader2, XCircle
+  AlertCircle, CheckCircle2, Loader2, XCircle, RefreshCw
 } from 'lucide-react';
 import { PositionedCard } from './types';
 
-export function CanvasCard({ card }: { card: PositionedCard }) {
+interface CanvasCardProps {
+  card: PositionedCard;
+  onRetry?: (cardId: string) => void;
+}
+
+export function CanvasCard({ card, onRetry }: CanvasCardProps) {
+  const [hovered, setHovered] = useState(false);
+
   const style: React.CSSProperties = {
     position: 'absolute',
     left: card.x,
@@ -20,18 +26,26 @@ export function CanvasCard({ card }: { card: PositionedCard }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       style={style}
-      className={`rounded-xl border overflow-hidden shadow-lg backdrop-blur-sm ${typeConfig.bg} ${typeConfig.border}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`rounded-xl border overflow-hidden shadow-lg backdrop-blur-sm group ${typeConfig.bg} ${typeConfig.border}`}
     >
       {/* Header */}
       <div className={`flex items-center gap-2 px-4 py-2.5 border-b ${typeConfig.headerBg}`}>
         <span className={typeConfig.iconColor}>{typeConfig.icon}</span>
         <span className="text-xs font-semibold tracking-wide uppercase text-white/70">{typeConfig.label}</span>
-        {card.status && (
-          <StatusBadge status={card.status} />
+        {card.status && <StatusBadge status={card.status} />}
+        {hovered && onRetry && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onRetry(card.id); }}
+            className="ml-auto flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-2 py-1 transition-colors"
+          >
+            <RefreshCw size={10} /> Retry from here
+          </button>
         )}
       </div>
 
@@ -79,9 +93,10 @@ export function CanvasCard({ card }: { card: PositionedCard }) {
         )}
       </div>
 
-      {/* Timestamp */}
-      <div className="px-4 py-1.5 text-[10px] text-white/25 border-t border-white/[0.03]">
-        {new Date(card.timestamp).toLocaleTimeString()}
+      {/* Footer */}
+      <div className="px-4 py-1.5 text-[10px] text-white/25 border-t border-white/[0.03] flex items-center justify-between">
+        <span>{new Date(card.timestamp).toLocaleTimeString()}</span>
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white/15 text-[9px]">#{card.id.slice(-6)}</span>
       </div>
     </motion.div>
   );

@@ -28,6 +28,7 @@ import { autoInstallForTask } from "../agents/auto_installer";
 import { emitMusicAtmosphere } from "../socket/music";
 import { searchKnowledgeBase } from "../org/kb";
 import { getWorkflow, recordWorkflowRun, listWorkflows } from "../agents/workflows";
+import { buildProfessionOverlay } from "../autonomy/professions";
 
 export function registerChatHandler(
   socket: Socket,
@@ -59,11 +60,11 @@ export function registerChatHandler(
     }
   });
 
-  socket.on("agent:chat", async (data: { text: string; history: any[]; personalityId?: string; category?: string; agentId?: string; domain?: string; orgId?: string | null; mode?: string }) => {
+  socket.on("agent:chat", async (data: { text: string; history: any[]; personalityId?: string; category?: string; agentId?: string; domain?: string; orgId?: string | null; mode?: string; source?: string }) => {
     console.log('[ChatHandler] agent:chat RECEIVED:', JSON.stringify(data).slice(0, 300));
-    const { text, history, personalityId = "lumi", category, agentId, domain, orgId, mode: payloadMode } = data;
+    const { text, history, personalityId = "lumi", category, agentId, domain, orgId, mode: payloadMode, source } = data;
     const uid = userIdFn(socket);
-    console.log('[ChatHandler] uid:', uid, 'agentId:', agentId);
+    console.log('[ChatHandler] uid:', uid, 'agentId:', agentId, 'source:', source);
 
     // Abort any previous chat session for this user
     const prevController = chatSessionMap.get(uid);
@@ -197,6 +198,14 @@ export function registerChatHandler(
         effectiveSystemPrompt += `\n\n## Company Knowledge Base\n${kbContext}\n\nUse the above company knowledge to inform your response. Cite article titles when referencing company policy.`;
       }
 
+      // Inject profession context — adapt language and expertise to user's trade
+      try {
+        const professionOverlay = buildProfessionOverlay();
+        if (professionOverlay) {
+          effectiveSystemPrompt += professionOverlay;
+        }
+      } catch {}
+
       // Inject contact context when user mentions people they know
       try {
         const { matchContactsFromText } = await import('../contacts/store');
@@ -211,7 +220,7 @@ export function registerChatHandler(
       const interactionId = crypto.randomUUID();
 
       // ── Desktop relay: enables 15 tools (mouse/keyboard/clipboard/screenshot/etc) in chat ──
-      const desktopRelay = async (toolName: string, args: Record<string, any>): Promise<string> => {
+      const desktopRelay = ((toolName: string, args: Record<string, any>): Promise<string> => {
         return new Promise((resolve, reject) => {
           const cid = crypto.randomUUID();
           const timeout = setTimeout(() => reject(new Error(`Desktop tool "${toolName}" timed out (30s)`)), 30000);
@@ -222,7 +231,7 @@ export function registerChatHandler(
           });
           socket.emit('tool:desktop_exec', { correlationId: cid, name: toolName, arguments: args });
         });
-      };
+      });
 
       socket.emit("agent:status", { status: "thinking", agentName: personality.name });
       console.log('[ChatHandler] emitted agent:status thinking');
@@ -241,6 +250,11 @@ export function registerChatHandler(
       const opModeConfig = getOperationModeConfig(operationMode);
       if (opModeConfig) {
         effectiveSystemPrompt += '\n\n' + opModeConfig.promptOverlay;
+      }
+
+      // Canvas mode: full-power assistant with visual plan-first workflow
+      if (source === 'canvas') {
+        effectiveSystemPrompt += '\n\n## Canvas Workbench\nYou are working inside the Canvas Workbench — a visual workspace where the user sees your thought process as cards.\n- You have FULL access to all tools including desktop control, file system, commands, mouse/keyboard.\n- Before executing destructive or desktop-modifying actions, show a plan card first so the user can see what you intend to do.\n- After each major step, summarize the result as a card.\n- When generating code, assets, or analysis, put the final output in the canvas as well.\n- The canvas is your visual trace — not a sandbox.';
       }
 
       // Read user's LLM prefs from settings (synced from API Matrix)
@@ -567,7 +581,9 @@ export function registerChatHandler(
               },
               ...(isSanctuary
                 ? { toolPolicy: { allowedTools: [], requireConfirmation: [], forbiddenTools: ['*'], maxIterations: 0 } }
-                : (opModeConfig ? { toolPolicy: opModeConfig.toolPolicy } : {})
+                : source === 'canvas'
+                  ? { toolPolicy: { allowedTools: ['*'], requireConfirmation: ['file_delete', 'delete_file', 'rm', 'unlink', 'format', 'rmdir', 'uninstall'], forbiddenTools: [], maxIterations: 25 } }
+                  : (opModeConfig ? { toolPolicy: opModeConfig.toolPolicy } : {})
               ),
               ...(operationMode === 'desktop_control' ? {
                 requestConfirmation: async (toolName: string, args: Record<string, any>): Promise<boolean> => {
@@ -659,7 +675,7 @@ export function registerChatHandler(
         for (const tc of allToolRecords) {
           const tcSummary = tc.error
             ? `[Tool: ${tc.name}] Error: ${tc.error}`
-            : `[Tool: ${tc.name}] ${tc.result || 'Done'}`;
+            : `[Tool: ${tc.name}] Done`;
           addMessage({ userId: uid, agentId: agentId || '', conversationId, role: 'tool', content: tcSummary });
         }
         addMessage({ userId: uid, agentId: agentId || '', conversationId, role: 'assistant', content: responseText, personality: personality.id });

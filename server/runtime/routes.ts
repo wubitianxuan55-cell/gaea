@@ -20,6 +20,7 @@ import { mountBranchConnectionRoutes } from "../routes/branch_routes";
 import { mountNotificationRoutes } from "../routes/notifications";
 import { mountCanvasRoutes } from "../routes/canvas_routes";
 import { autonomyRoutes } from "../routes/autonomy_routes";
+import { mountExploreRoutes, mountPlanRoutes } from "../routes/plan_explore_routes";
 
 interface RouteContext {
   apiRouter: Router;
@@ -74,6 +75,10 @@ export function mountAllRoutes({ apiRouter, jwtSecret, llm, getCookieOptions, io
 
   // Canvas Workbench
   mountCanvasRoutes(apiRouter, jwtSecret);
+
+  // System Exploration & Plans
+  mountExploreRoutes(apiRouter);
+  mountPlanRoutes(apiRouter);
 
   // Autonomy
   apiRouter.use('/autonomy', autonomyRoutes());

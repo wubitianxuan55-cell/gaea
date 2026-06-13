@@ -1,5 +1,5 @@
 // Auto-layout algorithm for infinite canvas cards
-import { CanvasCard, PositionedCard } from './types';
+import { CanvasCard, CanvasEdge, PositionedCard } from './types';
 
 const CARD_GAP = 24;
 const GROUP_GAP = 48;
@@ -121,4 +121,61 @@ export function computeLayout(cards: CanvasCard[], viewportWidth: number): Posit
   }
 
   return result;
+}
+
+/** Derive edges from card ordering + explicit parentId references */
+export function computeEdges(_cards: CanvasCard[], existingEdges: CanvasEdge[]): CanvasEdge[] {
+  // Group cards by groupId
+  const groups = new Map<string, CanvasCard[]>();
+  for (const c of _cards) {
+    const list = groups.get(c.groupId) || [];
+    list.push(c);
+    groups.set(c.groupId, list);
+  }
+
+  const edges: CanvasEdge[] = [];
+
+  for (const [groupId, groupCards] of groups) {
+    // Sort by timestamp
+    const sorted = [...groupCards].sort((a, b) => a.timestamp - b.timestamp);
+
+    // Create a flag to mark which connections are from explicit parentId
+    const connected = new Set<string>();
+    for (const card of sorted) {
+      if (card.parentId && sorted.some(c => c.id === card.parentId)) {
+        edges.push({
+          id: `edge_${card.parentId}_${card.id}`,
+          sourceId: card.parentId,
+          targetId: card.id,
+          dashed: true,
+          color: 'rgba(139,92,246,0.35)',
+        });
+        connected.add(card.id);
+      }
+    }
+
+    // Chain remaining cards in order
+    for (let i = 1; i < sorted.length; i++) {
+      if (!connected.has(sorted[i].id)) {
+        edges.push({
+          id: `edge_${sorted[i - 1].id}_${sorted[i].id}`,
+          sourceId: sorted[i - 1].id,
+          targetId: sorted[i].id,
+        });
+      }
+    }
+  }
+
+  // Merge with externally created edges, deduplicating by source+target
+  const edgeKeys = new Set<string>();
+  for (const e of edges) edgeKeys.add(`${e.sourceId}_${e.targetId}`);
+  for (const e of existingEdges) {
+    const key = `${e.sourceId}_${e.targetId}`;
+    if (!edgeKeys.has(key)) {
+      edges.push(e);
+      edgeKeys.add(key);
+    }
+  }
+
+  return edges;
 }

@@ -6,8 +6,10 @@ import '@fontsource-variable/geist';
 import './index.css';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { installApiBridge } from './services/apiBridge';
+import { socketService } from './services/socketService';
 
 installApiBridge();
+socketService.connect();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
