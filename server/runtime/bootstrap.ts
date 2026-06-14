@@ -17,8 +17,7 @@ interface BootstrapContext {
   HOST: string;
   jwtSecret: string;
   llm: {
-    getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any;
-    getXiaomi?: any; getKimi?: any; getGlm?: any; getRelay?: any;
+    getDeepSeek: any; getOllama?: any; getLmStudio?: any; isOllamaAvailable?: any; isLmStudioAvailable?: any;
   };
   __dirname: string;
 }
@@ -40,8 +39,8 @@ export async function bootstrap(ctx: BootstrapContext) {
     process.exit(1);
   }
 
-  // Auto-create admin account for local/desktop use
-  const adminPassword = process.env.AUTO_LOGIN_PASSWORD || 'lumi_admin_2026';
+  // Auto-create admin account for local/desktop use (only when explicitly configured)
+  const adminPassword = process.env.AUTO_LOGIN_PASSWORD;
   if (adminPassword) {
     try {
       const db = readDB();
@@ -64,7 +63,7 @@ export async function bootstrap(ctx: BootstrapContext) {
     }
   }
 
-  // ── First-boot system exploration — Lumi surveys its new home ──
+  // ── First-boot system exploration — Gaea surveys its new home ──
   try {
     if (!isFirstBootComplete()) {
       console.log('[Bootstrap] First boot detected — running system exploration...');
@@ -79,7 +78,7 @@ export async function bootstrap(ctx: BootstrapContext) {
   }
 
   // Register all agent tools
-  registerAllTools(toolRegistry, { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen });
+  registerAllTools(toolRegistry, { getDeepSeek: llm.getDeepSeek, getGemini: () => null, getOpenAI: () => null, getAnthropic: () => null, getQwen: () => null, getOllama: llm.getOllama, getLmStudio: llm.getLmStudio });
   console.log(`[Tools] Registered ${toolRegistry.list().length} built-in tools`);
 
   // Register MCP tools (non-blocking)
@@ -139,7 +138,7 @@ export async function bootstrap(ctx: BootstrapContext) {
   server.listen(PORT, HOST, () => {
     console.log(`Server running on http://${HOST}:${PORT}`);
     scheduler.setIO(io);
-    registerScheduledTasks(llm.getDeepSeek, llm.getGemini, llm.getOpenAI, llm.getAnthropic, llm.getQwen, llm.getXiaomi, llm.getKimi, llm.getGlm, llm.getRelay);
+    registerScheduledTasks(llm.getDeepSeek, () => null, () => null, () => null, () => null, () => null, () => null, () => null, () => null);
 
     // Clean up stale ephemeral agents on startup
     try {
@@ -154,30 +153,6 @@ export async function bootstrap(ctx: BootstrapContext) {
       }
     } catch {}
 
-    // Auto-install legal and design agent templates to all orgs
-    import('../legal/templates').then(({ installLegalTemplates }) => {
-      const db2 = readDB();
-      const orgs = (db2 as any).organizations || [];
-      let total = 0;
-      for (const org of orgs) {
-        total += installLegalTemplates(org.id);
-      }
-      if (total > 0) console.log(`[Org] Installed ${total} legal agent templates across ${orgs.length} org(s)`);
-    }).catch((err: any) => {
-      console.warn('[Org] Failed to install legal templates:', err.message);
-    });
-
-    import('../design/templates').then(({ installDesignTemplates }) => {
-      const db2 = readDB();
-      const orgs = (db2 as any).organizations || [];
-      let total = 0;
-      for (const org of orgs) {
-        total += installDesignTemplates(org.id);
-      }
-      if (total > 0) console.log(`[Org] Installed ${total} design agent templates across ${orgs.length} org(s)`);
-    }).catch((err: any) => {
-      console.warn('[Org] Failed to install design templates:', err.message);
-    });
   });
 
   // Cleanup on exit

@@ -2,7 +2,7 @@
 name = "lumi-os"
 version = "3.0.0"
 description = "Lumi Virtual Node OS"
-authors = ["LumiOS"]
+authors = ["Gaea"]
 edition = "2021"
 
 [lib]

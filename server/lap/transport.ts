@@ -24,11 +24,11 @@ import type {
   LAPScope,
 } from './types';
 
-// Local agent identity — configurable per LumiOS instance
+// Local agent identity — configurable per Gaea instance
 let localAgent: LAPAgentIdentity = {
   agentId: `agent_${randomUUID().slice(0, 8)}`,
   userId: 'local_user',
-  name: 'Lumi',
+  name: 'Gaea',
   capabilities: ['chat', 'code', 'search', 'memory', 'file_ops', 'web_search', 'desktop'],
   publicKey: '',
 };

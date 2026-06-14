@@ -5,7 +5,7 @@
  *   1. POST /api/feishu/events — receives all subscribed events
  *   2. URL verification: Feishu sends { type: "url_verification", challenge: "..." }
  *      → respond with { challenge: "..." } within 1 second
- *   3. Message events: parse → process via LLM with Lumi personality → reply
+ *   3. Message events: parse → process via LLM with Gaea personality → reply
  */
 import { Router } from 'express';
 import { FeishuAdapter } from './feishu';
@@ -161,7 +161,7 @@ export function createMessagingRoutes(
   return router;
 }
 
-// ── AI reply pipeline — powered by Lumi personality ──
+// ── AI reply pipeline — powered by Gaea personality ──
 
 async function processWithPersonality(
   msg: IncomingMessage,
@@ -175,7 +175,7 @@ async function processWithPersonality(
   const llm = options?.llmGetters;
   const registry = options?.personalityRegistry;
 
-  // ── Build system prompt from Lumi personality ──
+  // ── Build system prompt from Gaea personality ──
   let systemPrompt = '';
   let personality: any = null;
 
@@ -187,7 +187,7 @@ async function processWithPersonality(
       const emotionalState = options?.loadEmotionalState ? options.loadEmotionalState(msg.userId) : undefined;
 
       const result = registry.buildSystemPrompt(
-        'lumi',
+        'gaea',
         { mode: 'chat', sensory: { hasAudio: false, hasVideo: false, hasSpatial: false, hasHaptic: false, hasHolographic: false, activeDeviceTypes: [], deviceCount: 0 } },
         {
           memories: memories.length > 0 ? memories : undefined,
@@ -203,7 +203,7 @@ async function processWithPersonality(
   }
 
   if (!systemPrompt) {
-    systemPrompt = `你是一个名为 Lumi 的 AI 助手，通过飞书与用户交流。保持回复简洁、有帮助、自然。`;
+    systemPrompt = `你是一个名为 Gaea 的 AI 助手，通过飞书与用户交流。保持回复简洁、有帮助、自然。`;
   }
 
   // ── Determine model order from user LLM prefs ──

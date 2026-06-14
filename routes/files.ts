@@ -1,5 +1,5 @@
 /**
- * AI Knowledge Base API — manages files in Lumi's knowledge vault.
+ * AI Knowledge Base API — manages files in Gaea's knowledge vault.
  *
  * Files stored in data/knowledge/. Each file tracked with metadata:
  *   - source: 'upload' | 'generated' | 'ingested'
@@ -22,7 +22,7 @@ fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'lumiOS_default_jwt_secret_2026_local';
+const JWT_SECRET = process.env.JWT_SECRET || 'gaea_default_jwt_secret_2026_local';
 
 function requireAuth(req: Request, res: Response, next: () => void): void {
   let token = req.cookies.token;
@@ -44,7 +44,7 @@ function getUserId(req: Request): string {
 }
 
 // ── Multer: files staged in OS temp, then moved to knowledge dir ──
-const tmpDir = path.join(os.tmpdir(), 'lumi-uploads');
+const tmpDir = path.join(os.tmpdir(), 'gaea-uploads');
 fs.mkdirSync(tmpDir, { recursive: true });
 const upload = multer({ dest: tmpDir, limits: { fileSize: 500 * 1024 * 1024 } });
 
@@ -116,7 +116,7 @@ router.get('/files/list', (_req: Request, res: Response) => {
   }
 });
 
-// ── POST /files/upload — upload files + auto-ingest into Lumi's memory ──
+// ── POST /files/upload — upload files + auto-ingest into Gaea's memory ──
 router.post('/files/upload', requireAuth, upload.array('files', 20), async (req: Request, res: Response) => {
   try {
     const uploadedFiles = req.files as Express.Multer.File[];
@@ -174,9 +174,9 @@ router.post('/files/upload', requireAuth, upload.array('files', 20), async (req:
       if (isNew && textExts.test(ext)) {
         try {
           const content = fs.readFileSync(dest, 'utf-8');
-          const result = await ingestDocument(userId, 'lumi', finalName, content);
+          const result = await ingestDocument(userId, 'gaea', finalName, content);
           const meta = db.knowledgeFiles.find((m: any) => m.filename === finalName);
-          if (meta && !meta.agentIds.includes('lumi')) meta.agentIds.push('lumi');
+          if (meta && !meta.agentIds.includes('gaea')) meta.agentIds.push('gaea');
           entry.ingested = true;
           console.log(`[AutoIngest] "${finalName}" → ${result.chunkCount} chunks`);
         } catch (ingestErr: any) {

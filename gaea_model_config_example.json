@@ -21,7 +21,7 @@
     "provider": "deepseek",
     "endpoint": "https://api.deepseek.com/v1/chat/completions",
     "model": "deepseek-chat",
-    "api_key": "${LUMI_CLOUD_API_KEY}",
+    "api_key": "${GAEA_CLOUD_API_KEY}",
     "parameters": {
       "temperature": 0.7,
       "max_tokens": 4096,
@@ -54,8 +54,8 @@
   "secrets": {
     "provider": "env",
     "key_mappings": {
-      "cloud.api_key": "LUMI_CLOUD_API_KEY",
-      "local.api_key": "LUMI_LOCAL_API_KEY"
+      "cloud.api_key": "GAEA_CLOUD_API_KEY",
+      "local.api_key": "GAEA_LOCAL_API_KEY"
     }
   }
 }

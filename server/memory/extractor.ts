@@ -64,7 +64,7 @@ export interface ExtractionContext {
   userMessage: string;
   assistantResponse: string;
   existingMemories: string[];
-  provider: 'deepseek' | 'qwen' | 'openai' | 'gemini' | 'anthropic';
+  provider: string;
   model: string;
   userId?: string;
   treeBranches?: string[];

@@ -42,7 +42,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
       const agentMsg = {
         id: Date.now().toString(),
         text,
-        userName: 'Lumi',
+        userName: 'Gaea',
         timestamp: new Date().toISOString(),
         type: 'agent'
       };
@@ -91,7 +91,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
         const greetingMsg = {
           id: `greeting-${data.timestamp}`,
           text: data.message,
-          userName: data.agentName || 'Lumi',
+          userName: data.agentName || 'Gaea',
           timestamp: data.timestamp,
           type: 'agent'
         };
@@ -121,7 +121,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
         setMessages(data.map((i: any) => ({
           id: i.id,
           text: i.content,
-          userName: i.role === 'user' ? (user?.displayName || 'User') : (agentConfig?.name || 'Lumi'),
+          userName: i.role === 'user' ? (user?.displayName || 'User') : (agentConfig?.name || 'Gaea'),
           timestamp: i.timestamp,
           type: i.role === 'user' ? 'user' : 'agent'
         })));
@@ -233,7 +233,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
           role: m.type === 'user' ? 'user' : 'assistant',
           content: m.text
         })),
-        personalityId: 'lumi'
+        personalityId: 'gaea'
       });
     }
   };
@@ -326,7 +326,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-white/60 leading-relaxed italic">
-                "{founderVision || "LumiAI 旨在构建一个去中心化的智能协议..."}"
+                "{founderVision || "Gaea 旨在构建一个去中心化的智能协议..."}"
               </p>
               <Button 
                 onClick={onEnterSanctuary}
@@ -344,7 +344,7 @@ export function UnifiedAgent({ t, user, onEnterSanctuary }: { t: any; user: any;
       <section className="relative">
         <div className="text-center space-y-4 mb-8">
           <h2 className="text-4xl font-bold tracking-tighter glow-text">
-Lumi Core Agent
+Gaea Core Agent
           </h2>
           <p className="text-white/40 max-w-xl mx-auto italic">
             "{t.holographicEntranceDesc}"
@@ -357,7 +357,7 @@ Lumi Core Agent
               t={t} 
               callState={callState}
               audioLevel={audioLevel}
-              onStartCall={() => startCall(undefined, 'lumi', 'lumi')}
+              onStartCall={() => startCall(undefined, 'gaea', 'gaea')}
               onEndCall={endCall}
             />
           </div>

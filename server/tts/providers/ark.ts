@@ -37,14 +37,14 @@ export async function synthesizeSpeech(
 
   const body: Record<string, any> = {
     app: { appid: appId, cluster: 'volcano_tts' },
-    user: { uid: 'lumi_user' },
+    user: { uid: 'gaea_user' },
     audio: {
       voice_type: voiceId,
       encoding: 'mp3',
       rate: 24000,
     },
     request: {
-      reqid: `lumi_${Date.now()}`,
+      reqid: `gaea_${Date.now()}`,
       text,
       text_type: 'plain',
       operation: 'query',

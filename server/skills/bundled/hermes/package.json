@@ -1,9 +1,9 @@
 {
-  "name": "lumi-skill-hermes",
+  "name": "gaea-skill-hermes",
   "version": "1.0.0",
-  "description": "Versatile AI assistant with research, writing, and coding capabilities. Connect your existing Hermes instance as a Lumi team member.",
+  "description": "Versatile AI assistant with research, writing, and coding capabilities. Connect your existing Hermes instance as a Gaea team member.",
   "type": "module",
-  "lumi": {
+  "gaea": {
     "displayName": "Hermes",
     "category": "Assistant",
     "icon": "Sparkles",

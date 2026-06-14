@@ -32,7 +32,7 @@ export interface PersonalityVector {
 
 /** An execution mode preset stored inside a personality config.
  *  Scholar and Founder are no longer independent personalities —
- *  they are Lumi's internal thinking-mode presets. */
+ *  they are Gaea.s internal thinking-mode presets. */
 export interface ExecutionMode {
   description: string;
   tone: ExpressionStyle['tone'];
@@ -109,7 +109,7 @@ export interface PersonalityConfig {
   personalityVector?: PersonalityVector;
 
   /** Execution mode presets (e.g. scholar, founder) — internal thinking-mode switches
-   *  that Lumi can activate for specific task types. These are NOT independent personalities. */
+   *  that Gaea can activate for specific task types. These are NOT independent personalities. */
   executionModes?: Record<string, ExecutionMode>;
 
   /** Per-context overrides — e.g. 'floating-window' can be more concise than 'full-screen' */

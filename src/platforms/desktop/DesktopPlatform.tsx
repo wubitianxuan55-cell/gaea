@@ -10,7 +10,7 @@ interface DesktopPlatformProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogin: () => void;
-  setUiMode: (mode: 'web' | 'desktop' | 'mobile') => void;
+  setUiMode?: (mode: string) => void;
   renderTabContent: (tab: string) => React.ReactNode;
 }
 
@@ -41,7 +41,7 @@ export function DesktopPlatform({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogin={onLogin}
-        onExit={() => setUiMode('web')}
+        onExit={() => setUiMode?.('web')}
         renderTabContent={renderTabContent}
       />
     </motion.div>

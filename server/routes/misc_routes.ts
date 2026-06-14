@@ -91,14 +91,14 @@ export function mountMiscRoutes(router: Router, _jwtSecret: string, llm: {
     }
   });
 
-  // ── Org Chat (simpler version of /ai/chat, used by CentralLumiChat) ──
+  // ── Org Chat (simpler version of /ai/chat, used by CentralGaeaChat) ──
   router.post("/chat", optionalAuth, asyncHandler(async (req, res) => {
     const { messages, provider: reqProvider, model: reqModel } = req.body || {};
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array is required' });
     }
 
-    const provider = reqProvider || 'gemini';
+    const provider = reqProvider || 'deepseek';
     const model = reqModel || 'gemini-2.0-flash';
     const userId = req.user?.uid || 'anonymous';
 

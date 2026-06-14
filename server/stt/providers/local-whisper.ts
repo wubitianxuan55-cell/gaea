@@ -49,7 +49,7 @@ export async function transcribe(audioBuffer: Buffer, language: string = 'zh'): 
 
   // Write audio to temp WAV file
   const tmpDir = os.tmpdir();
-  const wavPath = path.join(tmpDir, `lumi_stt_${Date.now()}.wav`);
+  const wavPath = path.join(tmpDir, `gaea_stt_${Date.now()}.wav`);
   fs.writeFileSync(wavPath, audioBuffer);
 
   try {

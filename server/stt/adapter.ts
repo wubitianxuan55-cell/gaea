@@ -76,12 +76,22 @@ export function createStreamingSession(
 
 export function getActiveSTTProvider(): STTProvider | null {
   const pref = getVoicePreference();
-  // If user explicitly chose a provider, use it (even if circuit is open — user knows best)
+  // If user explicitly chose a provider, verify it's actually configured
   if (pref.stt === 'local-whisper' && localWhisper.isLocalWhisperAvailable()) return 'local-whisper';
-  if (pref.stt === 'qwen') return 'qwen';
-  if (pref.stt === 'ark') return 'ark';
-  if (pref.stt === 'deepgram') return 'deepgram';
-  if (pref.stt === 'whisper') return 'whisper';
+  if (pref.stt === 'qwen') {
+    const qk = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || getKey('DASHSCOPE_API_KEY') || getKey('QWEN_API_KEY');
+    if (qk) return 'qwen';
+  }
+  if (pref.stt === 'ark') {
+    const ak = process.env.DOUBAO_SPEECH_KEY || getKey('DOUBAO_SPEECH_KEY');
+    if (ak && ak.includes(':')) return 'ark';
+  }
+  if (pref.stt === 'deepgram') {
+    if (process.env.DEEPGRAM_API_KEY || getKey('DEEPGRAM_API_KEY')) return 'deepgram';
+  }
+  if (pref.stt === 'whisper') {
+    if (process.env.OPENAI_API_KEY || getKey('OPENAI_API_KEY')) return 'whisper';
+  }
   // Auto mode — prefer local, then healthy cloud providers
   try {
     if (localWhisper.isLocalWhisperAvailable()) return 'local-whisper';

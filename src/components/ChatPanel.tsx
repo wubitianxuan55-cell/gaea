@@ -7,7 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 
 export interface ChatMessage {
   id: string;
-  type: 'user-text' | 'user-voice' | 'lumi' | 'tool';
+  type: 'user-text' | 'user-voice' | 'gaea' | 'tool';
   content?: string;
   name?: string;
   args?: Record<string, any>;
@@ -71,7 +71,7 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
   const hasDesktop = installedSkillNames.some((n: string) => ['desktop', 'commander'].some(k => n.includes(k)));
 
   const quickSuggestions = [
-    { label: '随便聊聊', prompt: '你好Lumi，今天有什么有趣的发现吗？', show: true },
+    { label: '随便聊聊', prompt: '你好Gaea，今天有什么有趣的发现吗？', show: true },
     { label: '生成图片', prompt: '帮我生成一张星空下的赛博朋克城市图片', show: hasCreativeSkill },
     { label: '总结网页', prompt: '帮我抓取这篇文章的内容并总结要点', show: hasFetcher },
     { label: '桌面整理', prompt: '帮我把桌面上的文件按日期整理一下', show: hasDesktop },
@@ -133,7 +133,7 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
       setStreamingText('');
       setMessages(prev => [...prev, {
         id: crypto.randomUUID().slice(0, 9),
-        type: 'lumi',
+        type: 'gaea',
         content: data.text,
         timestamp: new Date().toISOString(),
       }]);
@@ -484,7 +484,7 @@ export function ChatPanel({ socket, t, onVoiceToggle, isVoiceActive, transcript 
                   </div>
                 )}
 
-                {msg.type === 'lumi' && (
+                {msg.type === 'gaea' && (
                   <div className="flex justify-start group">
                     <div className="max-w-[85%] bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 relative">
                       <div className="markdown-body text-white/80 text-sm leading-relaxed">

@@ -1,6 +1,4 @@
-// LumiOS Unified Server
-// / → personal AI OS desktop
-// /index.org.html → org workbench (create/manage orgs, legal tools)
+// Gaea Server — personal AI OS desktop
 import "dotenv/config";
 
 // ── Global exception handlers (must be first — before any async setup) ──
@@ -32,18 +30,15 @@ import { lapRoutes } from "./server/lap/routes";
 import voiceRoutes from "./routes/voice";
 import fileRoutes from "./routes/files";
 import { subscriptionRoutes } from "./server/subscription/routes";
-import { resolveRole } from "./server/runtime/role";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ROLE = resolveRole();
-
 const { app, server, io, apiRouter, PORT, HOST, JWT_SECRET, getCookieOptions } = createApp();
 const llm = createLLMRuntime();
 
-// ── Static serve for lumi_output (charts, images, generated files) ──
-app.use('/lumi_output', express.static(path.join(process.cwd(), 'lumi_output')));
+// ── Static serve for gaea_output (charts, images, generated files) ──
+app.use('/gaea_output', express.static(path.join(process.cwd(), 'gaea_output')));
 
 // ── Shared routes (both roles) ──
 mountAllRoutes({ apiRouter, jwtSecret: JWT_SECRET, llm, getCookieOptions, io });
@@ -211,20 +206,6 @@ apiRouter.get('/ncm/login/status', (_req, res) => {
 });
 
 // ── Org routes ──
-// Org routes are always mounted — personal and org coexist at different URLs.
-// / → personal desktop, /index.org.html → org workbench.
-{
-  const { mountOrgRoutes } = await import("./server/org/routes");
-  mountOrgRoutes(apiRouter, io);
-  const { mountBranchRoutes } = await import("./server/org/main_api");
-  const { attachOrgWs } = await import("./server/org/ws_sync");
-  mountBranchRoutes(apiRouter);
-  attachOrgWs(io);
-  console.log('[Org] Routes mounted at /api/org/*');
-  console.log('[Org] Branch API mounted at /api/branch/*');
-  console.log('[Org] WebSocket sync attached');
-}
-
 // ── Infrastructure ──
 setupMessaging(apiRouter, llm);
 setupMcpServer(app, server, io, llm, path.join(__dirname, 'server'));
@@ -241,7 +222,7 @@ process.on('exit', () => {
 // SIGINT/SIGTERM are handled by bootstrap.ts with proper cleanup + flushDB
 
 async function start() {
-  await setupStatic(app, __filename, __dirname, ROLE);
+  await setupStatic(app, __filename, __dirname);
   await bootstrap({ server, io, PORT, HOST, jwtSecret: JWT_SECRET, llm, __dirname });
 }
 

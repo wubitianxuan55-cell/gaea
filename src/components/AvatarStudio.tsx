@@ -10,25 +10,25 @@ import { ALL_ACCESSORIES, AccessoryDef, AccessoryCategory } from '../pets/access
 const BUILTIN_ANIMATIONS = ['idle', 'run', 'wave', 'jump', 'waiting'];
 
 const PET_ICONS: Record<string, React.ReactNode> = {
-  'lumi-cat': <Cat size={16} />,
-  'lumi-blob': <Disc3 size={16} />,
-  'lumi-bird': <Bird size={16} />,
-  'lumi-dragon': <Flame size={16} />,
-  'lumi-fox': <Star size={16} />,
-  'lumi-rabbit': <Rabbit size={16} />,
-  'lumi-bear': <PawPrint size={16} />,
-  'lumi-hamster': <Heart size={16} />,
+  'gaea-cat': <Cat size={16} />,
+  'gaea-blob': <Disc3 size={16} />,
+  'gaea-bird': <Bird size={16} />,
+  'gaea-dragon': <Flame size={16} />,
+  'gaea-fox': <Star size={16} />,
+  'gaea-rabbit': <Rabbit size={16} />,
+  'gaea-bear': <PawPrint size={16} />,
+  'gaea-hamster': <Heart size={16} />,
 };
 
 const PET_DESCS: Record<string, string> = {
-  'lumi-cat': '温暖治愈的猫猫，会眨眼、摇尾巴、撒娇挥手。适合日常陪伴。',
-  'lumi-blob': 'Q弹软萌的史莱姆，一蹦一跳、眼睛闪闪。活泼可爱风。',
-  'lumi-bird': '圆滚滚的小鸟，扑腾翅膀、叽叽喳喳。轻快灵动风。',
-  'lumi-dragon': '迷你小龙，有翅膀和小角。适合喜欢奇幻风格的用户。',
-  'lumi-fox': '橙色小狐狸，三角大耳、蓬松尾巴带白尖。机灵俏皮。',
-  'lumi-rabbit': '软萌小白兔，长耳朵垂下来、圆圆短尾巴。温柔治愈。',
-  'lumi-bear': '棕色小熊，圆耳朵、厚实爪垫。憨态可掬，给人安全感。',
-  'lumi-hamster': '圆圆小仓鼠，鼓鼓的腮帮子、迷你小耳朵。超萌可爱。',
+  'gaea-cat': '温暖治愈的猫猫，会眨眼、摇尾巴、撒娇挥手。适合日常陪伴。',
+  'gaea-blob': 'Q弹软萌的史莱姆，一蹦一跳、眼睛闪闪。活泼可爱风。',
+  'gaea-bird': '圆滚滚的小鸟，扑腾翅膀、叽叽喳喳。轻快灵动风。',
+  'gaea-dragon': '迷你小龙，有翅膀和小角。适合喜欢奇幻风格的用户。',
+  'gaea-fox': '橙色小狐狸，三角大耳、蓬松尾巴带白尖。机灵俏皮。',
+  'gaea-rabbit': '软萌小白兔，长耳朵垂下来、圆圆短尾巴。温柔治愈。',
+  'gaea-bear': '棕色小熊，圆耳朵、厚实爪垫。憨态可掬，给人安全感。',
+  'gaea-hamster': '圆圆小仓鼠，鼓鼓的腮帮子、迷你小耳朵。超萌可爱。',
 };
 
 const SPECIES_LABELS: Record<string, string> = {

@@ -376,8 +376,8 @@ export function queryMemories(q: MemoryQuery): Memory[] {
       // self-perspective memories take priority over owner traits (boosted by personality bias)
       const perspWeightA = perspectiveBias[a.perspective] || 1;
       const perspWeightB = perspectiveBias[b.perspective] || 1;
-      const perspA = (a.perspective === 'lumi_self' || a.perspective === 'lumi_growth' ? 0 : 1) / perspWeightA;
-      const perspB = (b.perspective === 'lumi_self' || b.perspective === 'lumi_growth' ? 0 : 1) / perspWeightB;
+      const perspA = (a.perspective === 'gaea_self' || a.perspective === 'gaea_growth' ? 0 : 1) / perspWeightA;
+      const perspB = (b.perspective === 'gaea_self' || b.perspective === 'gaea_growth' ? 0 : 1) / perspWeightB;
       if (perspA !== perspB) return perspA - perspB;
       // Type bias affects tie-breaking
       const typeWeightA = typeBias[a.type] || 1;

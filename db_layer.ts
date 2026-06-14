@@ -32,7 +32,7 @@ function migrateDataFromOldLocation() {
 }
 migrateDataFromOldLocation();
 
-const DB_PATH = getDataPath('lumi.db');
+const DB_PATH = getDataPath('gaea.db');
 
 let db: sqlite3.Database | null = null;
 let memoryDB: any = null;
@@ -76,7 +76,7 @@ function migrateSchema(): Promise<void> {
     // Add 'conversationId' column to interactions if it doesn't exist
     db!.run("ALTER TABLE interactions ADD COLUMN conversationId TEXT DEFAULT ''", onAlter);
     // Add agent framework columns
-    db!.run("ALTER TABLE agents ADD COLUMN personalityId TEXT DEFAULT 'lumi'", onAlter);
+    db!.run("ALTER TABLE agents ADD COLUMN personalityId TEXT DEFAULT 'gaea'", onAlter);
     db!.run("ALTER TABLE agents ADD COLUMN modelPreference TEXT DEFAULT ''", onAlter);
     db!.run("ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'shared'", onAlter);
     db!.run("ALTER TABLE agents ADD COLUMN autonomyLevel TEXT DEFAULT 'reactive'", onAlter);
@@ -194,7 +194,7 @@ function createTables(): Promise<void> {
         createdAt TEXT NOT NULL,
         userId TEXT,
         status TEXT DEFAULT 'active',
-        personalityId TEXT DEFAULT 'lumi',
+        personalityId TEXT DEFAULT 'gaea',
         modelPreference TEXT DEFAULT '',
         memoryScope TEXT DEFAULT 'shared',
         autonomyLevel TEXT DEFAULT 'reactive',
@@ -433,7 +433,7 @@ async function insertInitialData(): Promise<void> {
 
   if (counts.marketplace_skills === 0) {
     const defaultSkills = [
-      ['skill-1', '财务报表分析 LoRA', 'LumiNode_01', 50, '针对企业财务报表的深度微调权重，支持自动化对账与异常检测。', 'Finance'],
+      ['skill-1', '财务报表分析 LoRA', 'GaeaNode_01', 50, '针对企业财务报表的深度微调权重，支持自动化对账与异常检测。', 'Finance'],
       ['skill-2', '创意剧本创作 LoRA', 'CreativeMind', 30, '专注于科幻与悬疑风格的剧本创作，具备极强的逻辑连贯性。', 'Creative'],
       ['skill-3', '医疗辅助诊断 LoRA', 'HealthGuard', 100, '基于公开医疗数据集微调，辅助识别常见病症与用药建议。', 'Medical']
     ];
@@ -456,7 +456,7 @@ async function insertInitialData(): Promise<void> {
   if (counts.founder_vision === 0) {
     await run(
       `INSERT INTO founder_vision (id, content, updatedAt) VALUES (?, ?, ?)`,
-      [1, 'LumiAI 旨在构建一个去中心化的智能协议。我们追求空间存在感、边缘计算与数据主权。通过分布式节点，每一个用户都能拥有真正属于自己的、可进化的数字生命。', new Date().toISOString()]
+      [1, 'Gaea 旨在构建一个去中心化的智能协议。我们追求空间存在感、边缘计算与数据主权。通过分布式节点，每一个用户都能拥有真正属于自己的、可进化的数字生命。', new Date().toISOString()]
     );
   }
 }
@@ -524,7 +524,7 @@ async function loadMemoryDB(): Promise<void> {
     ...a,
     ownerUid: a.userId || a.ownerUid,
     data: a.config || a.data || '{}',
-    personalityId: a.personalityId || 'lumi',
+    personalityId: a.personalityId || 'gaea',
     modelPreference: a.modelPreference || '',
     memoryScope: a.memoryScope || 'shared',
     autonomyLevel: a.autonomyLevel || 'reactive',
@@ -692,9 +692,9 @@ async function persistMemoryDB(): Promise<void> {
     },
     {
       name: 'agents',
-      createSQL: `CREATE TABLE _temp_agents (id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL, config TEXT NOT NULL, createdAt TEXT NOT NULL, userId TEXT, status TEXT DEFAULT 'active', personalityId TEXT DEFAULT 'lumi', modelPreference TEXT DEFAULT '', memoryScope TEXT DEFAULT 'shared', autonomyLevel TEXT DEFAULT 'reactive', runtimeConfig TEXT DEFAULT '{}', runtime TEXT DEFAULT 'internal', externalCommand TEXT DEFAULT '', domain TEXT DEFAULT 'personal', orgId TEXT DEFAULT '')`,
+      createSQL: `CREATE TABLE _temp_agents (id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL, config TEXT NOT NULL, createdAt TEXT NOT NULL, userId TEXT, status TEXT DEFAULT 'active', personalityId TEXT DEFAULT 'gaea', modelPreference TEXT DEFAULT '', memoryScope TEXT DEFAULT 'shared', autonomyLevel TEXT DEFAULT 'reactive', runtimeConfig TEXT DEFAULT '{}', runtime TEXT DEFAULT 'internal', externalCommand TEXT DEFAULT '', domain TEXT DEFAULT 'personal', orgId TEXT DEFAULT '')`,
       insertSQL: `INSERT INTO _temp_agents (id, name, category, config, createdAt, userId, status, personalityId, modelPreference, memoryScope, autonomyLevel, runtimeConfig, runtime, externalCommand, domain, orgId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      rows: () => memoryDB.agents.map((a: any) => [a.id, a.name, a.category, a.data || a.config || '{}', a.createdAt, a.ownerUid || a.userId || null, a.status || 'active', a.personalityId || 'lumi', a.modelPreference || '', a.memoryScope || 'shared', a.autonomyLevel || 'reactive', a.runtimeConfig || '{}', a.runtime || 'internal', a.externalCommand || '', a.domain || 'personal', a.orgId || '']),
+      rows: () => memoryDB.agents.map((a: any) => [a.id, a.name, a.category, a.data || a.config || '{}', a.createdAt, a.ownerUid || a.userId || null, a.status || 'active', a.personalityId || 'gaea', a.modelPreference || '', a.memoryScope || 'shared', a.autonomyLevel || 'reactive', a.runtimeConfig || '{}', a.runtime || 'internal', a.externalCommand || '', a.domain || 'personal', a.orgId || '']),
     },
     {
       name: 'interactions',

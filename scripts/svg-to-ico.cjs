@@ -1,10 +1,10 @@
-// Convert lumiOS-icon.svg to icon.ico with multiple sizes
+// Convert gaea-icon.svg to icon.ico with multiple sizes
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const SVG_PATH = path.join(ROOT, 'assets', 'lumiOS-icon.svg');
+const SVG_PATH = path.join(ROOT, 'assets', 'gaea-icon.svg');
 const ICO_PATH = path.join(ROOT, 'src-tauri', 'icons', 'icon.ico');
 
 // Standard icon sizes for Windows

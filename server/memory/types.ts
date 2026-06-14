@@ -2,15 +2,15 @@ export type MemoryType = 'preference' | 'fact' | 'habit' | 'knowledge';
 
 /** Memory hierarchy tier — determines decay rate and retrieval priority */
 export type MemoryTier = 'episodic'       // Raw conversation memories, fast decay
-                       | 'internalized'  // Internalized preferences (Lumi's own)
+                       | 'internalized'  // Internalized preferences (Gaea's own)
                        | 'growth'        // Growth narratives, LLM-consolidated
                        | 'core_identity';// Core identity, never decays, protected
 
 /** Whose perspective does this memory belong to */
 export type MemoryPerspective = 'owner_trait'   // About the owner's traits
-                              | 'lumi_self'     // Lumi's self-knowledge
+                              | 'gaea_self'     // Gaea's self-knowledge
                               | 'shared_memory' // "Our" shared experiences
-                              | 'lumi_growth';  // Lumi's growth milestones
+                              | 'gaea_growth';  // Gaea's growth milestones
 
 /** Tree node type — branch nodes are topic containers, leaves are actual memories */
 export type MemoryNodeType = 'branch' | 'leaf';

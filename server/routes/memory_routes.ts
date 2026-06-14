@@ -439,7 +439,7 @@ Rules:
       const llmResult = await makeLLMCall(
         [{ role: 'user', content: prompt }],
         [],
-        { provider: 'qwen', model: 'qwen-plus' },
+        { provider: 'deepseek', model: 'deepseek-chat' },
         llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
       );
 

@@ -20,7 +20,7 @@ const SKILLS = [
 // These are demo/fallback data arrays that are never actually rendered (real data comes from API)
 // Keep English as-is for mock data
 
-export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent: any) => void }) {
+export function GaeaEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent: any) => void }) {
   const [hasDevice, setHasDevice] = useState(false);
   const [isIncubating, setIsIncubating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -413,7 +413,7 @@ export function LumiEcosystem({ t, onChatAgent }: { t: any; onChatAgent?: (agent
           <CooperationCard 
             icon={<Network className="text-celestial-saturn" />} 
             title={t.multiAgentOrch || "Multi-Agent Orchestration"} 
-            desc={t.multiAgentOrchDesc || "Lumi Core acts as the conductor, delegating sub-tasks to specialized local or peer agents."}
+            desc={t.multiAgentOrchDesc || "Gaea Core acts as the conductor, delegating sub-tasks to specialized local or peer agents."}
           />
           <CooperationCard 
             icon={<Share2 className="text-celestial-mars" />} 

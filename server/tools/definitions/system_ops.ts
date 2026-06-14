@@ -12,7 +12,7 @@ const DEFAULT_ALLOWED_COMMANDS = new Set([
 ]);
 
 function getAllowedCommands(): Set<string> {
-  const envOverride = process.env.LUMI_ALLOWED_COMMANDS;
+  const envOverride = process.env.GAEA_ALLOWED_COMMANDS;
   if (envOverride) {
     return new Set(envOverride.split(',').map(c => c.trim()).filter(Boolean));
   }

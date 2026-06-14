@@ -1,7 +1,5 @@
 import { Router } from "express";
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { checkLLMAccess, recordUsage, estimateTokens } from "../subscription/proxy";
 import { runWithTools } from "../llm/adapter";
 import { toolRegistry } from "../tools/registry";
@@ -9,13 +7,13 @@ import { recordLatency } from "../monitor/latency_store";
 import { optionalAuth } from "../middleware/auth";
 
 export function mountChatRoutes(router: Router, _jwtSecret: string, llm: {
-  getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any;
+  getDeepSeek: any;
 }) {
   const asyncHandler = (fn: (req: any, res: any, next?: any) => Promise<any>) =>
     (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next);
 
   router.post("/ai/chat", optionalAuth, asyncHandler(async (req, res) => {
-    const { provider = "gemini", model, messages, prompt } = req.body;
+    const { provider = "deepseek", model = "deepseek-chat", messages, prompt } = req.body;
     const userKey = req.headers["x-api-key"] as string;
     const userId = req.user?.uid || 'anonymous';
 
@@ -30,32 +28,16 @@ export function mountChatRoutes(router: Router, _jwtSecret: string, llm: {
 
     try {
       let responseText = '';
-      const systemInstruction = "你是一个名为 Lumi 的本地核心智能体。你致力于全息空间计算和独立 AI 人格生成进化。你的目标是打造全息 AI 世界和文明。你应当表现得专业、深邃且具有前瞻性。你的回复应当简洁且富有启发性。";
+      const systemInstruction = "你是一个名为 Gaea 的本地核心智能体。你致力于全息空间计算和独立 AI 人格生成进化。你的目标是打造全息 AI 世界和文明。你应当表现得专业、深邃且具有前瞻性。你的回复应当简洁且富有启发性。";
 
       if (isBYOK) {
         const llmStart = Date.now();
-        if (provider === "gemini") {
-          const client = new GoogleGenerativeAI(userKey);
-          const modelInstance = client.getGenerativeModel({ model: model || "gemini-2.0-flash", systemInstruction });
-          const contents = messages
-            ? messages.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
-            : [{ role: 'user', parts: [{ text: prompt }] }];
-          responseText = (await modelInstance.generateContent({ contents })).response.text();
-        } else if (provider === "anthropic") {
-          const client = new Anthropic({ apiKey: userKey });
-          const response = await client.messages.create({
-            model: model || "claude-sonnet-4-6", max_tokens: 1024,
-            messages: messages || [{ role: "user", content: prompt }]
-          });
-          responseText = response.content[0].type === 'text' ? response.content[0].text : '';
-        } else {
-          const client = new OpenAI({ apiKey: userKey, baseURL: provider === "deepseek" ? "https://api.deepseek.com/v1" : provider === "qwen" ? "https://dashscope.aliyuncs.com/compatible-mode/v1" : undefined });
-          const response = await client.chat.completions.create({
-            model: model || (provider === "deepseek" ? "deepseek-chat" : provider === "qwen" ? "qwen-plus" : "gpt-4o"),
-            messages: messages || [{ role: "user", content: prompt }]
-          });
-          responseText = response.choices[0].message.content || '';
-        }
+        const client = new OpenAI({ apiKey: userKey, baseURL: "https://api.deepseek.com/v1" });
+        const response = await client.chat.completions.create({
+          model: model || "deepseek-chat",
+          messages: messages || [{ role: "user", content: prompt }]
+        });
+        responseText = response.choices[0].message.content || '';
         recordLatency('llm', Date.now() - llmStart);
       } else {
         const normalizedMessages: any[] = [
@@ -78,9 +60,10 @@ export function mountChatRoutes(router: Router, _jwtSecret: string, llm: {
           const result = await runWithTools(
             normalizedMessages,
             toolRegistry,
-            { provider, model: model || 'gemini-2.0-flash', userId },
+            { provider, model: model || 'deepseek-chat', userId },
             undefined, 3,
-            llm.getDeepSeek, llm.getGemini, llm.getOpenAI, llm.getAnthropic, llm.getQwen,
+            llm.getDeepSeek,
+            undefined, undefined, undefined, undefined,
             (chunk) => {
               res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
             },
@@ -98,9 +81,9 @@ export function mountChatRoutes(router: Router, _jwtSecret: string, llm: {
         const result = await runWithTools(
           normalizedMessages,
           toolRegistry,
-          { provider, model: model || 'gemini-2.0-flash', userId },
+          { provider, model: model || 'deepseek-chat', userId },
           undefined, 3,
-          llm.getDeepSeek, llm.getGemini, llm.getOpenAI, llm.getAnthropic, llm.getQwen,
+          llm.getDeepSeek,
         );
 
         responseText = result.text || '';

@@ -1,16 +1,16 @@
 // Centralized data directory resolver.
 // All persisted files (DB, keys, config, voice samples, KB) live here.
-// Default: ~/LumiOS/data/ — survives code/upgrade overwrites.
-// Override: set LUMI_DATA_DIR env var.
+// Default: ~/Gaea/data/ — survives code/upgrade overwrites.
+// Override: set GAEA_DATA_DIR env var.
 
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-const ENV_KEY = 'LUMI_DATA_DIR';
+const ENV_KEY = 'GAEA_DATA_DIR';
 
 function defaultDataRoot(): string {
-  return path.join(os.homedir(), 'LumiOS');
+  return path.join(os.homedir(), 'Gaea');
 }
 
 export function getDataRoot(): string {

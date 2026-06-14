@@ -1,14 +1,14 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { generateDemoNodes, generateDemoConnections, type LumiNode, type LumiConnection } from './mockData';
+import { generateDemoNodes, generateDemoConnections, type GaeaNode, type GaeaConnection } from './mockData';
 
 interface NeuralNetworkProps {
   color: string;
   syncRate: number;
   accentColor: string;
-  nodes?: LumiNode[];
-  connections?: LumiConnection[];
+  nodes?: GaeaNode[];
+  connections?: GaeaConnection[];
 }
 
 const GLOBE_RADIUS = 1.85;

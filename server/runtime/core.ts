@@ -65,7 +65,11 @@ export function createApp(): AppContext {
     res.status(500).json({ error: err?.message || 'Internal server error' });
   });
 
-  const JWT_SECRET = process.env.JWT_SECRET || 'lumiOS_default_jwt_secret_2026_local';
+  const JWT_SECRET = process.env.JWT_SECRET || (() => {
+    const rand = require('crypto').randomBytes(32).toString('hex');
+    console.warn('[Security] JWT_SECRET not set — generated random secret for this session. Set JWT_SECRET in .env for persistence.');
+    return rand;
+  })();
 
   // Serialize personality file writes to prevent concurrent overwrites
   // SameSite=None requires Secure (Chromium silently rejects otherwise).

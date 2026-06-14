@@ -1,5 +1,5 @@
 /**
- * LAP (Lumi Agent Protocol) — Agent-to-agent collaboration protocol.
+ * LAP (Gaea Agent Protocol) — Agent-to-agent collaboration protocol.
  *
  * Layers:
  *   Application: handshake · delegate · share · negotiate · notify · revoke
@@ -12,7 +12,7 @@
 export interface LAPAgentIdentity {
   agentId: string;        // e.g. "agent_abc123"
   userId: string;         // e.g. "user_alice"
-  name: string;           // human-readable, e.g. "Alice 的 Lumi"
+  name: string;           // human-readable, e.g. "Alice 的 Gaea"
   capabilities: string[]; // e.g. ["chat", "code", "search", "memory"]
   publicKey: string;      // ed25519 public key (hex)
 }

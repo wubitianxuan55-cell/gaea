@@ -22,7 +22,7 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
 
   const steps = [
     {
-      title: t.onboardingWelcomeTitle || "Welcome to Lumi OS",
+      title: t.onboardingWelcomeTitle || "Welcome to Gaea OS",
       description: t.onboardingWelcomeDesc || "Your local-first, AI-driven operating system designed for neural performance and privacy.",
       icon: <Sparkles size={48} className="text-celestial-saturn" />,
       color: "from-celestial-saturn/20 to-transparent"
@@ -130,7 +130,7 @@ export function DesktopOnboarding({ isOpen, onFinish, t }: OnboardingProps) {
 
               <div className="flex gap-2">
                  <div className="text-xs font-black text-white/45 uppercase tracking-[0.3em]">
-                   {t.poweredByLumi || 'Powered by Lumi Neural Core v2.0'}
+                   {t.poweredByGaea || 'Powered by Gaea Neural Core v2.0'}
                  </div>
               </div>
             </div>

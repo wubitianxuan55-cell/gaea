@@ -27,24 +27,23 @@ import { runOrchestratedTask, shouldDistillSkill, buildSkillDescription } from "
 import { runNLChainer, shouldChainTask } from "../agents/nl_chainer";
 import { autoInstallForTask } from "../agents/auto_installer";
 import { emitMusicAtmosphere } from "../socket/music";
-import { searchKnowledgeBase } from "../org/kb";
 import { getWorkflow, recordWorkflowRun, listWorkflows } from "../agents/workflows";
 import { buildProfessionOverlay } from "../autonomy/professions";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'lumiOS_default_jwt_secret_2026_local';
+const JWT_SECRET = process.env.JWT_SECRET || require('crypto').randomBytes(32).toString('hex');
 
 export function registerChatHandler(
   socket: Socket,
   llmGetters: {
     getDeepSeek: () => any;
-    getGemini: () => any;
-    getOpenAI: () => any;
-    getAnthropic: () => any;
-    getQwen: () => any;
-    getOllama: () => any;
-    isOllamaAvailable: () => boolean;
-    getLmStudio: () => any;
-    isLmStudioAvailable: () => boolean;
+    getGemini?: () => any;
+    getOpenAI?: () => any;
+    getAnthropic?: () => any;
+    getQwen?: () => any;
+    getOllama?: () => any;
+    isOllamaAvailable?: () => boolean;
+    getLmStudio?: () => any;
+    isLmStudioAvailable?: () => boolean;
   },
   sensoryFn: (uid: string) => any,
   userIdFn: (s: Socket) => string,
@@ -59,13 +58,13 @@ export function registerChatHandler(
       controller.abort();
       chatSessionMap.delete(uid);
       socket.emit("agent:status", { status: "idle" });
-      socket.emit("agent:response", { text: "[Cancelled]", agentName: "Lumi", source: "chat" });
+      socket.emit("agent:response", { text: "[Cancelled]", agentName: "Gaea", source: "chat" });
     }
   });
 
   socket.on("agent:chat", async (data: { text: string; history: any[]; personalityId?: string; category?: string; agentId?: string; domain?: string; orgId?: string | null; mode?: string; source?: string }) => {
     console.log('[ChatHandler] agent:chat RECEIVED:', JSON.stringify(data).slice(0, 300));
-    const { text, history, personalityId = "lumi", category, agentId, mode: payloadMode, source } = data;
+    const { text, history, personalityId = "gaea", category, agentId, mode: payloadMode, source } = data;
     const uid = userIdFn(socket);
     console.log('[ChatHandler] uid:', uid, 'agentId:', agentId, 'source:', source);
 
@@ -125,19 +124,8 @@ export function registerChatHandler(
 
       // Org: search company KB when in work domain
       let kbContext: string | undefined;
-      if (resolvedDomain === 'work' && resolvedOrgId) {
-        try {
-          const kbResults = await searchKnowledgeBase(resolvedOrgId, text, 3);
-          if (kbResults.length > 0) {
-            kbContext = kbResults
-              .map(r => `[${r.title}] ${r.chunk}`)
-              .join('\n');
-            console.log('[ChatHandler] KB search results:', kbResults.length, 'articles found');
-          }
-        } catch (err: any) {
-          console.warn('[ChatHandler] KB search failed:', err.message);
-        }
-      }
+      // KB search removed with org edition
+
 
       const emotionKey = agentMemoryFilter ? `${uid}_agent_${agentId}` : uid;
       const emotionalState = loadEmotionalState(emotionKey);
@@ -406,7 +394,7 @@ export function registerChatHandler(
         console.warn('[ChatHandler] Quick command check failed, falling through:', qcErr.message);
       }
 
-      // ── Lumi Cognitive Engine: classify intent BEFORE calling any LLM ──
+      // ── Gaea Cognitive Engine: classify intent BEFORE calling any LLM ──
       const cognitiveCtx: CognitiveContext = {
         userId: uid,
         agentId: agentId || undefined,
@@ -458,20 +446,20 @@ export function registerChatHandler(
       let llmWasCalled = false;
 
       if (cognition.directToolExecuted && cognition.responseText) {
-        // Path A: Lumi handled this directly — no LLM needed
+        // Path A: Gaea handled this directly — no LLM needed
         responseText = cognition.responseText;
         console.log(`[Cognition] Direct tool '${cognition.intent.directToolCall?.name}' handled without LLM`);
       } else if (!isSanctuary && (cognition.intent.category === 'command' || cognition.intent.category === 'code' || cognition.intent.category === 'question')) {
         // Path B: Orchestrator — decompose tasks into sub-tasks for worker agents
         // (Skipped for sanctuary agents — they stay in their territory)
         try {
-          socket.emit("agent:status", { status: "thinking", agentName: "Lumi Orchestrator" });
+          socket.emit("agent:status", { status: "thinking", agentName: "Gaea Orchestrator" });
           const orchResult = await runOrchestratedTask(
             text,
             { userId: uid, personalityId, desktopRelay },
             { provider: activeProvider, model: activeModel },
             llmGetters,
-            (msg) => socket.emit("agent:chunk", { text: msg, agentName: "Lumi" }),
+            (msg) => socket.emit("agent:chunk", { text: msg, agentName: "Gaea" }),
           );
           if (orchResult) {
             responseText = orchResult.responseText;
@@ -517,7 +505,7 @@ export function registerChatHandler(
         await autoInstallForTask(text, { emit: (event, data) => socket.emit(event, data) });
 
         try {
-          socket.emit("agent:status", { status: "thinking", agentName: "Lumi Office" });
+          socket.emit("agent:status", { status: "thinking", agentName: "Gaea Office" });
           const chainerResult = await runNLChainer(
             text,
             { userId: uid, provider: activeProvider, model: activeModel, desktopRelay, context: { isCancelled: () => abortController.signal.aborted, toolPolicy: personality.toolPolicy } },
@@ -558,7 +546,7 @@ export function registerChatHandler(
           ? persistedHistory
           : (history ? history.map((m: any) => ({ role: m.role, content: m.content })) : []);
 
-        // Tell Lumi which model is currently active so it can self-identify correctly
+        // Tell Gaea which model is currently active so it can self-identify correctly
         const selfAwareness = `\n\n[System note: You are currently running on ${activeProvider} provider, model: ${activeModel}. If asked, mention this exact model.]`;
         const messages: NormalizedMessage[] = [
           { role: 'system', content: effectiveSystemPrompt + selfAwareness },
@@ -595,7 +583,7 @@ export function registerChatHandler(
               llmGetters,
               isCancelled: () => abortController.signal.aborted,
               onProgress: (step: string) => {
-                socket.emit("agent:chunk", { text: `[${step}]\n`, agentName: "Lumi" });
+                socket.emit("agent:chunk", { text: `[${step}]\n`, agentName: "Gaea" });
               },
               ...(isSanctuary
                 ? { toolPolicy: { allowedTools: [], requireConfirmation: [], forbiddenTools: ['*'], maxIterations: 0 } }
@@ -650,38 +638,9 @@ export function registerChatHandler(
           }
         } catch (llmErr: any) {
           console.error(`[Cognition] LLM '${activeProvider}/${activeModel}' failed: ${llmErr.message}`);
-          // Try fallback provider
-          if (llmErr.message?.includes('not configured') && activeProvider !== 'gemini') {
-            try {
-              const fallback = await runWithTools(
-                messages, toolRegistry,
-                { provider: 'gemini', model: DEFAULT_MODELS.gemini, userId: uid },
-                (record) => { allToolRecords.push({ name: record.name, args: JSON.stringify(record.arguments || {}), result: record.result?.slice(0, 500), error: record.error }); },
-                1,
-                llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
-                undefined,
-                {
-                  desktopRelay,
-                  llmGetters,
-                  isCancelled: () => abortController.signal.aborted,
-                  ...(opModeConfig ? { toolPolicy: opModeConfig.toolPolicy } : {}),
-                },
-              );
-              responseText = fallback.text || '';
-              llmWasCalled = true;
-              for (const u of fallback.usageRecords) {
-                recordTokenUsage(uid, u.provider, u.model, { promptTokens: u.promptTokens, completionTokens: u.completionTokens, totalTokens: u.totalTokens }, interactionId);
-              }
-            } catch (fallbackErr: any) {
-              // Both primary and fallback LLMs failed — use cognitive fallback
-              const cf = handleLLMFailure(cognition.intent, fallbackErr);
-              responseText = cf.responseText;
-            }
-          } else {
-            // LLM failed for other reasons — use cognitive fallback
-            const cf = handleLLMFailure(cognition.intent, llmErr);
-            responseText = cf.responseText;
-          }
+          // Use cognitive fallback
+          const cf = handleLLMFailure(cognition.intent, llmErr);
+          responseText = cf.responseText;
         }
       }
 
@@ -738,7 +697,7 @@ export function registerChatHandler(
       // Clean up abort session
       chatSessionMap.delete(uid);
 
-      // Auto-learn from corrections: when user corrects Lumi, extract high-confidence memories
+      // Auto-learn from corrections: when user corrects Gaea, extract high-confidence memories
       const correctionPatterns = [/不是/, /不对/, /错了/, /wrong/i, /incorrect/i, /actually/i, /no,?\s/i, /你弄错了/, /不是这样的/];
       const isCorrection = correctionPatterns.some(p => p.test(text));
       if (isCorrection && responseText) {
@@ -756,14 +715,14 @@ export function registerChatHandler(
           }
           console.log(`[ChatHandler] Correction learned: ${corrected.memories.length} memories with boosted confidence`);
 
-          // Real-time identity correction: when user contradicts a claim Lumi makes about the user
+          // Real-time identity correction: when user contradicts a claim Gaea makes about the user
           // (e.g. "我不做自动驾驶" → remove from coreMotivation immediately, no 7-day wait)
           try {
             const identityCheck = await makeLLMCall(
               [
                 {
                   role: 'system',
-                  content: `Detect identity corrections. Lumi's coreMotivation:\n"${personalityConfig.coreMotivation}"\nLumi's belief about owner's interests: ${JSON.stringify((personalityConfig as any).ownerProfile?.interestClusters || [])}\n\nUser said: "${text}"\nLumi said: "${responseText.slice(0, 300)}"\n\nIs the user denying something Lumi believes about them (interest, trait, name, profession)? If YES, return JSON: {"correctsIdentity": true, "removeInterest": "exact text from coreMotivation to remove", "rewriteMotivation": "rewrite coreMotivation without the false claim, preserving everything else, or null"}. If NO, return {"correctsIdentity": false}.\nReturn ONLY JSON.`,
+                  content: `Detect identity corrections. Lumi's coreMotivation:\n"${personalityConfig.coreMotivation}"\nLumi's belief about owner's interests: ${JSON.stringify((personalityConfig as any).ownerProfile?.interestClusters || [])}\n\nUser said: "${text}"\nGaea said: "${responseText.slice(0, 300)}"\n\nIs the user denying something Gaea believes about them (interest, trait, name, profession)? If YES, return JSON: {"correctsIdentity": true, "removeInterest": "exact text from coreMotivation to remove", "rewriteMotivation": "rewrite coreMotivation without the false claim, preserving everything else, or null"}. If NO, return {"correctsIdentity": false}.\nReturn ONLY JSON.`,
                 },
               ],
               [],

@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { readDB, writeDB } from "../../db_layer";
 import { syncUserToSupabase } from "../config/supabase";
-import { getMember, listUserOrgs } from "../org/db";
 import { saveVoiceprint, saveFace, getVoiceprints, getFaces, deleteVoiceprint, deleteFace } from "../biometrics/store";
 
 const authLimiter = rateLimit({
@@ -110,10 +109,13 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
   });
 
   // Bootstrap endpoint: auto-login for local admin account
-  // Only active when AUTO_LOGIN_PASSWORD env var is configured
+  // Only active when AUTO_LOGIN_PASSWORD env var is explicitly configured
   router.get("/auth/bootstrap", async (req, res) => {
     try {
-    const adminPassword = process.env.AUTO_LOGIN_PASSWORD || 'lumi_admin_2026';
+    const adminPassword = process.env.AUTO_LOGIN_PASSWORD;
+    if (!adminPassword) {
+      return res.status(403).json({ error: "AUTO_LOGIN_PASSWORD not configured" });
+    }
 
     const db = readDB();
     let admin = db.users.find((u: any) => u.username === "admin");
@@ -199,56 +201,6 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
   });
 
   // Switch into organization context — returns a new JWT with orgId + orgRole
-  router.post("/auth/switch-org", (req, res) => {
-    let token = req.cookies.token;
-    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
-      token = req.headers.authorization.slice(7);
-    }
-    if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-    try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const { orgId } = req.body;
-
-      // Allow clearing org context (return to personal mode)
-      if (orgId === null || orgId === undefined || orgId === '') {
-        const personalToken = jwt.sign(
-          { uid: decoded.uid, username: decoded.username, role: decoded.role || 'user' },
-          jwtSecret,
-          { expiresIn: "24h" }
-        );
-        res.cookie("token", personalToken, getCookieOptions());
-        return res.json({ success: true, orgId: null, orgRole: null });
-      }
-
-      const membership = getMember(orgId, decoded.uid);
-      if (!membership || membership.status !== 'active') {
-        return res.status(403).json({ error: "You are not a member of this organization" });
-      }
-
-      const orgToken = jwt.sign(
-        {
-          uid: decoded.uid,
-          username: decoded.username,
-          role: decoded.role || 'user',
-          orgId: membership.orgId,
-          orgRole: membership.role,
-        },
-        jwtSecret,
-        { expiresIn: "24h" }
-      );
-
-      res.cookie("token", orgToken, getCookieOptions());
-      res.json({
-        success: true,
-        orgId: membership.orgId,
-        orgRole: membership.role,
-      });
-    } catch (e) {
-      res.status(401).json({ error: "Invalid token" });
-    }
-  });
-
   // ── Biometric enrollment ──
 
   // Enroll a voiceprint: receives MFCC features extracted in-browser
@@ -365,21 +317,6 @@ export function mountAuthRoutes(router: Router, jwtSecret: string, getCookieOpti
       res.status(401).json({ error: "Invalid token" });
     }
   });
-
-  // List user's organization memberships (for org switcher UI)
-  router.get("/auth/orgs", (req, res) => {
-    let token = req.cookies.token;
-    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
-      token = req.headers.authorization.slice(7);
-    }
-    if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-    try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const orgs = listUserOrgs(decoded.uid);
-      res.json({ orgs });
-    } catch (e) {
-      res.status(401).json({ error: "Invalid token" });
-    }
-  });
 }
+
+

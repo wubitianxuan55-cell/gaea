@@ -1,4 +1,4 @@
-# local_whisper.py — faster-whisper STT for LumiOS
+# local_whisper.py — faster-whisper STT for Gaea
 # Usage: python local_whisper.py <wav_file_path>
 # Output: transcribed text to stdout
 #

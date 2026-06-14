@@ -1,5 +1,5 @@
 /**
- * Lumi Skill Management Tools — generate, list, and install MCP skills.
+ * Gaea Skill Management Tools — generate, list, and install MCP skills.
  *
  * These tools let the LLM agent create new reusable tools from natural language
  * descriptions, inspect existing skills, and install skill packages from disk.
@@ -11,10 +11,12 @@ import { mcpManager } from '../../mcp/client';
 // Module-level LLM getters, set during registration
 let _llmGetters: {
   getDeepSeek: () => any;
-  getGemini: () => any;
+  getGemini?: () => any;
   getOpenAI?: () => any;
   getAnthropic?: () => any;
   getQwen?: () => any;
+  getOllama?: () => any;
+  getLmStudio?: () => any;
 } | null = null;
 
 export function setSkillLLMGetters(getters: typeof _llmGetters): void {
@@ -67,7 +69,7 @@ async function listSkillsHandler(): Promise<string> {
   try {
     const skills = mcpManager.listLocalSkills();
     if (skills.length === 0) {
-      return 'No locally installed skills found in ~/lumi_skills/. Generate one with the generate_skill tool.';
+      return 'No locally installed skills found in ~/gaea_skills/. Generate one with the generate_skill tool.';
     }
 
     const lines = skills.map(s => {
@@ -133,7 +135,7 @@ export function registerSkillTools(registry: ToolRegistry): void {
   registry.register({
     name: 'list_skills',
     description:
-      'List all locally installed MCP skills in ~/lumi_skills/. ' +
+      'List all locally installed MCP skills in ~/gaea_skills/. ' +
       'Shows skill name, description, tool count, and whether it was auto-generated. ' +
       'Use before generating new skills to check for duplicates.',
     parameters: {
@@ -149,7 +151,7 @@ export function registerSkillTools(registry: ToolRegistry): void {
   registry.register({
     name: 'install_skill',
     description:
-      'Install an MCP skill from a local directory into ~/lumi_skills/ so it becomes available as a tool. ' +
+      'Install an MCP skill from a local directory into ~/gaea_skills/ so it becomes available as a tool. ' +
       'The directory must contain index.ts and package.json for a valid MCP server.',
     parameters: {
       type: 'object',

@@ -43,7 +43,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
   const hasDesktop = installedSkillNames.some((n: string) => ['desktop', 'commander'].some(k => n.includes(k)));
 
   const quickSuggestions = [
-    { id: 'chat', label: t.suggestChat || '随便聊聊', prompt: '你好Lumi，今天有什么有趣的发现吗？', show: true },
+    { id: 'chat', label: t.suggestChat || '随便聊聊', prompt: '你好Gaea，今天有什么有趣的发现吗？', show: true },
     { id: 'creative', label: t.suggestCreative || '生成一张图片', prompt: '帮我生成一张星空下的赛博朋克城市图片', show: hasCreativeSkill },
     { id: 'fetch', label: t.suggestFetch || '总结网页内容', prompt: '帮我抓取这篇文章的内容并总结要点', show: hasFetcher },
     { id: 'desktop', label: t.suggestDesktop || '桌面整理', prompt: '帮我把桌面上的文件按日期整理一下', show: hasDesktop },
@@ -104,7 +104,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
   const { speak, stop, pause, resume, isSpeaking, isPaused } = useTTS();
   const recognition = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const agentNameRef = useRef<string>('Lumi');
+  const agentNameRef = useRef<string>('Gaea');
 
   // Escape to close panels
   useEffect(() => {
@@ -117,9 +117,9 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
     return () => window.removeEventListener('keydown', onKey);
   }, [showVoicePicker]);
 
-  const agentName = agent?.name || (t.lumiEssence || 'Lumi Essence');
+  const agentName = agent?.name || (t.gaeaEssence || 'Gaea Essence');
   const agentCategory = agent?.category || (t.friend || 'friend');
-  const agentId = agent?.id || 'lumi';
+  const agentId = agent?.id || 'gaea';
 
   const isFounder = agentId === 'founder' || agentCategory === 'founder' || agentName.includes('Founder') || agentName.includes('创始人');
 
@@ -199,7 +199,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
               setMessages(deduped.map((m: any) => ({
                 id: m.id || crypto.randomUUID(),
                 text: m.content || m.message || m.response || '',
-                userName: m.role === 'assistant' ? (agentNameRef.current || 'Lumi') : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
+                userName: m.role === 'assistant' ? (agentNameRef.current || 'Gaea') : (user?.displayName || user?.username || (t.chatUserFallback || 'User')),
                 timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
                 type: m.role === 'assistant' ? 'agent' : 'user',
               })));
@@ -325,7 +325,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
             setMessages(result.messages.map((m: any) => ({
               id: m.id || crypto.randomUUID(),
               text: m.content || m.message || m.response || '',
-              userName: m.role === 'assistant' ? (agentNameRef.current || 'Lumi') : (user?.displayName || 'You'),
+              userName: m.role === 'assistant' ? (agentNameRef.current || 'Gaea') : (user?.displayName || 'You'),
               timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
               type: m.role === 'assistant' ? 'agent' : 'user',
               mode: m.mode,
@@ -404,7 +404,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
     socket.emit("agent:chat", {
       text,
       history: messages.map(m => ({ role: m.type === 'agent' ? 'assistant' : 'user', content: m.text })),
-      personalityId: 'lumi',
+      personalityId: 'gaea',
       category: agentCategory,
       agentId,
       domain: workDomain,
@@ -443,7 +443,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
     }, 5000);
   };
 
-  // When prefillMessage comes from notification center, show it as a Lumi message
+  // When prefillMessage comes from notification center, show it as a Gaea message
   const sentRef = useRef<string>('');
   useEffect(() => {
     if (prefillMessage && prefillMessage !== sentRef.current) {
@@ -524,7 +524,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
           };
           setUploadResults(prev => [result, ...prev]);
 
-          // Inject file content into chat so Lumi sees it in current conversation
+          // Inject file content into chat so Gaea sees it in current conversation
           if (f.content) {
             setMessages(prev => [...prev, {
               id: `filectx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -628,7 +628,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
           <VoiceCallButton
             callState={callState}
             audioLevel={audioLevel}
-            onStart={() => startCall(selectedVoiceId, 'lumi', agentId)}
+            onStart={() => startCall(selectedVoiceId, 'gaea', agentId)}
             onEnd={endCall}
             hasVoice={voices.length > 0}
           />
@@ -1084,7 +1084,7 @@ export function AgentChatPage({ t, user, agent, isOpen, onClose, prefillMessage,
                               await fetch('/api/files/ingest', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fileId: r.fileName, agentId: 'lumi' }),
+                                body: JSON.stringify({ fileId: r.fileName, agentId: 'gaea' }),
                               });
                               setUploadResults(prev => prev.map(x => x.id === r.id ? { ...x, ingested: true } : x));
                               toast.success(`"${r.fileName}" added to Knowledge Base`);

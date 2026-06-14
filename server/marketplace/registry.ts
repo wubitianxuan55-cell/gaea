@@ -1,10 +1,10 @@
 /**
- * LumiOS Skill Marketplace Registry
+ * Gaea Skill Marketplace Registry
  *
  * Dynamically discovers skills from:
  *   - Bundled skills in server/skills/bundled/
  *   - Community registry (published skills)
- *   - Local ~/lumi_skills/ installs
+ *   - Local ~/gaea_skills/ installs
  */
 import fs from 'fs';
 import path from 'path';
@@ -16,7 +16,7 @@ import { getTranslation } from '../skills/translations';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const SKILLS_DIR = path.join(os.homedir(), 'lumi_skills');
+export const SKILLS_DIR = path.join(os.homedir(), 'gaea_skills');
 const BUNDLED_DIR = path.join(__dirname, '..', 'skills', 'bundled');
 
 export interface MarketplaceSkill {
@@ -65,29 +65,29 @@ function discoverBundledSkills(): MarketplaceSkill[] {
 
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      const lumi = pkg.lumi || {};
+      const skillCfg = pkg.gaea || {};
       const installed = fs.existsSync(path.join(SKILLS_DIR, entry.name));
       skills.push({
         id: `skill-${entry.name}`,
-        name: lumi.displayName || toDisplayName(entry.name),
+        name: skillCfg.displayName || toDisplayName(entry.name),
         description: pkg.description || '',
-        author: 'Lumi Official',
+        author: 'Gaea Official',
         downloads: 0,
         rating: 0,
-        category: lumi.category || 'Other',
-        icon: lumi.icon || 'Zap',
+        category: skillCfg.category || 'Other',
+        icon: skillCfg.icon || 'Zap',
         installSource: 'bundled',
         installPath: path.join(BUNDLED_DIR, entry.name),
         installed,
         version: pkg.version,
-        toolCount: lumi.toolCount || 1,
-        requiresApiKey: lumi.requiresApiKey || false,
-        apiKeyEnv: lumi.apiKeyEnv,
-        apiKeyUrl: lumi.apiKeyUrl,
-        requiresSetup: lumi.requiresSetup || false,
-        setupNote: lumi.setupNote,
-        runtime: lumi.runtime || 'internal',
-        externalCommand: lumi.externalCommand,
+        toolCount: skillCfg.toolCount || 1,
+        requiresApiKey: skillCfg.requiresApiKey || false,
+        apiKeyEnv: skillCfg.apiKeyEnv,
+        apiKeyUrl: skillCfg.apiKeyUrl,
+        requiresSetup: skillCfg.requiresSetup || false,
+        setupNote: skillCfg.setupNote,
+        runtime: skillCfg.runtime || 'internal',
+        externalCommand: skillCfg.externalCommand,
       });
     } catch { /* skip invalid packages */ }
   }

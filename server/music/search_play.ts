@@ -144,15 +144,15 @@ async function pickAndPlay(
   } catch {}
 
   const reasonPhrase = moodReasonMap[mood] || '根据你现在的状态';
-  const lumiReason = `${reasonPhrase}，给你放一首「${trackInfo.name}」，希望你喜欢。`;
+  const gaeaReason = `${reasonPhrase}，给你放一首「${trackInfo.name}」，希望你喜欢。`;
 
   console.log(`[Music] Scene: ${scene.scene}, particles=${scene.particles}`);
   emitMusicAtmosphere(socket, {
     track: trackInfo, mood, audioUrl: '',
-    lyrics: lyricsData, lumiReason, scene,
+    lyrics: lyricsData, gaeaReason, scene,
   });
 
-  return { success: true, text: lumiReason };
+  return { success: true, text: gaeaReason };
 }
 
 export async function searchAndPlay(

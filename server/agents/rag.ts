@@ -68,7 +68,7 @@ export async function ingestDocument(
       },
       {
         tier: options?.tier || 'internalized',
-        perspective: 'lumi_self',
+        perspective: 'gaea_self',
         importance: 0.4,
         agentId,
       },

@@ -132,7 +132,7 @@ function getAudioSession(socket: Socket): AudioSession {
       isActive: false,
       ttsAbortController: null,
       currentVoiceId: null,
-      personalityId: 'lumi',
+      personalityId: 'gaea',
       accumulatedText: '',
       isSpeaking: false,
       isProcessing: false,
@@ -145,7 +145,7 @@ function getAudioSession(socket: Socket): AudioSession {
       ttsDecayTimers: [],
       bargeinTimer: null,
       userId: '',
-      agentId: 'lumi',
+      agentId: 'gaea',
       voiceprintMatched: true,  // default: allow (no voiceprints enrolled yet)
       voiceprintConfidence: 0,
     };
@@ -159,10 +159,12 @@ async function processVoiceInput(
   userText: string,
   llmGetters: {
     getDeepSeek: () => any;
-    getGemini: () => any;
-    getOpenAI: () => any;
-    getAnthropic: () => any;
-    getQwen: () => any;
+    getGemini?: () => any;
+    getOpenAI?: () => any;
+    getAnthropic?: () => any;
+    getQwen?: () => any;
+    getOllama?: () => any;
+    getLmStudio?: () => any;
   },
   sensoryFn: (uid: string) => any,
 ): Promise<void> {
@@ -183,7 +185,7 @@ async function processVoiceInput(
   session.isSpeaking = true;
   session.isProcessing = true;
   session.pipelineAbortController = new AbortController();
-  socket.emit("agent:status", { status: "thinking", agentName: "Lumi" });
+  socket.emit("agent:status", { status: "thinking", agentName: "Gaea" });
   session.ttsAbortController = new AbortController();
   socket.emit("audio:status", { status: "thinking" });
 
@@ -200,7 +202,7 @@ async function processVoiceInput(
 
   const sensoryAudio = sensoryFn(socket.id);
   const { config: personality, systemPrompt: fullPersonalityPrompt } = personalityRegistry.buildSystemPrompt(
-    session.personalityId || 'lumi',
+    session.personalityId || 'gaea',
     { mode: 'task', sensory: sensoryAudio, uiContext: 'voice' },
     {
       userId: session.userId,
@@ -210,7 +212,7 @@ async function processVoiceInput(
   );
 
   // ── Unified personality prompt + voice-specific overlay ──
-  // Same core prompt as text chat — one Lumi, one framework.
+  // Same core prompt as text chat — one Gaea, one framework.
   const voiceOverlay = [
     '\n## Voice Mode',
     '- You are SPEAKING, not typing. Be conversational and natural, like talking to a friend.',
@@ -418,7 +420,7 @@ async function processVoiceInput(
       socket.emit('chat:conversation_updated', { conversationId: conv.id, agentId: session.agentId });
       socket.emit("audio:status", { status: "listening" });
       socket.emit("agent:status", { status: "idle" });
-      socket.emit("agent:response", { text: responseText, agentName: "Lumi", source: "quick_command" });
+      socket.emit("agent:response", { text: responseText, agentName: "Gaea", source: "quick_command" });
       return;
     }
   } catch (qcErr: any) {
@@ -426,12 +428,12 @@ async function processVoiceInput(
   }
 
   try {
-    // ── Lumi Cognitive Engine: classify intent BEFORE calling any LLM ──
-    // Same cognitive layer as text chat — one Lumi, one framework.
+    // ── Gaea Cognitive Engine: classify intent BEFORE calling any LLM ──
+    // Same cognitive layer as text chat — one Gaea, one framework.
     const cognitiveCtx: CognitiveContext = {
       userId: session.userId,
       agentId: session.agentId,
-      personalityId: session.personalityId || 'lumi',
+      personalityId: session.personalityId || 'gaea',
       personalityName: personality.name,
       llmProvider: provider,
       llmModel: voiceModel,
@@ -523,7 +525,7 @@ async function processVoiceInput(
             getAnthropic: llmGetters.getAnthropic,
             getQwen: llmGetters.getQwen,
           },
-          (msg) => socket.emit("agent:chunk", { text: msg, agentName: "Lumi" }),
+          (msg) => socket.emit("agent:chunk", { text: msg, agentName: "Gaea" }),
         );
         if (orchResult) {
           usedOrchestrator = true;
@@ -574,7 +576,7 @@ async function processVoiceInput(
         (chunk: string) => {
           responseText += chunk;
           sentenceBuffer += chunk;
-          socket.emit("agent:chunk", { text: chunk, agentName: "Lumi" });
+          socket.emit("agent:chunk", { text: chunk, agentName: "Gaea" });
           const match = sentenceBuffer.match(/^([\s\S]*?[。！？.!?\n])/);
           if (match) {
             sentenceBuffer = sentenceBuffer.slice(match[1].length);
@@ -638,7 +640,7 @@ async function processVoiceInput(
 
     if (responseText) {
       logger.info(`[Audio] Response: "${responseText.slice(0, 80)}" (${sentenceIdx} sentences, ${toolResults.length} tool calls)`);
-      socket.emit("agent:response", { text: responseText, agentName: "Lumi", source: "voice" });
+      socket.emit("agent:response", { text: responseText, agentName: "Gaea", source: "voice" });
     }
 
     // Persist
@@ -718,10 +720,12 @@ export function registerVoiceHandlers(
   socket: Socket,
   llmGetters: {
     getDeepSeek: () => any;
-    getGemini: () => any;
-    getOpenAI: () => any;
-    getAnthropic: () => any;
-    getQwen: () => any;
+    getGemini?: () => any;
+    getOpenAI?: () => any;
+    getAnthropic?: () => any;
+    getQwen?: () => any;
+    getOllama?: () => any;
+    getLmStudio?: () => any;
   },
   sensoryFn: (uid: string) => any,
   getUserId: (s: Socket) => string,
@@ -736,11 +740,11 @@ export function registerVoiceHandlers(
     session.inputQueue = [];
     session.lastChunkTime = 0;
     session.userId = getUserId(socket);
-    session.agentId = data.agentId || 'lumi';
-    const personalityCfg = personalityRegistry.get(data.personalityId || 'lumi');
+    session.agentId = data.agentId || 'gaea';
+    const personalityCfg = personalityRegistry.get(data.personalityId || 'gaea');
     // Use explicit voiceId, then personality's TTS voice, then null (TTS provider default)
     session.currentVoiceId = data.voiceId || personalityCfg?.ttsVoiceId || null;
-    session.personalityId = data.personalityId || 'lumi';
+    session.personalityId = data.personalityId || 'gaea';
 
     // End previous STT session if re-starting without explicit stop
     if (session.sttSession) { try { session.sttSession.end(); } catch {} session.sttSession = null; }
@@ -943,7 +947,7 @@ export function registerVoiceHandlers(
   });
 
   /**
-   * Night / Focus quiet mode: determine whether Lumi should suppress proactive speech.
+   * Night / Focus quiet mode: determine whether Gaea should suppress proactive speech.
    */
   function shouldStayQuiet(userId: string): { quiet: boolean; reason: string } {
     const hour = new Date().getHours();
@@ -992,12 +996,12 @@ export function registerVoiceHandlers(
     // Resolve voiceId: session first, then personality config, then give up
     let voiceId = session.currentVoiceId;
     if (!voiceId) {
-      const personalityCfg = personalityRegistry.get(session.personalityId || 'lumi');
+      const personalityCfg = personalityRegistry.get(session.personalityId || 'gaea');
       voiceId = personalityCfg?.ttsVoiceId || null;
     }
     if (!voiceId) { resetSpeaking(); return; }
 
-    // Gate: check initiative level — Lumi only speaks first when comfortable enough
+    // Gate: check initiative level — Gaea only speaks first when comfortable enough
     const es = loadEmotionalState(userId);
     if (es.initiative < 0.4) { resetSpeaking(); return; }
 
@@ -1044,7 +1048,7 @@ export function registerVoiceHandlers(
     const session = getAudioSession(socket);
     let voiceId = session.currentVoiceId;
     if (!voiceId) {
-      const personalityCfg = personalityRegistry.get(session.personalityId || 'lumi');
+      const personalityCfg = personalityRegistry.get(session.personalityId || 'gaea');
       voiceId = personalityCfg?.ttsVoiceId || null;
     }
     if (!voiceId) return;

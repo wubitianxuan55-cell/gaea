@@ -1,6 +1,4 @@
-// Server role persistence — flat JSON config file (no DB dependency).
-// Env LUMI_ROLE overrides everything. Without env, reads data/server_config.json.
-// Configured via getDataPath so it survives code upgrades.
+// Server role — always personal (org edition removed)
 
 import fs from 'fs';
 import path from 'path';
@@ -15,8 +13,8 @@ export interface ServerConfig {
 }
 
 export function resolveRole(): 'personal' | 'org' {
-  if (process.env.LUMI_ROLE === 'org' || process.env.LUMI_ROLE === 'personal') {
-    return process.env.LUMI_ROLE;
+  if (process.env.GAEA_ROLE === 'org' || process.env.GAEA_ROLE === 'personal') {
+    return process.env.GAEA_ROLE;
   }
   try {
     if (fs.existsSync(CONFIG_PATH)) {

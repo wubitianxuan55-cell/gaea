@@ -12,7 +12,7 @@ async function computerUse(args: Record<string, any>, context?: any): Promise<st
 
   const task = args.task || args.prompt || '';
   if (!task.trim()) {
-    throw new Error('The "task" parameter is required — describe what you want Lumi to do on the desktop.');
+    throw new Error('The "task" parameter is required — describe what you want Gaea to do on the desktop.');
   }
 
   const maxIterations = args.max_steps || args.maxIterations || 15;

@@ -20,7 +20,7 @@ export interface ToolContext {
   /** LLM provider getters for tools that need to call vision/text models internally */
   llmGetters?: {
     getDeepSeek: () => any;
-    getGemini: () => any;
+    getGemini?: () => any;
     getOpenAI?: () => any;
     getAnthropic?: () => any;
     getQwen?: () => any;

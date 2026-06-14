@@ -23,15 +23,15 @@ export function HardcoreBootSequence({ onComplete, t }: { onComplete: () => void
     { text: 'Shard-A (System) OK', delay: 100 },
     { text: 'Shard-B (Neural) OK', delay: 100 },
     { text: 'Shard-C (Memory) OK', delay: 100 },
-    { text: 'Booting Lumi Virtual Kernel v3.0.0...', delay: 500 },
+    { text: 'Booting Gaea Virtual Kernel v3.0.0...', delay: 500 },
     { text: '[ LOADING MODULES ]', delay: 200 },
     { text: 'Mounting /dev/mesh-01...', delay: 150 },
     { text: 'Mapping Neural Synapses...', delay: 250 },
-    { text: 'Init: Lumi-Core-D (v1.0.12)...', delay: 100 },
+    { text: 'Init: Gaea-Core-D (v1.0.12)...', delay: 100 },
     { text: 'Network: Mesh Peer Bridge Active...', delay: 200 },
     { text: 'Security: Neural ID Verification Active...', delay: 150 },
     { text: 'Environment: Virtual Desktop Engine Starting...', delay: 300 },
-    { text: 'LUMI_OS READY', delay: 500 },
+    { text: 'GAEA_OS READY', delay: 500 },
   ];
 
   useEffect(() => {

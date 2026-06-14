@@ -1,13 +1,13 @@
 /**
  * Privacy Mode — local-only processing enforcement.
  *
- * LUMI_PRIVACY=strict  →  all cloud calls blocked, local providers only
- * LUMI_PRIVACY=standard (default) → normal operation
+ * GAEA_PRIVACY=strict  →  all cloud calls blocked, local providers only
+ * GAEA_PRIVACY=standard (default) → normal operation
  */
 
 export type PrivacyMode = 'strict' | 'standard';
 
-const PRIVACY_ENV = 'LUMI_PRIVACY';
+const PRIVACY_ENV = 'GAEA_PRIVACY';
 
 export function getPrivacyMode(): PrivacyMode {
   const val = process.env[PRIVACY_ENV];
@@ -26,7 +26,7 @@ export function isProviderLocalOnly(provider: string): boolean {
 export function requireLocalProvider(provider: string): void {
   if (isStrictPrivacy() && !isProviderLocalOnly(provider)) {
     throw new Error(
-      `[Privacy] Strict mode active (LUMI_PRIVACY=strict). ` +
+      `[Privacy] Strict mode active (GAEA_PRIVACY=strict). ` +
       `Cloud provider "${provider}" is blocked. Use ollama or lmstudio.`
     );
   }
@@ -45,12 +45,7 @@ export function listActiveCloudProviders(): string[] {
     const { loadKeys } = require('./keys');
     const keys = loadKeys();
     const providers: string[] = [];
-    if (keys.OPENAI_API_KEY) providers.push('openai');
-    if (keys.ANTHROPIC_API_KEY) providers.push('anthropic');
-    if (keys.DASHSCOPE_API_KEY || keys.QWEN_API_KEY) providers.push('qwen');
     if (keys.DEEPSEEK_API_KEY) providers.push('deepseek');
-    if (keys.GEMINI_API_KEY) providers.push('gemini');
-    if (keys.ALIYUN_AK_ID) providers.push('aliyun');
     return providers;
   } catch {
     return [];

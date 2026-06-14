@@ -11,12 +11,12 @@
   ],
   "agents": [],
   "interactions": [],
-  "founderVision": "LumiAI 旨在构建一个去中心化的智能协议。我们追求空间存在感、边缘计算与数据主权。通过分布式节点，每一个用户都能拥有真正属于自己的、可进化的数字生命。",
+  "founderVision": "Gaea 旨在构建一个去中心化的智能协议。我们追求空间存在感、边缘计算与数据主权。通过分布式节点，每一个用户都能拥有真正属于自己的、可进化的数字生命。",
   "marketplaceSkills": [
     {
       "id": "skill-1",
       "name": "财务报表分析 LoRA",
-      "author": "LumiNode_01",
+      "author": "GaeaNode_01",
       "price": 50,
       "description": "针对企业财务报表的深度微调权重，支持自动化对账与异常检测。",
       "category": "Finance"

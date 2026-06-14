@@ -22,10 +22,12 @@ export function registerTaskHandler(
   socket: Socket,
   llmGetters: {
     getDeepSeek: () => any;
-    getGemini: () => any;
-    getOpenAI: () => any;
-    getAnthropic: () => any;
-    getQwen: () => any;
+    getGemini?: () => any;
+    getOpenAI?: () => any;
+    getAnthropic?: () => any;
+    getQwen?: () => any;
+    getOllama?: () => any;
+    getLmStudio?: () => any;
   },
   sensoryFn: (uid: string) => any,
   userIdFn: (s: Socket) => string,
@@ -35,7 +37,7 @@ export function registerTaskHandler(
     const interactionId = crypto.randomUUID();
 
     // Retrieve personality vector early to bias memory retrieval (cross-system fusion: vector→memory)
-    const personalityPreConfig = personalityRegistry.get(data.personalityId || 'lumi');
+    const personalityPreConfig = personalityRegistry.get(data.personalityId || 'gaea');
     const retrievalBiases = personalityPreConfig?.personalityVector
       ? vectorMemoryBias(personalityPreConfig.personalityVector)
       : { typeWeights: {}, perspectiveWeights: {} };
@@ -51,7 +53,7 @@ export function registerTaskHandler(
 
     const sensory = sensoryFn(uid);
     const { config: personality, systemPrompt: systemInstruction } = personalityRegistry.buildSystemPrompt(
-      data.personalityId || 'lumi',
+      data.personalityId || 'gaea',
       { mode: 'task', sensory },
       {
         memories: relevantMemories.length > 0 ? relevantMemories : undefined,
@@ -110,7 +112,7 @@ export function registerTaskHandler(
     try {
       socket.emit("agent:status", { status: "thinking", agentName: personality.name });
 
-      // ── Lumi Cognitive Engine: classify intent BEFORE calling any LLM ──
+      // ── Gaea Cognitive Engine: classify intent BEFORE calling any LLM ──
       const cognitiveCtx: CognitiveContext = {
         userId: uid,
         personalityId: personality.id,
@@ -178,20 +180,20 @@ export function registerTaskHandler(
       // ── Orchestrator: decompose complex tasks into sub-tasks for worker agents ──
       let orchestratedText = '';
       if (cognition.intent.category === 'command' || cognition.intent.category === 'code' || cognition.intent.category === 'question') {
-        const complexity = classifyComplexity(data.text, { userId: uid, personalityId: data.personalityId || 'lumi' });
+        const complexity = classifyComplexity(data.text, { userId: uid, personalityId: data.personalityId || 'gaea' });
         if (complexity === 'complex' || complexity === 'moderate') {
           const db = readDB();
           const availableAgents = (db.agents || []).filter((a: any) => a.status !== 'offline');
           if (availableAgents.length >= 1) {
             try {
-              socket.emit("agent:status", { status: "thinking", agentName: "Lumi Orchestrator" });
-              const subTasks = await decomposeTask(data.text, { provider: activeProvider, model: activeModel }, { userId: uid, personalityId: data.personalityId || 'lumi' }, llmGetters);
-              socket.emit("task:chunk", { text: `[Orchestrator] Decomposed into ${subTasks.length} sub-tasks\n`, agentName: "Lumi" });
+              socket.emit("agent:status", { status: "thinking", agentName: "Gaea Orchestrator" });
+              const subTasks = await decomposeTask(data.text, { provider: activeProvider, model: activeModel }, { userId: uid, personalityId: data.personalityId || 'gaea' }, llmGetters);
+              socket.emit("task:chunk", { text: `[Orchestrator] Decomposed into ${subTasks.length} sub-tasks\n`, agentName: "Gaea" });
 
               const assignments = matchWorkers(subTasks, availableAgents);
-              socket.emit("task:chunk", { text: `[Orchestrator] Assigned to ${assignments.length} worker(s)\n`, agentName: "Lumi" });
+              socket.emit("task:chunk", { text: `[Orchestrator] Assigned to ${assignments.length} worker(s)\n`, agentName: "Gaea" });
 
-              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId: data.personalityId || 'lumi', desktopRelay }, { provider: activeProvider, model: activeModel }, llmGetters);
+              const workflowResult = await executeWorkflow(assignments, { userId: uid, personalityId: data.personalityId || 'gaea', desktopRelay }, { provider: activeProvider, model: activeModel }, llmGetters);
               const aggregated = await aggregateWithLLM(workflowResult, data.text, { provider: activeProvider, model: activeModel }, llmGetters);
               orchestratedText = aggregated;
 
@@ -207,7 +209,7 @@ export function registerTaskHandler(
                   timestamp: new Date().toISOString(),
                 });
               }
-              socket.emit("task:chunk", { text: `\n[Orchestrator] Workflow complete — ${workflowResult.totalAgentsUsed} agent(s) used\n`, agentName: "Lumi" });
+              socket.emit("task:chunk", { text: `\n[Orchestrator] Workflow complete — ${workflowResult.totalAgentsUsed} agent(s) used\n`, agentName: "Gaea" });
             } catch (orchErr: any) {
               console.error('[Orchestrator] Task workflow failed, falling back to normal execution:', orchErr.message);
             }

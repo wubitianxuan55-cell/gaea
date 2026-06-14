@@ -5,7 +5,7 @@ import { recordWorkflow, WorkflowStep } from '../skills/worklog';
 import { recordLatency } from '../monitor/latency_store';
 
 export interface LLMConfig {
-  provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen' | 'ark' | 'ollama' | 'lmstudio' | 'xiaomi' | 'kimi' | 'glm' | 'relay' | 'auto';
+  provider: string;
   model: string;
   maxTokens?: number;
   userId?: string;
@@ -32,19 +32,19 @@ export async function runWithTools(
   onToolCall?: (record: ToolExecutionRecord) => void,
   maxIterations: number = 5,
   getDeepSeek?: () => any,
-  getGemini?: () => any,
-  getOpenAI?: () => any,
-  getAnthropic?: () => any,
-  getQwen?: () => any,
+  _getGemini?: () => any,
+  _getOpenAI?: () => any,
+  _getAnthropic?: () => any,
+  _getQwen?: () => any,
   onStreamChunk?: StreamCallback,
   context?: ToolContext,
   getOllama?: () => any,
   getLmStudio?: () => any,
-  getArk?: () => any,
-  getXiaomi?: () => any,
-  getKimi?: () => any,
-  getGlm?: () => any,
-  getRelay?: () => any,
+  _getArk?: () => any,
+  _getXiaomi?: () => any,
+  _getKimi?: () => any,
+  _getGlm?: () => any,
+  _getRelay?: () => any,
 ): Promise<LLMResult> {
   const executionLog: ToolExecutionRecord[] = [];
   const usageRecords: LLMUsageRecord[] = [];
@@ -74,34 +74,16 @@ export async function runWithTools(
           config,
           onStreamChunk,
           getDeepSeek || (() => null),
-          getGemini || (() => null),
-          getOpenAI || (() => null),
-          getAnthropic || (() => null),
-          getQwen || (() => null),
           getOllama || (() => null),
           getLmStudio || (() => null),
-          getArk || (() => null),
-          getXiaomi || (() => null),
-          getKimi || (() => null),
-          getGlm || (() => null),
-          getRelay || (() => null),
         )
       : await makeLLMCall(
           conversationHistory,
           toolDeclarations,
           config,
           getDeepSeek || (() => null),
-          getGemini || (() => null),
-          getOpenAI || (() => null),
-          getAnthropic || (() => null),
-          getQwen || (() => null),
           getOllama || (() => null),
           getLmStudio || (() => null),
-          getArk || (() => null),
-          getXiaomi || (() => null),
-          getKimi || (() => null),
-          getGlm || (() => null),
-          getRelay || (() => null),
         );
     recordLatency('llm', Date.now() - llmStart);
 
@@ -234,17 +216,17 @@ export async function analyzeScreen(
   query: string,
   config: { provider: string; model: string },
   getDeepSeek?: () => any,
-  getGemini?: () => any,
-  getOpenAI?: () => any,
-  getAnthropic?: () => any,
-  getQwen?: () => any,
+  _getGemini?: () => any,
+  _getOpenAI?: () => any,
+  _getAnthropic?: () => any,
+  _getQwen?: () => any,
   getOllama?: () => any,
   getLmStudio?: () => any,
-  getArk?: () => any,
-  getXiaomi?: () => any,
-  getKimi?: () => any,
-  getGlm?: () => any,
-  getRelay?: () => any,
+  _getArk?: () => any,
+  _getXiaomi?: () => any,
+  _getKimi?: () => any,
+  _getGlm?: () => any,
+  _getRelay?: () => any,
 ): Promise<string> {
   const { base64, mime } = parseScreenshotBase64(imageBase64);
 
@@ -252,20 +234,9 @@ export async function analyzeScreen(
   let provider = config.provider;
   let model = config.model;
 
-  // Qwen and Ark have specific vision models — auto-switch when using chat models
-  if (provider === 'qwen' && !model.includes('vl')) {
-    // qwen-plus/qwen-max/qwen-turbo → qwen-vl-max for vision
-    model = 'qwen-vl-max';
-  } else if (provider === 'ark' && !model.includes('vision')) {
-    // doubao-1-5-pro/lite → doubao-1-5-vision-pro for vision
-    model = 'doubao-1-5-vision-pro-32k';
-  } else if (provider === 'deepseek') {
-    // DeepSeek has no vision capability — route to the best available provider
-    if (getQwen?.()) { provider = 'qwen'; model = 'qwen-vl-max'; }
-    else if (getArk?.()) { provider = 'ark'; model = 'doubao-1-5-vision-pro-32k'; }
-    else if (getOpenAI?.()) { provider = 'openai'; model = 'gpt-4o'; }
-    else if (getGemini?.()) { provider = 'gemini'; model = 'gemini-2.0-flash'; }
-    else throw new Error('Vision requires a Qwen, Ark, OpenAI, or Gemini API key. DeepSeek does not support vision.');
+  if (provider === 'deepseek') {
+    // DeepSeek has no vision capability — error out
+    throw new Error('Vision analysis requires a vision-capable model. DeepSeek does not support vision. Configure an Ollama/LM Studio vision model or use a different provider.');
   }
 
   const messages: NormalizedMessage[] = [
@@ -285,9 +256,9 @@ export async function analyzeScreen(
   const result = await makeLLMCall(
     messages, [],
     { provider: provider as any, model, maxTokens: 1000 },
-    getDeepSeek || (() => null), getGemini || (() => null),
-    getOpenAI, getAnthropic, getQwen, getOllama, getLmStudio, getArk,
-    getXiaomi, getKimi, getGlm, getRelay,
+    getDeepSeek || (() => null),
+    getOllama || (() => null),
+    getLmStudio || (() => null),
   );
 
   return result.text || 'Vision analysis returned no text.';
@@ -298,18 +269,18 @@ export async function runWithVision(
   messages: NormalizedMessage[],
   config: LLMConfig,
   getDeepSeek?: () => any,
-  getGemini?: () => any,
-  getOpenAI?: () => any,
-  getAnthropic?: () => any,
-  getQwen?: () => any,
+  _getGemini?: () => any,
+  _getOpenAI?: () => any,
+  _getAnthropic?: () => any,
+  _getQwen?: () => any,
   getOllama?: () => any,
   getLmStudio?: () => any,
-  getArk?: () => any,
-  getXiaomi?: () => any,
-  getKimi?: () => any,
-  getGlm?: () => any,
-  getRelay?: () => any,
+  _getArk?: () => any,
+  _getXiaomi?: () => any,
+  _getKimi?: () => any,
+  _getGlm?: () => any,
+  _getRelay?: () => any,
 ): Promise<string> {
-  const result = await makeLLMCall(messages, [], config, getDeepSeek || (() => null), getGemini || (() => null), getOpenAI, getAnthropic, getQwen, getOllama, getLmStudio, getArk, getXiaomi, getKimi, getGlm, getRelay);
+  const result = await makeLLMCall(messages, [], config, getDeepSeek || (() => null), getOllama || (() => null), getLmStudio || (() => null));
   return result.text || '';
 }

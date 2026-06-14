@@ -149,7 +149,7 @@ export function Settings({
       case 'neural':
         return (
           <div className="space-y-8">
-            <SettingsSection title={t.agentFramework || "Agent Framework (Lumi Protocol)"} icon={<BrainCircuit size={18} className="text-celestial-saturn" />}>
+            <SettingsSection title={t.agentFramework || "Agent Framework (Gaea Protocol)"} icon={<BrainCircuit size={18} className="text-celestial-saturn" />}>
               <div className="space-y-6">
                 <AutonomousSettingsPanel t={t} operationMode={operationMode} setOperationMode={setOperationMode} />
                 <div className="space-y-1">
@@ -158,15 +158,6 @@ export function Settings({
                     <select value={aiConfig.provider} onChange={(e) => updateAIConfig({ provider: e.target.value })}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold appearance-none cursor-pointer focus:border-celestial-saturn/50 outline-none">
                       <option value="deepseek">DeepSeek</option>
-                      <option value="qwen">Qwen (DashScope)</option>
-                      <option value="gemini">Google Gemini</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="anthropic">Anthropic Claude</option>
-                      <option value="ark">Doubao / 豆包 (Ark)</option>
-                      <option value="xiaomi">Xiaomi / 小米</option>
-                      <option value="kimi">Kimi / 月之暗面</option>
-                      <option value="glm">GLM / 智谱</option>
-                      <option value="relay">中转站 (API Relay)</option>
                     </select>
                     <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/45" />
                   </div>
@@ -186,9 +177,9 @@ export function Settings({
         return (
           <div className="space-y-8">
             <SettingsSection title={t.privacySecurity || "Privacy & Security"} icon={<Shield size={18} className="text-celestial-mars" />}>
-              <SettingsItem label={t.localEncryption || "Local Encryption"} desc={t.localEncryptionDesc || "Encrypt all Agent data stored on your local disk."} storageKey="lumi_sec_local_encryption" t={t} />
-              <SettingsItem label={t.anonymousMode || "Anonymous Mode"} desc={t.anonymousModeDesc || "Hide your node ID from the collaborative network."} storageKey="lumi_sec_anonymous_mode" t={t} />
-              <SettingsItem label={t.biometricLock || "Biometric Lock"} desc={t.biometricLockDesc || "Require fingerprint or face ID for Agent generation."} storageKey="lumi_sec_biometric_lock" t={t} />
+              <SettingsItem label={t.localEncryption || "Local Encryption"} desc={t.localEncryptionDesc || "Encrypt all Agent data stored on your local disk."} storageKey="gaea_sec_local_encryption" t={t} />
+              <SettingsItem label={t.anonymousMode || "Anonymous Mode"} desc={t.anonymousModeDesc || "Hide your node ID from the collaborative network."} storageKey="gaea_sec_anonymous_mode" t={t} />
+              <SettingsItem label={t.biometricLock || "Biometric Lock"} desc={t.biometricLockDesc || "Require fingerprint or face ID for Agent generation."} storageKey="gaea_sec_biometric_lock" t={t} />
             </SettingsSection>
             {isElectron && (
               <SettingsSection title={t.desktopNodeRuntime || "Desktop Node Runtime"} icon={<Database size={18} className="text-celestial-jupiter" />}>
@@ -196,8 +187,8 @@ export function Settings({
                   <div className="flex justify-between items-center text-sm"><span className="text-white/60">{t.platform || "Platform"}:</span><span className="font-mono text-celestial-jupiter uppercase">{platform}</span></div>
                   <div className="flex justify-between items-center text-sm"><span className="text-white/60">{t.nodeStatus || "Node Status"}:</span><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="font-bold text-green-500 underline decoration-green-500/20 underline-offset-4">{t.nodeActive || "ACTIVE"}</span></div></div>
                 </div>
-                <SettingsItem label={t.hardwareAcceleration || "Hardware Acceleration"} desc={t.hardwareAccelerationDesc || "Use GPU for neural core inference."} storageKey="lumi_sec_hw_accel" t={t} />
-                <SettingsItem label={t.systemTrayMode || "System Tray Mode"} desc={t.systemTrayModeDesc || "Keep Lumi running in the background."} storageKey="lumi_sec_system_tray" t={t} />
+                <SettingsItem label={t.hardwareAcceleration || "Hardware Acceleration"} desc={t.hardwareAccelerationDesc || "Use GPU for neural core inference."} storageKey="gaea_sec_hw_accel" t={t} />
+                <SettingsItem label={t.systemTrayMode || "System Tray Mode"} desc={t.systemTrayModeDesc || "Keep Gaea running in the background."} storageKey="gaea_sec_system_tray" t={t} />
               </SettingsSection>
             )}
 
@@ -262,10 +253,10 @@ export function Settings({
             onClick={async () => {
               try {
                 await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-                localStorage.removeItem('lumi_auth_token');
+                localStorage.removeItem('gaea_auth_token');
                 window.location.reload();
               } catch {
-                localStorage.removeItem('lumi_auth_token');
+                localStorage.removeItem('gaea_auth_token');
                 window.location.reload();
               }
             }}
@@ -329,7 +320,7 @@ function HardwareSettings({ t }: { t: any }) {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <SettingsSection title={t.hardwareSensorNetwork || "Hardware Sensor Network"} icon={<Camera size={18} className="text-celestial-saturn" />}>
         <p className="text-sm text-white/40 mb-8 max-w-xl">
-          {t.hardwareSensorNetworkDesc || "LumiAI requires access to your physical sensors for real-world contextual awareness and biometric verification. All data is processed locally on your node."}
+          {t.hardwareSensorNetworkDesc || "Gaea requires access to your physical sensors for real-world contextual awareness and biometric verification. All data is processed locally on your node."}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -440,14 +431,14 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
 }) {
   const { aiConfig, updateAIConfig, logout } = useApp();
   const [keyValue, setKeyValue] = useState(() => {
-    try { return localStorage.getItem(`lumi_${providerId}_key`) || ''; } catch { return ''; }
+    try { return localStorage.getItem(`gaea_${providerId}_key`) || ''; } catch { return ''; }
   });
   const [saved, setSaved] = useState(false);
   const [serverConfigured, setServerConfigured] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
   const savedModels = (() => {
-    try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('gaea_llm_models') || '{}'); } catch { return {}; }
   })();
   const [model, setModel] = useState(() => {
     return savedModels[providerId] || models[0];
@@ -461,7 +452,7 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
   }, [serverKey]);
 
   const handleRemoveKey = () => {
-    localStorage.removeItem(`lumi_${providerId}_key`);
+    localStorage.removeItem(`gaea_${providerId}_key`);
     fetch('/api/settings/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -477,7 +468,7 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
 
   const handleSaveKey = () => {
     if (!keyValue.trim()) return;
-    localStorage.setItem(`lumi_${providerId}_key`, keyValue.trim());
+    localStorage.setItem(`gaea_${providerId}_key`, keyValue.trim());
     fetch('/api/settings/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -502,10 +493,10 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
   const handleModelChange = (m: string) => {
     setModel(m);
     const allModels = (() => {
-      try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+      try { return JSON.parse(localStorage.getItem('gaea_llm_models') || '{}'); } catch { return {}; }
     })();
     allModels[providerId] = m;
-    localStorage.setItem('lumi_llm_models', JSON.stringify(allModels));
+    localStorage.setItem('gaea_llm_models', JSON.stringify(allModels));
     syncToServer(allModels);
     if (aiConfig.provider === providerId) {
       updateAIConfig({ model: m });
@@ -575,7 +566,7 @@ function LLMProviderRow({ icon, label, providerId, models, placeholder, disabled
 }
 
 function ProactiveVoiceToggle() {
-  const storageKey = 'lumi_allow_proactive_voice';
+  const storageKey = 'gaea_allow_proactive_voice';
   const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) === 'true');
 
   const toggle = () => {
@@ -599,7 +590,7 @@ function ProactiveVoiceToggle() {
 }
 
 function WakeWordToggle() {
-  const storageKey = 'lumi_wake_word_enabled';
+  const storageKey = 'gaea_wake_word_enabled';
   const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) === 'true');
 
   const toggle = () => {
@@ -623,7 +614,7 @@ function WakeWordToggle() {
 }
 
 function AlwaysOnVoiceToggle() {
-  const storageKey = 'lumi_always_on_voice';
+  const storageKey = 'gaea_always_on_voice';
   const [enabled, setEnabled] = useState(() => localStorage.getItem(storageKey) === 'true');
 
   const toggle = () => {
@@ -651,21 +642,10 @@ function LLMProvidersPage({ t, providerStatus }: { t: any; providerStatus: Recor
     <div className="space-y-8">
       <SettingsSection title={t.llmProviders || "LLM Providers"} icon={<BrainCircuit size={18} className="text-celestial-saturn" />}>
         <p className="text-sm text-white/40 max-w-xl mb-6">
-          {t.apiMatrixLLMDesc || 'Configure API keys and preferred models for each LLM provider.'}
+          {t.apiMatrixLLMDesc || 'DeepSeek is the primary reasoning engine for Gaea. Enter your API key below.'}
         </p>
         <div className="grid grid-cols-1 gap-6">
           <LLMProviderRow icon={<BrainCircuit size={18} className="text-blue-400" />} label="DeepSeek" providerId="deepseek" models={['deepseek-chat', 'deepseek-reasoner']} placeholder="sk-..." serverKey="DEEPSEEK_API_KEY" t={t} />
-          <LLMProviderRow icon={<Zap size={18} className="text-violet-400" />} label="Qwen / DashScope (Alibaba Cloud)" providerId="qwen" models={['qwen-plus', 'qwen-max', 'qwen-turbo']} placeholder="sk-..." serverKey="DASHSCOPE_API_KEY" t={t} />
-          <LLMProviderRow icon={<Cloud size={18} className="text-cyan-400" />} label="Doubao / 豆包 (Ark)" providerId="ark" models={['doubao-1-5-pro-32k', 'doubao-1-5-lite-32k', 'doubao-1-5-vision-pro-32k']} placeholder="Enter Ark API key..." serverKey="ARK_API_KEY" t={t} />
-          <LLMProviderRow icon={<Cpu size={18} className="text-orange-400" />} label="Xiaomi / 小米" providerId="xiaomi" models={['xiaomi-chat']} placeholder="Enter Xiaomi API key..." serverKey="XIAOMI_API_KEY" t={t} />
-          <LLMProviderRow icon={<Sparkle size={18} className="text-rose-400" />} label="Kimi / 月之暗面 (Moonshot)" providerId="kimi" models={['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k']} placeholder="sk-..." serverKey="KIMI_API_KEY" t={t} />
-          <LLMProviderRow icon={<Sparkle size={18} className="text-cyan-400" />} label="GLM / 智谱 (Zhipu AI)" providerId="glm" models={['glm-4-plus', 'glm-4-flash', 'glm-4-air']} placeholder="Enter GLM API key..." serverKey="GLM_API_KEY" t={t} />
-          <LLMProviderRow icon={<BrainCircuit size={18} className="text-blue-400" />} label={`Google Gemini${providerStatus.gemini?.available ? ` (${providerStatus.gemini.model})` : ''}`} providerId="gemini" models={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']} placeholder={providerStatus.gemini?.available ? (t.connectedViaEnv || 'Connected via environment') : (t.noKeyConfigured || 'No key configured')} serverKey="GEMINI_API_KEY" t={t} />
-          <LLMProviderRow icon={<MessagesSquare size={18} className="text-green-400" />} label="OpenAI" providerId="openai" models={['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo']} placeholder="sk-..." serverKey="OPENAI_API_KEY" t={t} />
-          <LLMProviderRow icon={<Sparkle size={18} className="text-purple-400" />} label="Anthropic Claude" providerId="anthropic" models={['claude-sonnet-4-6', 'claude-opus-4-7', 'claude-haiku-4-5']} placeholder="sk-ant-..." serverKey="ANTHROPIC_API_KEY" t={t} />
-          <OllamaProviderRow t={t} />
-          <LmStudioProviderRow t={t} />
-          <RelayProviderRow t={t} />
         </div>
       </SettingsSection>
     </div>
@@ -674,7 +654,7 @@ function LLMProvidersPage({ t, providerStatus }: { t: any; providerStatus: Recor
 
 function OllamaProviderRow({ t }: { t?: any }) {
   const [baseUrl, setBaseUrl] = useState(() => {
-    try { return localStorage.getItem('lumi_ollama_url') || 'http://localhost:11434'; } catch { return 'http://localhost:11434'; }
+    try { return localStorage.getItem('gaea_ollama_url') || 'http://localhost:11434'; } catch { return 'http://localhost:11434'; }
   });
   const [detected, setDetected] = useState(false);
   const [models, setModels] = useState<string[]>([]);
@@ -704,7 +684,7 @@ function OllamaProviderRow({ t }: { t?: any }) {
       const cfg = await resp.json();
       setDetected(!!cfg.detected);
       setModels(cfg.models || []);
-      localStorage.setItem('lumi_ollama_url', baseUrl);
+      localStorage.setItem('gaea_ollama_url', baseUrl);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch { setDetected(false); setModels([]); }
@@ -754,7 +734,7 @@ function OllamaProviderRow({ t }: { t?: any }) {
 
 function LmStudioProviderRow({ t }: { t?: any }) {
   const [baseUrl, setBaseUrl] = useState(() => {
-    try { return localStorage.getItem('lumi_lmstudio_url') || 'http://localhost:1234'; } catch { return 'http://localhost:1234'; }
+    try { return localStorage.getItem('gaea_lmstudio_url') || 'http://localhost:1234'; } catch { return 'http://localhost:1234'; }
   });
   const [detected, setDetected] = useState(false);
   const [models, setModels] = useState<string[]>([]);
@@ -783,7 +763,7 @@ function LmStudioProviderRow({ t }: { t?: any }) {
       const cfg = await resp.json();
       setDetected(!!cfg.detected);
       setModels(cfg.models || []);
-      localStorage.setItem('lumi_lmstudio_url', baseUrl);
+      localStorage.setItem('gaea_lmstudio_url', baseUrl);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch { setDetected(false); setModels([]); }
@@ -854,28 +834,28 @@ function VoiceServicesPage({ t }: { t: any }) {
           {t.voiceServicesDesc || 'Speech recognition (ASR) and speech synthesis (TTS). Doubao Speech is auto-prioritized when configured.'}
         </p>
         <div className="grid grid-cols-1 gap-6">
-          <ApiKeyField icon={<Volume2 size={18} className="text-emerald-400" />} label={t.doubaoSpeechLabel || 'Doubao Speech (STT + TTS)'} placeholder="AppID:AccessToken" storageKey="lumi_doubao_speech" serverKey="DOUBAO_SPEECH_KEY" hint={t.doubaoSpeechHint || 'Format: AppID:AccessToken. Get both from console.volcengine.com/speech → App Management'} t={t} />
-          <ApiKeyField icon={<Zap size={18} className="text-violet-400" />} label={t.dashscopeLabel || 'DashScope (STT + TTS)'} placeholder="sk-..." storageKey="lumi_dashscope_key" serverKey="DASHSCOPE_API_KEY" hint={t.dashscopeHint || 'Powers Qwen ASR and CosyVoice TTS. Get your key at dashscope.aliyun.com'} t={t} />
+          <ApiKeyField icon={<Volume2 size={18} className="text-emerald-400" />} label={t.doubaoSpeechLabel || 'Doubao Speech (STT + TTS)'} placeholder="AppID:AccessToken" storageKey="gaea_doubao_speech" serverKey="DOUBAO_SPEECH_KEY" hint={t.doubaoSpeechHint || 'Format: AppID:AccessToken. Get both from console.volcengine.com/speech → App Management'} t={t} />
+          <ApiKeyField icon={<Zap size={18} className="text-violet-400" />} label={t.dashscopeLabel || 'DashScope (STT + TTS)'} placeholder="sk-..." storageKey="gaea_dashscope_key" serverKey="DASHSCOPE_API_KEY" hint={t.dashscopeHint || 'Powers Qwen ASR and CosyVoice TTS. Get your key at dashscope.aliyun.com'} t={t} />
         </div>
         <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-white/80">{t.proactiveVoiceGreeting || '允许Lumi主动语音问候'}</p>
-              <p className="text-xs text-white/55 mt-0.5">{t.proactiveVoiceGreetingDesc || '开启后，Lumi会在检测到异常或长时间不活动时主动开口说话'}</p>
+              <p className="text-xs font-bold text-white/80">{t.proactiveVoiceGreeting || '允许Gaea主动语音问候'}</p>
+              <p className="text-xs text-white/55 mt-0.5">{t.proactiveVoiceGreetingDesc || '开启后，Gaea会在检测到异常或长时间不活动时主动开口说话'}</p>
             </div>
             <ProactiveVoiceToggle />
           </div>
           <div className="flex items-center justify-between mt-3">
             <div>
               <p className="text-xs font-bold text-white/80">{t.wakeWordLabel || '唤醒词检测 (Wake Word)'}</p>
-              <p className="text-xs text-white/55 mt-0.5">{t.wakeWordDesc || '持续监听"Lumi"唤醒词。开启后麦克风持续上传音频做ASR识别，会产生费用。'}</p>
+              <p className="text-xs text-white/55 mt-0.5">{t.wakeWordDesc || '持续监听"Gaea"唤醒词。开启后麦克风持续上传音频做ASR识别，会产生费用。'}</p>
             </div>
             <WakeWordToggle />
           </div>
           <div className="flex items-center justify-between mt-3">
             <div>
               <p className="text-xs font-bold text-white/80">{t.alwaysOnVoiceLabel || '持续语音通道 (Always-On Voice)'}</p>
-              <p className="text-xs text-white/55 mt-0.5">{t.alwaysOnVoiceDesc || '开启后麦克风不会自动断开，Lumi始终在听。'}</p>
+              <p className="text-xs text-white/55 mt-0.5">{t.alwaysOnVoiceDesc || '开启后麦克风不会自动断开，Gaea始终在听。'}</p>
             </div>
             <AlwaysOnVoiceToggle />
           </div>
@@ -981,10 +961,10 @@ function ApiKeyField({ icon, label, placeholder, disabled = false, storageKey, s
 
 function RelayProviderRow({ t }: { t?: any }) {
   const [apiKey, setApiKey] = useState(() => {
-    try { return localStorage.getItem('lumi_relay_key') || ''; } catch { return ''; }
+    try { return localStorage.getItem('gaea_relay_key') || ''; } catch { return ''; }
   });
   const [baseUrl, setBaseUrl] = useState(() => {
-    try { return localStorage.getItem('lumi_relay_url') || 'https://api.example.com/v1'; } catch { return 'https://api.example.com/v1'; }
+    try { return localStorage.getItem('gaea_relay_url') || 'https://api.example.com/v1'; } catch { return 'https://api.example.com/v1'; }
   });
   const [serverKeyOk, setServerKeyOk] = useState(false);
   const [serverUrlOk, setServerUrlOk] = useState(false);
@@ -1002,8 +982,8 @@ function RelayProviderRow({ t }: { t?: any }) {
 
   const handleSave = () => {
     if (!apiKey.trim() || !baseUrl.trim()) return;
-    localStorage.setItem('lumi_relay_key', apiKey.trim());
-    localStorage.setItem('lumi_relay_url', baseUrl.trim());
+    localStorage.setItem('gaea_relay_key', apiKey.trim());
+    localStorage.setItem('gaea_relay_url', baseUrl.trim());
     fetch('/api/settings/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1016,8 +996,8 @@ function RelayProviderRow({ t }: { t?: any }) {
   };
 
   const handleRemove = () => {
-    localStorage.removeItem('lumi_relay_key');
-    localStorage.removeItem('lumi_relay_url');
+    localStorage.removeItem('gaea_relay_key');
+    localStorage.removeItem('gaea_relay_url');
     fetch('/api/settings/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1120,7 +1100,7 @@ function AutonomousSettingsPanel({ t, operationMode, setOperationMode }: { t: an
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs font-black uppercase tracking-widest text-white/60">Autonomous Mode</div>
-            <p className="text-xs text-white/40 mt-1">Enable background autonomous work — Lumi can self-initiate tasks when idle.</p>
+            <p className="text-xs text-white/40 mt-1">Enable background autonomous work — Gaea can self-initiate tasks when idle.</p>
           </div>
           <button
             onClick={() => setOperationMode(isAutonomous ? 'desktop_control' : 'autonomous')}
@@ -1132,7 +1112,7 @@ function AutonomousSettingsPanel({ t, operationMode, setOperationMode }: { t: an
         {isAutonomous && (
           <div className="flex items-center gap-2 text-xs text-cyan-400/70">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            Autonomous mode active — Lumi will generate tasks when you're idle
+            Autonomous mode active — Gaea will generate tasks when you're idle
           </div>
         )}
       </div>

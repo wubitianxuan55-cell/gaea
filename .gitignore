@@ -1,3 +1,4 @@
+# Gaea build artifacts
 node_modules/
 build/
 dist/
@@ -11,15 +12,26 @@ coverage/
 *.db
 db.json
 *.tar.gz
+
 # Runtime data (auto-created by the application)
 data/
 gpt-sovits-src/
 src-tauri/target/
+
+# AI agent tooling (not part of the product)
 .claude/
+.codegraph/
+.reasonix/
+.tianxuan/
+reasonix.toml
 docs/
+
+# Misc
 gen_landing.py
 /tools/
 $null
+nul
+=
 agent_shutdown_snapshot_*
 LumiOS_个人版_部署服务方案.pdf
 lumi_output/

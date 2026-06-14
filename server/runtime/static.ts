@@ -3,7 +3,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 
-export async function setupStatic(app: express.Express, __filename: string, __dirname: string, role: string = 'personal') {
+export async function setupStatic(app: express.Express, __filename: string, __dirname: string) {
   const isBundledServer = path.basename(process.cwd()).toLowerCase() === "dist-server" ||
     path.basename(__dirname).toLowerCase() === "dist-server";
   const isSourceServer = __filename.endsWith("server.ts") ||
@@ -24,7 +24,7 @@ export async function setupStatic(app: express.Express, __filename: string, __di
     });
     app.use(vite.middlewares);
   } else {
-    console.log(`Starting in PRODUCTION mode (Static) as ${role}...`);
+    console.log(`Starting in PRODUCTION mode (Static)...`);
     const distPath = fs.existsSync(path.join(process.cwd(), "dist"))
       ? path.join(process.cwd(), "dist")
       : path.join(process.cwd(), "..", "dist");

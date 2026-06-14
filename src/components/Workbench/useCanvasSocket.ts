@@ -246,7 +246,7 @@ export function useCanvasSocket({ socket, onCards, onEdges, onStatusChange }: Us
     socket?.emit('agent:chat', {
       text: text.trim(),
       history: [],
-      personalityId: 'lumi',
+      personalityId: 'gaea',
       category: undefined,
       agentId: undefined,
       domain: undefined,
@@ -318,7 +318,7 @@ export function useCanvasSocket({ socket, onCards, onEdges, onStatusChange }: Us
       socket?.emit('agent:chat', {
         text: userRequest.text,
         history: [],
-        personalityId: 'lumi',
+        personalityId: 'gaea',
         source: 'canvas',
       });
     }

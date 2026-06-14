@@ -160,29 +160,9 @@ export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
     const stored = loadKeys();
     const envOrStore = (envKey: string, storeKey: string) =>
       !!(process.env[envKey] && process.env[envKey]!.length > 0) || !!stored[storeKey as keyof typeof stored];
-    // Check local model configs
-    let ollamaAvailable = false;
-    let lmstudioAvailable = false;
-    try {
-      const db = readDB();
-      const os = (db.settings || []).find((s: any) => s.key === 'ollama_config');
-      if (os) ollamaAvailable = !!JSON.parse(os.value).detected;
-      const ls = (db.settings || []).find((s: any) => s.key === 'lmstudio_config');
-      if (ls) lmstudioAvailable = !!JSON.parse(ls.value).detected;
-    } catch {}
     res.json({
       providers: {
         deepseek: { available: envOrStore('DEEPSEEK_API_KEY', 'DEEPSEEK_API_KEY'), model: process.env.DEEPSEEK_MODEL || 'deepseek-chat' },
-        gemini: { available: envOrStore('GEMINI_API_KEY', 'GEMINI_API_KEY'), model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' },
-        openai: { available: envOrStore('OPENAI_API_KEY', 'OPENAI_API_KEY'), model: process.env.OPENAI_MODEL || 'gpt-4o' },
-        anthropic: { available: envOrStore('ANTHROPIC_API_KEY', 'ANTHROPIC_API_KEY'), model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6' },
-        qwen: { available: envOrStore('QWEN_API_KEY', 'DASHSCOPE_API_KEY') || envOrStore('DASHSCOPE_API_KEY', 'DASHSCOPE_API_KEY'), model: process.env.QWEN_MODEL || 'qwen-plus' },
-        ark: { available: envOrStore('ARK_API_KEY', 'ARK_API_KEY'), model: process.env.ARK_MODEL || 'doubao-1-5-pro-32k' },
-        xiaomi: { available: envOrStore('XIAOMI_API_KEY', 'XIAOMI_API_KEY'), model: process.env.XIAOMI_MODEL || 'xiaomi-chat' },
-        kimi: { available: envOrStore('KIMI_API_KEY', 'KIMI_API_KEY'), model: process.env.KIMI_MODEL || 'moonshot-v1-8k' },
-        glm: { available: envOrStore('GLM_API_KEY', 'GLM_API_KEY'), model: process.env.GLM_MODEL || 'glm-4-plus' },
-        ollama: { available: ollamaAvailable, model: 'local' },
-        lmstudio: { available: lmstudioAvailable, model: 'local' },
       },
     });
   });
@@ -194,14 +174,6 @@ export function mountSystemRoutes(router: Router, jwtSecret: string, io?: any) {
       const stored = loadKeys();
       const keyMap: Record<string, string | undefined> = {
         deepseek: apiKey || process.env.DEEPSEEK_API_KEY || stored.DEEPSEEK_API_KEY,
-        gemini: apiKey || process.env.GEMINI_API_KEY || stored.GEMINI_API_KEY,
-        openai: apiKey || process.env.OPENAI_API_KEY || stored.OPENAI_API_KEY,
-        anthropic: apiKey || process.env.ANTHROPIC_API_KEY || stored.ANTHROPIC_API_KEY,
-        qwen: apiKey || process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || stored.QWEN_API_KEY || stored.DASHSCOPE_API_KEY,
-        ark: apiKey || process.env.ARK_API_KEY || stored.ARK_API_KEY,
-        xiaomi: apiKey || process.env.XIAOMI_API_KEY || stored.XIAOMI_API_KEY,
-        kimi: apiKey || process.env.KIMI_API_KEY || stored.KIMI_API_KEY,
-        glm: apiKey || process.env.GLM_API_KEY || stored.GLM_API_KEY,
       };
       const key = keyMap[provider];
       if (!key) {

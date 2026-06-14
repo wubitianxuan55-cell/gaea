@@ -154,7 +154,7 @@ export function AutonomousFeed({ expanded: initialExpanded }: { expanded?: boole
             <AnimatePresence>
               {allItems.length === 0 ? (
                 <div className="text-center py-8 text-xs text-white/30">
-                  No autonomous tasks yet. Switch to autonomous mode and wait for Lumi to initiate work.
+                  No autonomous tasks yet. Switch to autonomous mode and wait for Gaea to initiate work.
                 </div>
               ) : (
                 allItems.map(task => (

@@ -119,7 +119,7 @@
         "api_key": {
           "type": "string",
           "description": "API key — store in env vars, never in config files",
-          "x-env-var": "LUMI_CLOUD_API_KEY"
+          "x-env-var": "GAEA_CLOUD_API_KEY"
         },
         "parameters": {
           "type": "object",

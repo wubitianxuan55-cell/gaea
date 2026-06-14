@@ -13,11 +13,8 @@ import { isCloudRetryable } from './retry';
 
 export const LLM_PRIORITY: Array<{ provider: string; label: string }> = [
   { provider: 'deepseek', label: 'DeepSeek' },
-  { provider: 'qwen', label: 'Qwen' },
-  { provider: 'openai', label: 'OpenAI' },
-  { provider: 'gemini', label: 'Gemini' },
-  { provider: 'anthropic', label: 'Anthropic' },
-  { provider: 'glm', label: 'GLM / 智谱' },
+  { provider: 'ollama', label: 'Ollama (local)' },
+  { provider: 'lmstudio', label: 'LM Studio (local)' },
 ];
 
 export const STT_PRIORITY: Array<{ provider: string; label: string }> = [

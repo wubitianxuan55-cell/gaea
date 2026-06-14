@@ -27,10 +27,12 @@ export interface ChainerResult {
 
 interface LlmGetters {
   getDeepSeek: () => any;
-  getGemini: () => any;
-  getOpenAI: () => any;
-  getAnthropic: () => any;
-  getQwen: () => any;
+  getGemini?: () => any;
+  getOpenAI?: () => any;
+  getAnthropic?: () => any;
+  getQwen?: () => any;
+  getOllama?: () => any;
+  getLmStudio?: () => any;
 }
 
 // Map from user intent domain to tool category filters

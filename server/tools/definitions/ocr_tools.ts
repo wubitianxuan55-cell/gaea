@@ -10,12 +10,12 @@ async function ocrScreen(args: Record<string, any>, context?: any): Promise<stri
 
   // Resolve vision-capable provider
   const g = context?.llmGetters || {};
-  const provider = g.getQwen?.() ? 'qwen' : g.getArk?.() ? 'ark' : g.getOpenAI?.() ? 'openai' : g.getGemini?.() ? 'gemini' : null;
+  const provider = g.getOllama?.() ? 'ollama' : g.getLmStudio?.() ? 'lmstudio' : null;
   if (!provider) {
-    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No vision-capable model key configured (OpenAI/Qwen/Ark/Gemini). Provide the key in Settings → API Matrix.' });
+    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No local vision model available. Start Ollama or LM Studio.' });
   }
 
-  const model = provider === 'qwen' ? 'qwen-vl-max' : provider === 'ark' ? 'doubao-1-5-vision-pro-32k' : provider === 'openai' ? 'gpt-4o' : 'gemini-2.0-flash';
+  const model = provider === 'ollama' ? 'llava' : 'minicpm-v';
   try {
     const description = await analyzeScreen(base64, query, { provider, model }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen, g.getOllama, g.getLmStudio, g.getArk);
     return description;
@@ -33,12 +33,12 @@ async function ocrRegion(args: Record<string, any>, context?: any): Promise<stri
   const base64 = await context.desktopRelay('desktop_capture_screen', { quality: 70 });
 
   const g = context?.llmGetters || {};
-  const provider = g.getQwen?.() ? 'qwen' : g.getArk?.() ? 'ark' : g.getOpenAI?.() ? 'openai' : g.getGemini?.() ? 'gemini' : null;
+  const provider = g.getOllama?.() ? 'ollama' : g.getLmStudio?.() ? 'lmstudio' : null;
   if (!provider) {
-    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No vision-capable model key configured.' });
+    return JSON.stringify({ format: 'screenshot_base64', data: base64, note: 'No local vision model available. Start Ollama or LM Studio.' });
   }
 
-  const model = provider === 'qwen' ? 'qwen-vl-max' : provider === 'ark' ? 'doubao-1-5-vision-pro-32k' : provider === 'openai' ? 'gpt-4o' : 'gemini-2.0-flash';
+  const model = provider === 'ollama' ? 'llava' : 'minicpm-v';
   try {
     const description = await analyzeScreen(base64, query, { provider, model }, g.getDeepSeek, g.getGemini, g.getOpenAI, g.getAnthropic, g.getQwen, g.getOllama, g.getLmStudio, g.getArk);
     return description;

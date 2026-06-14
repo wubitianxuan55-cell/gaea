@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Rocket, MessageSquare, Globe, Users, User as UserIcon, BookOpen, Zap, ChevronDown, Database, ShoppingBag, Cloud, Network, Smartphone, Laptop, Handshake, Building2, Smile, Settings as SettingsIcon, Briefcase } from 'lucide-react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { WorkModeSwitch } from './org/WorkModeSwitch';
 import { useApp } from '../contexts/AppContext';
 
 interface NavbarProps {
@@ -81,7 +80,7 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
           <Rocket className="text-white" size={16} />
         </div>
         <div className="flex flex-col -space-y-1">
-          <span className="text-sm font-black tracking-tight glow-text uppercase">{t.lumiKernel || 'Lumi Kernel'}</span>
+          <span className="text-sm font-black tracking-tight glow-text uppercase">{t.gaeaKernel || 'Gaea Kernel'}</span>
           <span className="text-xs font-bold text-white/40 tracking-widest">{t.stableVersion || 'STABLE v3.0.0'}</span>
         </div>
       </div>
@@ -202,13 +201,6 @@ export function Navbar({ user, onLogin, onLogout, activeTab, setActiveTab, lang,
 
         {user ? (
           <div className="flex items-center gap-3">
-            {orgConnection && (
-              <WorkModeSwitch
-                domain={workDomain}
-                onToggle={() => switchDomain(workDomain === 'personal' ? 'work' : 'personal')}
-                connected={orgConnection.connected}
-              />
-            )}
             <button
               onClick={() => setActiveTab('settings')}
               className={`p-2 rounded-full transition-all ${activeTab === 'settings' ? 'text-celestial-saturn bg-celestial-saturn/10' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}

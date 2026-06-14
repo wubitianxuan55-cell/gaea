@@ -79,7 +79,7 @@ export function mountMcpRoutes(router: Router) {
         {
           headers: {
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'LumiOS-MCP-Browser',
+            'User-Agent': 'Gaea-MCP-Browser',
             ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
           },
         }
@@ -112,7 +112,7 @@ export function mountMcpRoutes(router: Router) {
         {
           headers: {
             'Accept': 'application/json',
-            'User-Agent': 'LumiOS-MCP-Browser',
+            'User-Agent': 'Gaea-MCP-Browser',
           },
         }
       );

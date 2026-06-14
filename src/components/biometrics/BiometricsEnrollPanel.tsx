@@ -250,7 +250,7 @@ export function BiometricsEnrollPanel() {
         <div>
           <p className="text-xs text-white/60">
             {voiceprints.length === 0 && faces.length === 0
-              ? '尚未录入生物特征 — 录入后可防止 Lumi 响应陌生人'
+              ? '尚未录入生物特征 — 录入后可防止 Gaea 响应陌生人'
               : `已录入 ${voiceprints.length} 组声纹 + ${faces.length} 组人脸`
             }
           </p>

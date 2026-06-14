@@ -93,7 +93,7 @@ export async function generateAutonomousTasks(
 
   if (contextParts.length === 0) return 0;
 
-  const prompt = `你是 Lumi 的后台自主任务规划器。根据用户当前的上下文，建议 1-3 个你可以自主完成的小任务。
+  const prompt = `你是 Gaea 的后台自主任务规划器。根据用户当前的上下文，建议 1-3 个你可以自主完成的小任务。
 
 要求：
 - 安全无害（不删除文件、不执行危险命令）
@@ -120,7 +120,7 @@ ${contextParts.join('\n')}
     const messages: NormalizedMessage[] = [{ role: 'user', content: prompt }];
     const result = await makeLLMCall(
       messages, [],
-      { provider: 'qwen', model: 'qwen-turbo', maxTokens: 500 },
+      { provider: 'deepseek', model: 'deepseek-chat', maxTokens: 500 },
       getters.getDeepSeek, getters.getGemini,
       getters.getOpenAI || (() => null),
       getters.getAnthropic || (() => null),

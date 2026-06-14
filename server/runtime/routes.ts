@@ -16,7 +16,6 @@ import { mountSkillRoutes } from "../routes/skill_routes";
 import { mountMarketplaceRoutes } from "../routes/marketplace_routes";
 import { mountMiscRoutes } from "../routes/misc_routes";
 import { mountContactsRoutes } from "../routes/contacts_routes";
-import { mountBranchConnectionRoutes } from "../routes/branch_routes";
 import { mountNotificationRoutes } from "../routes/notifications";
 import { mountCanvasRoutes } from "../routes/canvas_routes";
 import { autonomyRoutes } from "../routes/autonomy_routes";
@@ -26,14 +25,22 @@ interface RouteContext {
   apiRouter: Router;
   jwtSecret: string;
   llm: {
-    getDeepSeek: any; getGemini: any; getOpenAI: any; getAnthropic: any; getQwen: any; getArk: any; getGlm: any;
+    getDeepSeek: any; getOllama: any; isOllamaAvailable: any; getLmStudio: any; isLmStudioAvailable: any;
   };
   getCookieOptions: () => { httpOnly: true; secure: true; sameSite: "none"; maxAge: number };
   io: Server;
 }
 
 export function mountAllRoutes({ apiRouter, jwtSecret, llm, getCookieOptions, io }: RouteContext) {
-  const llmGetters = { getDeepSeek: llm.getDeepSeek, getGemini: llm.getGemini, getOpenAI: llm.getOpenAI, getAnthropic: llm.getAnthropic, getQwen: llm.getQwen, getArk: llm.getArk, getGlm: llm.getGlm };
+  const llmGetters = {
+    getDeepSeek: llm.getDeepSeek,
+    getGemini: () => null,
+    getOpenAI: () => null,
+    getAnthropic: () => null,
+    getQwen: () => null,
+    getOllama: llm.getOllama,
+    getLmStudio: llm.getLmStudio,
+  };
 
   // Personality, MCP, Device management
   mountPersonalityRoutes(apiRouter, jwtSecret, llmGetters);
@@ -66,9 +73,6 @@ export function mountAllRoutes({ apiRouter, jwtSecret, llm, getCookieOptions, io
 
   // Contacts
   mountContactsRoutes(apiRouter, jwtSecret);
-
-  // Branch connection (employee→company)
-  mountBranchConnectionRoutes(apiRouter, jwtSecret);
 
   // Notifications
   mountNotificationRoutes(apiRouter);

@@ -1,4 +1,4 @@
-# 🧠 Lumi Local ↔ Cloud Switching Plan
+# 🧠 Gaea Local ↔ Cloud Switching Plan
 ## *The Art of Knowing Where to Think*
 
 ---
@@ -14,7 +14,7 @@ Your nervous system doesn't think with just one brain. It has:
 | **Cortex** | Local forebrain | ~50ms | Reason, plan, create |
 | **Global mind** | Cloud / tribe | ~500ms | Collective memory, culture, wisdom |
 
-**Lumi's architecture mirrors this.** Local models are your spinal cord and cerebellum — fast, private, always-on. Cloud models are your connection to the global mind — vast, wise, evolving.
+**Gaea's architecture mirrors this.** Local models are your spinal cord and cerebellum — fast, private, always-on. Cloud models are your connection to the global mind — vast, wise, evolving.
 
 The switching system is *metacognition* — the brain deciding *which brain to use*.
 
@@ -173,8 +173,8 @@ This prevents the "thrashing" problem — switching back and forth too rapidly.
 
 | Provider | How It Works |
 |----------|-------------|
-| `env` | Read from environment variables (e.g., `LUMI_CLOUD_API_KEY`) |
-| `file` | Read from a protected file (`.lumi_secrets`) with 600 permissions |
+| `env` | Read from environment variables (e.g., `GAEA_CLOUD_API_KEY`) |
+| `file` | Read from a protected file (`.gaea_secrets`) with 600 permissions |
 | `vault` | HashiCorp Vault integration |
 | `aws_secrets` | AWS Secrets Manager |
 | `azure_keyvault` | Azure Key Vault |

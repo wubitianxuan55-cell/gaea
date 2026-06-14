@@ -112,7 +112,7 @@ export async function executeNextAutonomousTask(
     };
 
     const messages = [
-      { role: 'system' as const, content: `You are Lumi executing an autonomous background task. You work independently without user interaction. Be efficient and direct. Current task mode: ${task.mode}.` },
+      { role: 'system' as const, content: `You are Gaea executing an autonomous background task. You work independently without user interaction. Be efficient and direct. Current task mode: ${task.mode}.` },
       { role: 'user' as const, content: task.description },
     ];
 
@@ -120,7 +120,7 @@ export async function executeNextAutonomousTask(
       messages,
       toolRegistry,
       {
-        provider: 'qwen',
+        provider: 'deepseek',
         model: 'qwen-plus',
         maxTokens: 2000,
         userId: task.userId,

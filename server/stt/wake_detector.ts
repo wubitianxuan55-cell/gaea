@@ -9,12 +9,12 @@ import { getVoicePreference } from '../config/voice_preference';
 const WAKE_WORDS = [
   'Jarvis', 'jarvis', '贾维斯',
   '计算机', '电脑',
-  'lumi', 'Lumi', 'LUMI',
+  'gaea', 'Gaea', 'GAEA',
   '卢米', '路米', '鲁米', '露米',
-  // "嘿 Lumi" + common ASR misrecognition variants
-  '嘿 Lumi', '嘿 lumi', '嘿lumi', 'hey lumi', 'Hey Lumi', 'Hey lumi',
+  // "嘿 Gaea" + common ASR misrecognition variants
+  '嘿 Gaea', '嘿 gaea', '嘿gaea', 'hey gaea', 'Hey Gaea', 'Hey gaea',
   '黑卢米', '嘿路米', '黑鲁米', '嘿卢米', '黑路米', '嗨卢米', '嗨路米',
-  'hi lumi', 'Hi Lumi', 'hi Lumi', '黑 lumi', '嗨 lumi',
+  'hi gaea', 'Hi Gaea', 'hi Gaea', '黑 gaea', '嗨 gaea',
   'hi 卢米', 'hi 路米', 'hey 卢米', 'hey 路米',
   '嘿 卢米', '嘿 路米', '嗨 卢米', '嗨 路米',
   // 豆包 + common ASR variants

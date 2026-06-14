@@ -8,7 +8,7 @@ async function agentCreate(args: Record<string, any>, _context?: any): Promise<s
   const category = (args.category || 'general').trim().toLowerCase();
   const skillTags: string[] = Array.isArray(args.skillTags) ? args.skillTags : [];
   const description = (args.description || '').trim();
-  const executionMode = args.executionMode || 'lumi';
+  const executionMode = args.executionMode || 'gaea';
   const modelPreference = args.model || 'qwen-plus';
   const knowledgeDomains: string[] = Array.isArray(args.knowledgeDomains) ? args.knowledgeDomains : [];
   const autonomyLevel = args.autonomyLevel || 'reactive';
@@ -97,7 +97,7 @@ async function agentTerminate(args: Record<string, any>, _context?: any): Promis
     if (!db.agents) db.agents = [];
 
     if (terminateAll) {
-      const BUILTINS = ['lumi', 'lumi_default', 'scholar_default', 'founder_default', 'incubated'];
+      const BUILTINS = ['gaea', 'gaea_default', 'scholar_default', 'founder_default', 'incubated'];
       const activeAgents = db.agents.filter((a: any) => a.status === 'active' && !BUILTINS.includes(a.id));
       if (activeAgents.length === 0) {
         return 'No active agents to terminate (built-in agents excluded).';
@@ -147,7 +147,7 @@ export function registerAgentTools(registry: ToolRegistry): void {
   registry.register({
     name: 'agent_create',
     description:
-      'Create a new permanent worker agent for Lumi\'s swarm. Use this when the user asks you to make a helper, specialist, or worker for a recurring task. The agent becomes an active member of the hive — it can be assigned sub-tasks by the orchestrator and appears in the user\'s agent list.',
+      'Create a new permanent worker agent for Gaea\'s swarm. Use this when the user asks you to make a helper, specialist, or worker for a recurring task. The agent becomes an active member of the hive — it can be assigned sub-tasks by the orchestrator and appears in the user\'s agent list.',
     parameters: {
       type: 'object',
       properties: {
@@ -155,7 +155,7 @@ export function registerAgentTools(registry: ToolRegistry): void {
         category: { type: 'string', description: 'The general domain: coding, writing, research, data, media, automation, etc.' },
         skillTags: { type: 'array', items: { type: 'string' }, description: 'Specific skill tags for task matching (e.g. ["python", "data-analysis"])' },
         description: { type: 'string', description: 'What this agent specializes in — used as its internal config' },
-        executionMode: { type: 'string', description: 'Thinking mode: lumi (default), scholar, founder, or zen' },
+        executionMode: { type: 'string', description: 'Thinking mode: gaea (default), scholar, founder, or zen' },
         model: { type: 'string', description: 'Preferred LLM model (default: qwen-plus)' },
         knowledgeDomains: { type: 'array', items: { type: 'string' }, description: 'Knowledge domains for RAG routing' },
         autonomyLevel: { type: 'string', description: 'reactive (on-demand only), scheduled (periodic checks), or autonomous (self-triggering)' },
@@ -172,7 +172,7 @@ export function registerAgentTools(registry: ToolRegistry): void {
   registry.register({
     name: 'agent_list',
     description:
-      'List all active worker agents in Lumi\'s swarm. Use this to show the user what agents currently exist, their skills, and status.',
+      `List all active worker agents in Gaea's swarm. Use this to show the user what agents currently exist, their skills, and status.`,
     parameters: {
       type: 'object',
       properties: {},

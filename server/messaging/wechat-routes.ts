@@ -121,7 +121,7 @@ function startWeChatPolling(
 
 // Simplified AI reply via available LLM — avoids code duplication with the main messaging pipeline
 
-const DEFAULT_SYSTEM_PROMPT = `你是一个名为 Lumi 的 AI 助手，通过微信与用户交流。保持回复简洁、温暖、有帮助。用中文回复。`;
+const DEFAULT_SYSTEM_PROMPT = `你是一个名为 Gaea 的 AI 助手，通过微信与用户交流。保持回复简洁、温暖、有帮助。用中文回复。`;
 
 async function processWeChatMessage(
   msg: { userId: string; text: string },

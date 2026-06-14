@@ -16,13 +16,10 @@ export interface DispatchConfig {
 
 interface LLMGetters {
   getDeepSeek: () => any;
-  getGemini: () => any;
-  getOpenAI: () => any;
-  getAnthropic: () => any;
-  getQwen: () => any;
   getOllama: () => any;
   getLmStudio?: () => any;
   isOllamaAvailable: () => boolean;
+  isLmStudioAvailable?: () => boolean;
 }
 
 /**
@@ -46,7 +43,7 @@ async function tryLocal(
       messages,
       toolDeclarations,
       { provider: 'ollama', model: localModel, maxTokens: config.maxTokens, userId: config.userId },
-      getters.getDeepSeek, getters.getGemini, getters.getOpenAI, getters.getAnthropic, getters.getQwen, getters.getOllama, getters.getLmStudio,
+      getters.getDeepSeek, getters.getOllama, getters.getLmStudio,
     );
     if (result.text || result.toolCalls) return result;
     // Empty response — fallback
@@ -84,7 +81,7 @@ export async function dispatchLLMCall(
     messages,
     toolDeclarations,
     { provider: provider as any, model, maxTokens: config.maxTokens, userId: config.userId },
-    getters.getDeepSeek, getters.getGemini, getters.getOpenAI, getters.getAnthropic, getters.getQwen, getters.getOllama, getters.getLmStudio,
+    getters.getDeepSeek, getters.getOllama, getters.getLmStudio,
   );
 
   return { ...cloudResult, tier: 'cloud' };
@@ -123,7 +120,7 @@ export async function dispatchLLMCallStreaming(
     toolDeclarations,
     { provider: provider as any, model, maxTokens: config.maxTokens, userId: config.userId, signal: config.signal },
     onChunk,
-    getters.getDeepSeek, getters.getGemini, getters.getOpenAI, getters.getAnthropic, getters.getQwen, getters.getOllama, getters.getLmStudio,
+    getters.getDeepSeek, getters.getOllama, getters.getLmStudio,
   );
 
   return { ...cloudResult, tier: 'cloud' };

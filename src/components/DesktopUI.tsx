@@ -76,9 +76,6 @@ import { DesktopOnboarding } from './DesktopOnboarding';
 import { DeviceSyncCenter } from './DeviceSyncCenter';
 import { AgentChatPage } from './AgentChatPage';
 import { CanvasWorkbench } from './Workbench/CanvasWorkbench';
-import { OrgHub } from './org/OrgHub';
-import { OrgPortal } from './OrgPortal';
-import { WorkModeSwitch } from './org/WorkModeSwitch';
 import { Sanctuary } from './Sanctuary';
 import { MemoryAvatarLab } from './MemoryAvatarLab';
 import { AvatarStudio } from './AvatarStudio';
@@ -126,7 +123,7 @@ interface NativeFile {
 
 declare global {
   interface Window {
-    lumiElectron?: {
+    gaeaElectron?: {
       getSystemInfo: () => Promise<{ platform: string; hostname: string; freeMemory: number }>;
       listHomeFiles: () => Promise<NativeFile[]>;
       selectDirectory: () => Promise<string | null>;
@@ -473,7 +470,7 @@ function ControlCenter({ isOpen, onClose, t, brightness, setBrightness, volume, 
       </div>
       
       <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between font-sans">
-        <span className="text-xs font-bold text-white/45 tracking-widest uppercase">{t.desktopVersion || 'Lumi OS v3.0.0'}</span>
+        <span className="text-xs font-bold text-white/45 tracking-widest uppercase">{t.desktopVersion || 'Gaea OS v3.0.0'}</span>
         <button onClick={onClose} className="text-xs font-black text-celestial-saturn hover:underline uppercase tracking-widest">{t.closeNexus || 'Close Nexus'}</button>
       </div>
     </motion.div>
@@ -761,7 +758,7 @@ function Spotlight({ isOpen, onClose, onSelect, apps, t }: { isOpen: boolean; on
           <Search size={24} className="text-white/40" />
           <input 
             autoFocus
-            placeholder={t.searchNeuralHub || "Search Lumi Neural Hub..."}
+            placeholder={t.searchNeuralHub || "Search Gaea Neural Hub..."}
             className="flex-1 bg-transparent border-none outline-none text-xl font-bold text-white placeholder:text-white/45"
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -930,7 +927,7 @@ export function DesktopUI({
   const [sanctuaryOpen, setSanctuaryOpen] = useState(false);
   const [sanctuaryAgent, setSanctuaryAgent] = useState<any>(null);
   const [petReaction, setPetReaction] = useState<{ animation: string; until: number } | null>(null);
-  const [activePersonality, setActivePersonality] = useState('lumi');
+  const [activePersonality, setActivePersonality] = useState('gaea');
   const petReactionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerPetReaction = (animation: string, ms: number = 1500) => {
@@ -942,13 +939,13 @@ export function DesktopUI({
   const [memoryLabOpen, setMemoryLabOpen] = useState(false);
   const [equippedAccessories, setEquippedAccessories] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('lumi_accessories');
+      const saved = localStorage.getItem('gaea_accessories');
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
   const [selectedPet, setSelectedPet] = useState<PetConfig | null>(() => {
     try {
-      const saved = localStorage.getItem('lumi_selected_pet');
+      const saved = localStorage.getItem('gaea_selected_pet');
       if (saved) {
         const parsed = JSON.parse(saved);
         // Rehydrate spritesheet from defaults if possible
@@ -964,11 +961,11 @@ export function DesktopUI({
   // Ref to prevent echoing our own preference changes back via socket
   const petPrefsSavingRef = useRef(false);
   const savePetPrefsToServer = useCallback(async (pet: PetConfig | null, accessories: string[]) => {
-    localStorage.setItem('lumi_accessories', JSON.stringify(accessories));
+    localStorage.setItem('gaea_accessories', JSON.stringify(accessories));
     if (pet) {
-      localStorage.setItem('lumi_selected_pet', JSON.stringify({ id: pet.id, name: pet.name, author: pet.author }));
+      localStorage.setItem('gaea_selected_pet', JSON.stringify({ id: pet.id, name: pet.name, author: pet.author }));
     } else {
-      localStorage.removeItem('lumi_selected_pet');
+      localStorage.removeItem('gaea_selected_pet');
     }
     petPrefsSavingRef.current = true;
     try {
@@ -1000,10 +997,10 @@ export function DesktopUI({
   const [isWallpaperMode, setIsWallpaperMode] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>(() => {
-    try { return JSON.parse(localStorage.getItem('lumi_icon_positions') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('gaea_icon_positions') || '{}'); } catch { return {}; }
   });
-  const [wallpaper, setWallpaper] = useState<string>(() => localStorage.getItem('lumi_wallpaper_type') || 'celestial');
-  const [wallpaperUrl, setWallpaperUrl] = useState<string>(() => localStorage.getItem('lumi_wallpaper_url') || '');
+  const [wallpaper, setWallpaper] = useState<string>(() => localStorage.getItem('gaea_wallpaper_type') || 'celestial');
+  const [wallpaperUrl, setWallpaperUrl] = useState<string>(() => localStorage.getItem('gaea_wallpaper_url') || '');
   const wallpaperInputRef = React.useRef<HTMLInputElement>(null);
 
   // Desktop icon layout: absolute positioning, 4 columns, fixed spacing
@@ -1029,8 +1026,8 @@ export function DesktopUI({
       const url = reader.result as string;
       setWallpaperUrl(url);
       setWallpaper('custom');
-      localStorage.setItem('lumi_wallpaper_type', 'custom');
-      localStorage.setItem('lumi_wallpaper_url', url);
+      localStorage.setItem('gaea_wallpaper_type', 'custom');
+      localStorage.setItem('gaea_wallpaper_url', url);
     };
     reader.readAsDataURL(file);
   };
@@ -1056,7 +1053,7 @@ export function DesktopUI({
 
   const [isTrainingOpen, setIsTrainingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    return localStorage.getItem('lumi_onboarding_seen') !== 'true';
+    return localStorage.getItem('gaea_onboarding_seen') !== 'true';
   });
   const [mcpActivities, setMcpActivities] = useState<Array<{
     id: string; device: string; action: string; status: string;
@@ -1081,15 +1078,15 @@ export function DesktopUI({
   useEffect(() => { canvasOpenRef.current = canvasOpen; }, [canvasOpen]);
   // Wake word detection — server-side Qwen ASR (DASHSCOPE_API_KEY), falls back to Picovoice
   // Default off — user must explicitly enable in Settings to avoid continuous ASR charges
-  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('lumi_wake_word_enabled') === 'true');
+  const [wakeEnabled, setWakeEnabled] = useState(() => localStorage.getItem('gaea_wake_word_enabled') === 'true');
   const wakeWord = useWakeWord({
     socket,
     startCallRef,
     enabled: wakeEnabled,
-    keyword: 'Lumi',
+    keyword: 'Gaea',
     voiceId: selectedVoiceId,
-    personalityId: 'lumi',
-    agentId: 'lumi',
+    personalityId: 'gaea',
+    agentId: 'gaea',
     onDetection: () => sounds.playWakeChime(),
     isCallActive: () => callState !== 'idle',
     onInterrupt: () => interrupt(),
@@ -1142,19 +1139,18 @@ export function DesktopUI({
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.tab) {
-        // Anyone can open the org tab — join/create/connect handled by OrgPortal
         setActiveTab(detail.tab);
       }
     };
-    window.addEventListener('lumi:navigate', handler);
-    return () => window.removeEventListener('lumi:navigate', handler);
+    window.addEventListener('gaea:navigate', handler);
+    return () => window.removeEventListener('gaea:navigate', handler);
   }, [setActiveTab, isOrgAdmin]);
 
   // Listen for Memory Avatar Lab open request from AgentGenerator
   useEffect(() => {
     const handler = () => openMemoryAvatar();
-    window.addEventListener('lumi:open-memory-lab', handler);
-    return () => window.removeEventListener('lumi:open-memory-lab', handler);
+    window.addEventListener('gaea:open-memory-lab', handler);
+    return () => window.removeEventListener('gaea:open-memory-lab', handler);
   }, []);
 
   // Restore real system volume/brightness on mount
@@ -1304,7 +1300,7 @@ export function DesktopUI({
                taskId === 'evening_wrapup' ? 'Evening Wrap-up' :
                taskId === 'reminder_check' ? 'Reminder' :
                taskId === 'memory_decay' ? 'Memory' :
-               taskId === 'behavioral_analysis' ? 'Insight' : 'Lumi',
+               taskId === 'behavioral_analysis' ? 'Insight' : 'Gaea',
         message: data.message,
       });
       // Trigger pet reaction
@@ -1332,15 +1328,15 @@ export function DesktopUI({
           const found = defaults.find(d => d.id === pet.id);
           if (found || pet?.atlas) {
             setSelectedPet(found || pet);
-            localStorage.setItem('lumi_selected_pet', JSON.stringify(pet));
+            localStorage.setItem('gaea_selected_pet', JSON.stringify(pet));
           }
         } else {
           setSelectedPet(null);
-          localStorage.removeItem('lumi_selected_pet');
+          localStorage.removeItem('gaea_selected_pet');
         }
         if (accessories) {
           setEquippedAccessories(accessories);
-          localStorage.setItem('lumi_accessories', JSON.stringify(accessories));
+          localStorage.setItem('gaea_accessories', JSON.stringify(accessories));
         }
         toast.info('桌面形象已从另一设备同步');
       }
@@ -1353,7 +1349,7 @@ export function DesktopUI({
       toast.info(msg, { duration: 5000 });
     };
     const onAgentNotification = (data: { type: string; level: string; message: string }) => {
-      addNotification({ type: data.level === 'critical' ? 'warning' : data.level === 'warning' ? 'warning' : 'info', title: data.type || 'Lumi', message: data.message });
+      addNotification({ type: data.level === 'critical' ? 'warning' : data.level === 'warning' ? 'warning' : 'info', title: data.type || 'Gaea', message: data.message });
       if (data.level === 'critical') {
         toast.error(data.message, { duration: 10000 });
       } else if (data.level === 'warning') {
@@ -1422,11 +1418,11 @@ export function DesktopUI({
             if (found || data.pet?.atlas) {
               setSelectedPet(found || data.pet);
             }
-            localStorage.setItem('lumi_selected_pet', JSON.stringify(data.pet));
+            localStorage.setItem('gaea_selected_pet', JSON.stringify(data.pet));
           }
           if (data.accessories?.length > 0) {
             setEquippedAccessories(data.accessories);
-            localStorage.setItem('lumi_accessories', JSON.stringify(data.accessories));
+            localStorage.setItem('gaea_accessories', JSON.stringify(data.accessories));
           }
         }
       } catch {}
@@ -1461,10 +1457,10 @@ export function DesktopUI({
         const cs = callStateRef.current;
         if (cs === 'speaking') {
           interrupt();
-          startCall(selectedVoiceId, 'lumi', 'lumi');
+          startCall(selectedVoiceId, 'gaea', 'gaea');
           isSpacebarRecording.current = true;
         } else if (cs === 'idle') {
-          startCall(selectedVoiceId, 'lumi', 'lumi');
+          startCall(selectedVoiceId, 'gaea', 'gaea');
           isSpacebarRecording.current = true;
         }
       }
@@ -1584,8 +1580,8 @@ export function DesktopUI({
       case 'reset_wallpaper':
         setWallpaper('celestial');
         setWallpaperUrl('');
-        localStorage.removeItem('lumi_wallpaper_type');
-        localStorage.removeItem('lumi_wallpaper_url');
+        localStorage.removeItem('gaea_wallpaper_type');
+        localStorage.removeItem('gaea_wallpaper_url');
         break;
       case 'display_settings':
         toggleWindow('settings');
@@ -1847,7 +1843,7 @@ export function DesktopUI({
                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-celestial-mars to-celestial-saturn flex items-center justify-center p-1 group-hover:rotate-12 transition-transform shadow-lg shadow-celestial-saturn/20">
                  <Rocket size={14} className="text-white" />
                </div>
-               <span className="text-xs font-black tracking-widest uppercase text-white/60">{t.lumiOS || 'Lumi OS'}</span>
+               <span className="text-xs font-black tracking-widest uppercase text-white/60">{t.gaeaOS || 'Gaea OS'}</span>
             </button>
             <div className="h-4 w-px bg-white/10" />
             <div className="flex gap-4">
@@ -1877,12 +1873,6 @@ export function DesktopUI({
               </TopMenuButton>
             </div>
           </div>
-
-          {orgConnection?.connected && (
-            <div className="flex items-center justify-center">
-              <WorkModeSwitch domain={workDomain} onToggle={() => switchDomain(workDomain === 'personal' ? 'work' : 'personal')} connected={orgConnection.connected} />
-            </div>
-          )}
 
           <div className="flex items-center gap-6 flex-1 justify-end">
             <div className="flex items-center gap-4 text-white/55">
@@ -2207,7 +2197,7 @@ export function DesktopUI({
               </div>
               {wakeWord.isListening && callState === 'idle' && (
                 <div className="mt-2 text-xs text-white/45 uppercase tracking-[0.25em] font-mono">
-                  Listening for &ldquo;Lumi&rdquo;
+                  Listening for &ldquo;Gaea&rdquo;
                 </div>
               )}
               {wakeWord.error && (
@@ -2233,7 +2223,7 @@ export function DesktopUI({
               >
                  <div className="flex flex-col items-center gap-1 group">
                    <span className="text-xs font-black tracking-[0.4em] text-white/40 uppercase group-hover:text-celestial-saturn transition-colors">
-                     {callState === 'idle' ? (t.lumiNeuralCore || 'Lumi Neural Core') : `${callState.toUpperCase()} ${t.sessionActive || 'SESSION'}`}
+                     {callState === 'idle' ? (t.gaeaNeuralCore || 'Gaea Neural Core') : `${callState.toUpperCase()} ${t.sessionActive || 'SESSION'}`}
                    </span>
                    <div className="flex gap-1">
                      {callState !== 'idle' ? (
@@ -2305,7 +2295,7 @@ export function DesktopUI({
                       const ny = defaultY + info.offset.y;
                       const newPos = { ...iconPositions, [def.id]: { x: nx, y: ny } };
                       setIconPositions(newPos);
-                      localStorage.setItem('lumi_icon_positions', JSON.stringify(newPos));
+                      localStorage.setItem('gaea_icon_positions', JSON.stringify(newPos));
                     }}
                     onContextMenu={(e: React.MouseEvent) => {
                       if (editMode) return;
@@ -2388,7 +2378,7 @@ export function DesktopUI({
         </div>
       </div>
 
-      {/* MCP Live Activity — xiaozhi ⇄ Lumi */}
+      {/* MCP Live Activity — xiaozhi ⇄ Gaea */}
       <AnimatePresence>
         {showMcpPanel && mcpActivities.length > 0 && (
           <motion.div
@@ -2400,7 +2390,7 @@ export function DesktopUI({
             <GlassCard className="p-4 rounded-2xl border-white/10 bg-black/70 backdrop-blur-2xl space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[12px] font-black text-white/40 uppercase tracking-widest">{t.liveDeviceLabel || 'Live'} · xiaozhi ⇄ Lumi</span>
+                <span className="text-[12px] font-black text-white/40 uppercase tracking-widest">{t.liveDeviceLabel || 'Live'} · xiaozhi ⇄ Gaea</span>
               </div>
               <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
                 {mcpActivities.slice(0, 5).map((act) => (
@@ -2435,14 +2425,14 @@ export function DesktopUI({
           isOpen={showOnboarding} 
           onFinish={() => {
             setShowOnboarding(false);
-            localStorage.setItem('lumi_onboarding_seen', 'true');
+            localStorage.setItem('gaea_onboarding_seen', 'true');
           }}
           t={t}
         />
         <VoiceTrainingDialog 
           isOpen={isTrainingOpen} 
           onClose={() => setIsTrainingOpen(false)} 
-          onSuccess={() => window.dispatchEvent(new CustomEvent('lumi:voice-updated'))}
+          onSuccess={() => window.dispatchEvent(new CustomEvent('gaea:voice-updated'))}
         />
         <AnimatePresence>
           {openWindows.map(windowId => {
@@ -2586,20 +2576,6 @@ export function DesktopUI({
       />
 
       {/* Org Workbench fullscreen overlay — available to all logged-in users */}
-      <AnimatePresence>
-        {activeTab === 'org' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[220] bg-celestial-deep overflow-auto"
-          >
-            <OrgPortal onBack={() => setActiveTab('home')} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Sanctuary — fullscreen immersive memory avatar space */}
       <Sanctuary
         agent={sanctuaryAgent}

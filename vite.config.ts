@@ -28,8 +28,7 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         input: {
-          web: 'index.html',
-          org: 'index.org.html',
+          main: 'index.html',
         },
         output: {
           manualChunks(id: string) {

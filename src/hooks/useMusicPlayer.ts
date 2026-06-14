@@ -42,7 +42,7 @@ export interface MusicAtmosphere {
   track: MusicTrack;
   mood: string;
   weather?: string;
-  lumiReason?: string;
+  gaeaReason?: string;
   audioUrl?: string;
   lyrics?: MusicLyricLine[];
   scene?: MusicScene;
@@ -56,7 +56,7 @@ export interface MusicPlayerState {
   volume: number;
   mood: string;
   weather?: string;
-  lumiReason?: string;
+  gaeaReason?: string;
   lyrics: MusicLyricLine[];
   scene: MusicScene | null;
   visible: boolean;
@@ -74,7 +74,7 @@ export function useMusicPlayer() {
     volume: 70,
     mood: 'peaceful',
     weather: undefined,
-    lumiReason: undefined,
+    gaeaReason: undefined,
     lyrics: [],
     scene: null,
     visible: false,
@@ -112,7 +112,7 @@ export function useMusicPlayer() {
         track: data.track,
         mood: data.mood,
         weather: data.weather,
-        lumiReason: data.lumiReason,
+        gaeaReason: data.gaeaReason,
         lyrics: data.lyrics || [],
         scene: data.scene || null,
         visible: true,

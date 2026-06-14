@@ -102,278 +102,24 @@ export function parseDeepSeekResponse(rawResponse: any): NormalizedLLMResponse {
   return { text, toolCalls: null, reasoningContent, usage };
 }
 
-// ── Gemini ──
-
-export function formatGeminiRequest(params: {
-  model: string;
-  messages: NormalizedMessage[];
-  toolDeclarations: ToolDeclaration[];
-  maxTokens?: number;
-}): {
-  modelConfig: { model: string; systemInstruction?: string; tools?: Array<{ functionDeclarations: any[] }> };
-  contents: Array<{ role: string; parts: any[] }>;
-} {
-  // Extract system message for Gemini's separate systemInstruction param
-  let systemInstruction: string | undefined;
-  const nonSystemMessages = params.messages.filter(m => {
-    if (m.role === 'system' && m.content) {
-      systemInstruction = m.content as string;
-      return false;
-    }
-    return true;
-  });
-
-  // Convert messages to Gemini contents format
-  const contents: Array<{ role: string; parts: any[] }> = [];
-
-  for (const m of nonSystemMessages) {
-    if (m.role === 'tool') {
-      // Tool results become user messages with functionResponse
-      const prevContent = contents.length > 0 ? contents[contents.length - 1] : null;
-      if (prevContent && prevContent.role === 'model') {
-        // Append functionResponse to a new user message
-        contents.push({
-          role: 'user',
-          parts: [{
-            functionResponse: {
-              name: m.name || '',
-              response: { content: m.content || '' },
-            },
-          }],
-        });
-      } else {
-        contents.push({
-          role: 'user',
-          parts: [{
-            functionResponse: {
-              name: m.name || '',
-              response: { content: m.content || '' },
-            },
-          }],
-        });
-      }
-      continue;
-    }
-
-    if (m.role === 'assistant') {
-      const parts: any[] = [];
-      if (m.content) {
-        parts.push({ text: m.content });
-      }
-      if (m.toolCalls) {
-        for (const tc of m.toolCalls) {
-          parts.push({
-            functionCall: {
-              name: tc.name,
-              args: tc.arguments,
-            },
-          });
-        }
-      }
-      contents.push({ role: 'model', parts });
-      continue;
-    }
-
-    // user messages
-    contents.push({
-      role: 'user',
-      parts: [{ text: m.content || '' }],
-    });
-  }
-
-  const hasTools = params.toolDeclarations.length > 0;
-
-  const modelConfig: any = { model: params.model };
-  if (systemInstruction) modelConfig.systemInstruction = systemInstruction;
-  if (hasTools) {
-    modelConfig.tools = [{
-      functionDeclarations: params.toolDeclarations.map(td => ({
-        name: td.function.name,
-        description: td.function.description,
-        parameters: td.function.parameters,
-      })),
-    }];
-  }
-
-  return { modelConfig, contents };
-}
-
-export function parseGeminiResponse(rawResponse: any): NormalizedLLMResponse {
-  const candidate = rawResponse.candidates?.[0];
-  if (!candidate) return { text: null, toolCalls: null };
-
-  const parts = candidate.content?.parts || [];
-  const textParts: string[] = [];
-  const toolCalls: ParsedToolCall[] = [];
-
-  for (const part of parts) {
-    if (part.text) {
-      textParts.push(part.text);
-    }
-    if (part.functionCall) {
-      toolCalls.push({
-        id: `gemini-${Date.now()}-${toolCalls.length}`,
-        name: part.functionCall.name || '',
-        arguments: part.functionCall.args || {},
-      });
-    }
-  }
-
-  return {
-    text: textParts.length > 0 ? textParts.join('\n') : null,
-    toolCalls: toolCalls.length > 0 ? toolCalls : null,
-    usage: extractUsage(rawResponse),
-  };
-}
-
-// ── OpenAI (same API format as DeepSeek) ──
-
-export const formatOpenAIRequest = formatDeepSeekRequest;
-export const parseOpenAIResponse = parseDeepSeekResponse;
-
-// ── Qwen / DashScope (OpenAI-compatible API) ──
-
-export function formatQwenRequest(params: {
-  model: string;
-  messages: NormalizedMessage[];
-  toolDeclarations: ToolDeclaration[];
-  maxTokens?: number;
-  userId?: string;
-}): {
-  model: string;
-  messages: Array<{ role: string; content: MessageContent; tool_calls?: any; tool_call_id?: string }>;
-  tools?: ToolDeclaration[];
-  tool_choice?: string;
-  max_tokens?: number;
-} {
-  const openaiMessages = params.messages.map(m => {
-    const roleMap: Record<string, string> = { assistant: 'assistant', tool: 'tool', system: 'system' };
-    const entry: any = { role: roleMap[m.role] || 'user' };
-    if (m.content !== null) entry.content = m.content;
-    if (m.reasoningContent) entry.reasoning_content = m.reasoningContent;
-    if (m.toolCalls) {
-      entry.tool_calls = m.toolCalls.map(tc => ({
-        id: tc.id,
-        type: 'function',
-        function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-      }));
-    }
-    if (m.toolCallId) entry.tool_call_id = m.toolCallId;
-    if (m.name) entry.name = m.name;
-    return entry;
-  });
-
-  const hasTools = params.toolDeclarations.length > 0;
-
-  return {
-    model: params.model,
-    messages: openaiMessages,
-    ...(hasTools ? { tools: params.toolDeclarations, tool_choice: 'auto' } : {}),
-    ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
-    // DashScope does not support the OpenAI `user` parameter — omit it
-  };
-}
-
-// ── Anthropic ──
-
-export function formatAnthropicRequest(params: {
-  model: string;
-  messages: NormalizedMessage[];
-  toolDeclarations: ToolDeclaration[];
-  maxTokens?: number;
-}): { model: string; max_tokens: number; system?: string; messages: any[]; tools?: any[] } {
-  // Extract system message to top-level
-  let system: string | undefined;
-  const nonSystem = params.messages.filter(m => {
-    if (m.role === 'system' && m.content) {
-      system = m.content as string;
-      return false;
-    }
-    return true;
-  });
-
-  const anthropicMessages: any[] = [];
-
-  for (const m of nonSystem) {
-    if (m.role === 'tool') {
-      anthropicMessages.push({
-        role: 'user',
-        content: [{ type: 'tool_result', tool_use_id: m.toolCallId, content: m.content || '' }],
-      });
-    } else if (m.role === 'assistant') {
-      const content: any[] = [];
-      if (m.content) content.push({ type: 'text', text: m.content });
-      if (m.toolCalls) {
-        for (const tc of m.toolCalls) {
-          content.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.arguments });
-        }
-      }
-      anthropicMessages.push({ role: 'assistant', content });
-    } else {
-      anthropicMessages.push({ role: 'user', content: m.content || '' });
-    }
-  }
-
-  const hasTools = params.toolDeclarations.length > 0;
-  const tools = hasTools
-    ? params.toolDeclarations.map(td => ({
-        name: td.function.name,
-        description: td.function.description,
-        input_schema: td.function.parameters,
-      }))
-    : undefined;
-
-  return {
-    model: params.model,
-    max_tokens: params.maxTokens || 4096,
-    ...(system ? { system } : {}),
-    messages: anthropicMessages,
-    ...(tools ? { tools } : {}),
-  };
-}
-
-export function parseAnthropicResponse(rawResponse: any): NormalizedLLMResponse {
-  const content = rawResponse.content || [];
-  const textParts: string[] = [];
-  const toolCalls: ParsedToolCall[] = [];
-
-  for (const block of content) {
-    if (block.type === 'text' && block.text) {
-      textParts.push(block.text);
-    }
-    if (block.type === 'tool_use') {
-      toolCalls.push({
-        id: block.id,
-        name: block.name,
-        arguments: block.input || {},
-      });
-    }
-  }
-
-  return {
-    text: textParts.length > 0 ? textParts.join('\n') : null,
-    toolCalls: toolCalls.length > 0 ? toolCalls : null,
-    usage: extractUsage(rawResponse),
-  };
-}
-
 // ── LLM Call Router ──
 
 export async function makeLLMCall(
   messages: NormalizedMessage[],
   toolDeclarations: ToolDeclaration[],
-  config: { provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen' | 'ark' | 'ollama' | 'lmstudio' | 'xiaomi' | 'kimi' | 'glm' | 'relay' | 'auto'; model: string; maxTokens?: number; userId?: string },  getDeepSeek: () => any,
-  getGemini: () => any,
-  getOpenAI?: () => any,
-  getAnthropic?: () => any,
-  getQwen?: () => any,
+  config: { provider: string; model: string; maxTokens?: number; userId?: string },
+  getDeepSeek: () => any,
+  _getGemini?: () => any,
+  _getOpenAI?: () => any,
+  _getAnthropic?: () => any,
+  _getQwen?: () => any,
   getOllama?: () => any,
   getLmStudio?: () => any,
-  getArk?: () => any,
-  getXiaomi?: () => any,
-  getKimi?: () => any,
-  getGlm?: () => any,
-  getRelay?: () => any,
+  _getArk?: () => any,
+  _getXiaomi?: () => any,
+  _getKimi?: () => any,
+  _getGlm?: () => any,
+  _getRelay?: () => any,
 ): Promise<NormalizedLLMResponse> {
   // ── Privacy gate: strict mode blocks cloud providers ──
   // Reasoning models need high token budget — their CoT eats into max_tokens
@@ -384,8 +130,6 @@ export async function makeLLMCall(
   if (isStrictPrivacy()) {
     if (config.provider === 'auto') {
       // In strict mode, auto routes to local-only dispatch
-      const { dispatchLLMCall } = await import('./dispatch');
-      const localGetters = { getDeepSeek, getGemini, getOpenAI: getOpenAI || (() => null), getAnthropic: getAnthropic || (() => null), getQwen: getQwen || (() => null), getArk: getArk || (() => null), getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
       if (getOllama?.()) {
         try {
           const req = formatDeepSeekRequest({ model: 'llama3.2', messages, toolDeclarations, maxTokens: maxTokens, userId: config.userId });
@@ -394,14 +138,14 @@ export async function makeLLMCall(
             () => client.chat.completions.create(req),
             { provider: 'ollama', maxRetries: 1 }
           );
-          return parseOpenAIResponse(res);
+          return parseDeepSeekResponse(res);
         } catch {
           if (getLmStudio?.()) {
             try {
               const req = formatDeepSeekRequest({ model: config.model, messages, toolDeclarations, maxTokens: maxTokens, userId: config.userId });
               const client = getLmStudio();
               const res = await client.chat.completions.create(req);
-              return parseOpenAIResponse(res);
+              return parseDeepSeekResponse(res);
             } catch {}
           }
           throw new Error('[Privacy] Strict mode: no local LLM available. Start Ollama or LM Studio.');
@@ -411,7 +155,7 @@ export async function makeLLMCall(
         const req = formatDeepSeekRequest({ model: config.model, messages, toolDeclarations, maxTokens: maxTokens, userId: config.userId });
         const client = getLmStudio();
         const res = await client.chat.completions.create(req);
-        return parseOpenAIResponse(res);
+        return parseDeepSeekResponse(res);
       }
       throw new Error('[Privacy] Strict mode: no local LLM provider available. Set up Ollama or LM Studio.');
     }
@@ -421,27 +165,20 @@ export async function makeLLMCall(
   // ── Auto/hybrid dispatch: local Ollama → cloud DeepSeek fallback ──
   if (config.provider === 'auto' && getOllama) {
     const { dispatchLLMCall } = await import('./dispatch');
-    const getters = { getDeepSeek, getGemini, getOpenAI: getOpenAI || (() => null), getAnthropic: getAnthropic || (() => null), getQwen: getQwen || (() => null), getArk: getArk || (() => null), getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
+    const getters = { getDeepSeek, getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
     const result = await dispatchLLMCall(messages, toolDeclarations, { provider: 'deepseek', model: 'deepseek-chat', maxTokens: maxTokens, userId: config.userId }, getters);
     return { text: result.text, toolCalls: result.toolCalls, usage: result.usage };
   }
 
-  // OpenAI-compatible path: DeepSeek, Qwen, Ark, Ollama, LM Studio
-  if (config.provider === 'deepseek' || config.provider === 'qwen' || config.provider === 'ark' || config.provider === 'ollama' || config.provider === 'lmstudio' || config.provider === 'xiaomi' || config.provider === 'kimi' || config.provider === 'glm' || config.provider === 'relay') {
+  // OpenAI-compatible path: DeepSeek, Ollama, LM Studio
+  if (config.provider === 'deepseek' || config.provider === 'ollama' || config.provider === 'lmstudio') {
     const client = config.provider === 'deepseek' ? getDeepSeek()
-      : config.provider === 'qwen' ? getQwen?.()
-      : config.provider === 'ark' ? getArk?.()
       : config.provider === 'lmstudio' ? getLmStudio?.()
-      : config.provider === 'xiaomi' ? getXiaomi?.()
-      : config.provider === 'kimi' ? getKimi?.()
-      : config.provider === 'glm' ? getGlm?.()
-      : config.provider === 'relay' ? getRelay?.()
       : getOllama?.();
     if (!client) throw new Error(`${config.provider} not configured`);
 
-    const fmt = config.provider === 'qwen' ? formatQwenRequest : formatDeepSeekRequest;
     const isLocal = config.provider === 'ollama' || config.provider === 'lmstudio';
-    const params = fmt({
+    const params = formatDeepSeekRequest({
       model: config.model,
       messages,
       toolDeclarations,
@@ -454,62 +191,6 @@ export async function makeLLMCall(
       { provider: config.provider, model: config.model },
     );
     return parseDeepSeekResponse(response);
-  }
-
-  if (config.provider === 'gemini') {
-    const client = getGemini();
-    if (!client) throw new Error('Gemini not configured (GEMINI_API_KEY missing)');
-
-    const { modelConfig, contents } = formatGeminiRequest({
-      model: config.model,
-      messages,
-      toolDeclarations,
-      maxTokens: maxTokens,
-    });
-
-    const modelInstance = client.getGenerativeModel(modelConfig);
-    const result = await withCloudResilience(
-      () => modelInstance.generateContent({ contents }),
-      { provider: 'gemini', model: config.model },
-    );
-    return parseGeminiResponse(result);
-  }
-
-  if (config.provider === 'openai') {
-    const client = getOpenAI?.();
-    if (!client) throw new Error('OpenAI not configured (OPENAI_API_KEY missing)');
-
-    const params = formatOpenAIRequest({
-      model: config.model,
-      messages,
-      toolDeclarations,
-      maxTokens: maxTokens,
-      userId: config.userId,
-    });
-
-    const response = await withCloudResilience(
-      () => client.chat.completions.create(params),
-      { provider: 'openai', model: config.model },
-    );
-    return parseOpenAIResponse(response);
-  }
-
-  if (config.provider === 'anthropic') {
-    const client = getAnthropic?.();
-    if (!client) throw new Error('Anthropic not configured (ANTHROPIC_API_KEY missing)');
-
-    const params = formatAnthropicRequest({
-      model: config.model,
-      messages,
-      toolDeclarations,
-      maxTokens: maxTokens,
-    });
-
-    const response = await withCloudResilience(
-      () => client.messages.create(params),
-      { provider: 'anthropic', model: config.model },
-    );
-    return parseAnthropicResponse(response);
   }
 
   throw new Error(`Unsupported provider: ${config.provider}`);
@@ -526,20 +207,20 @@ function isReasoningModel(model: string): boolean {
 export async function makeLLMCallStreaming(
   messages: NormalizedMessage[],
   toolDeclarations: ToolDeclaration[],
-  config: { provider: 'deepseek' | 'gemini' | 'openai' | 'anthropic' | 'qwen' | 'ark' | 'ollama' | 'lmstudio' | 'xiaomi' | 'kimi' | 'glm' | 'relay' | 'auto'; model: string; maxTokens?: number; userId?: string; signal?: AbortSignal },
+  config: { provider: string; model: string; maxTokens?: number; userId?: string; signal?: AbortSignal },
   onChunk: StreamCallback,
   getDeepSeek: () => any,
-  getGemini: () => any,
-  getOpenAI?: () => any,
-  getAnthropic?: () => any,
-  getQwen?: () => any,
+  _getGemini?: () => any,
+  _getOpenAI?: () => any,
+  _getAnthropic?: () => any,
+  _getQwen?: () => any,
   getOllama?: () => any,
   getLmStudio?: () => any,
-  getArk?: () => any,
-  getXiaomi?: () => any,
-  getKimi?: () => any,
-  getGlm?: () => any,
-  getRelay?: () => any,
+  _getArk?: () => any,
+  _getXiaomi?: () => any,
+  _getKimi?: () => any,
+  _getGlm?: () => any,
+  _getRelay?: () => any,
 ): Promise<NormalizedLLMResponse> {
   // ── Privacy gate ──
   if (isStrictPrivacy() && config.provider !== 'auto') {
@@ -554,28 +235,20 @@ export async function makeLLMCallStreaming(
   // ── Auto/hybrid dispatch: local Ollama → cloud DeepSeek fallback ──
   if (config.provider === 'auto' && getOllama) {
     const { dispatchLLMCallStreaming } = await import('./dispatch');
-    const getters = { getDeepSeek, getGemini, getOpenAI: getOpenAI || (() => null), getAnthropic: getAnthropic || (() => null), getQwen: getQwen || (() => null), getArk: getArk || (() => null), getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
+    const getters = { getDeepSeek, getOllama, isOllamaAvailable: () => !!getOllama?.(), getLmStudio, isLmStudioAvailable: () => !!getLmStudio?.() };
     const result = await dispatchLLMCallStreaming(messages, toolDeclarations, { provider: 'deepseek', model: 'deepseek-chat', maxTokens: maxTokens, userId: config.userId, signal: config.signal }, onChunk, getters);
     return { text: result.text, toolCalls: result.toolCalls, usage: result.usage };
   }
 
-  // ── DeepSeek / OpenAI / Qwen / Ark / Ollama / LM Studio (OpenAI-compatible streaming) ──
-  if (config.provider === 'deepseek' || config.provider === 'openai' || config.provider === 'qwen' || config.provider === 'ark' || config.provider === 'ollama' || config.provider === 'lmstudio' || config.provider === 'xiaomi' || config.provider === 'kimi' || config.provider === 'glm' || config.provider === 'relay') {
+  // ── DeepSeek / Ollama / LM Studio (OpenAI-compatible streaming) ──
+  if (config.provider === 'deepseek' || config.provider === 'ollama' || config.provider === 'lmstudio') {
     const client = config.provider === 'deepseek' ? getDeepSeek()
-      : config.provider === 'openai' ? getOpenAI?.()
-      : config.provider === 'qwen' ? getQwen?.()
-      : config.provider === 'ark' ? getArk?.()
       : config.provider === 'lmstudio' ? getLmStudio?.()
-      : config.provider === 'xiaomi' ? getXiaomi?.()
-      : config.provider === 'kimi' ? getKimi?.()
-      : config.provider === 'glm' ? getGlm?.()
-      : config.provider === 'relay' ? getRelay?.()
       : getOllama?.();
     if (!client) throw new Error(`${config.provider} not configured`);
 
-    const fmt = config.provider === 'qwen' ? formatQwenRequest : formatDeepSeekRequest;
     const isLocal = config.provider === 'ollama' || config.provider === 'lmstudio';
-    const params: any = fmt({
+    const params: any = formatDeepSeekRequest({
       model: config.model,
       messages,
       toolDeclarations,
@@ -636,123 +309,6 @@ export async function makeLLMCallStreaming(
       return { text, toolCalls, reasoningContent, usage };
     }
     return { text, toolCalls: null, reasoningContent, usage };
-  }
-
-  // ── Gemini streaming ──
-  if (config.provider === 'gemini') {
-    const client = getGemini();
-    if (!client) throw new Error('Gemini not configured (GEMINI_API_KEY missing)');
-
-    const { modelConfig, contents } = formatGeminiRequest({
-      model: config.model,
-      messages,
-      toolDeclarations,
-      maxTokens: maxTokens,
-    });
-
-    const modelInstance = client.getGenerativeModel(modelConfig);
-    const result: any = await withCloudResilience(
-      () => modelInstance.generateContentStream({ contents }),
-      { provider: 'gemini', model: config.model },
-    );
-
-    const accumulatedText: string[] = [];
-    const toolCalls: ParsedToolCall[] = [];
-
-    for await (const chunk of result.stream) {
-      const text = chunk.text();
-      if (text) {
-        accumulatedText.push(text);
-        onChunk(text);
-      }
-      const calls = chunk.functionCalls();
-      if (calls) {
-        for (let i = 0; i < calls.length; i++) {
-          toolCalls.push({
-            id: `gemini-${Date.now()}-${toolCalls.length}`,
-            name: calls[i].name || '',
-            arguments: calls[i].args || {},
-          });
-        }
-      }
-    }
-
-    // Also check the aggregated response for function calls + usage
-    const aggregated = await result.response;
-    const parsed = parseGeminiResponse(aggregated);
-
-    return {
-      text: accumulatedText.length > 0 ? accumulatedText.join('') : parsed.text,
-      toolCalls: parsed.toolCalls && parsed.toolCalls.length > 0 ? parsed.toolCalls : (toolCalls.length > 0 ? toolCalls : null),
-      usage: parsed.usage,
-    };
-  }
-
-  // ── Anthropic streaming ──
-  if (config.provider === 'anthropic') {
-    const client = getAnthropic?.();
-    if (!client) throw new Error('Anthropic not configured (ANTHROPIC_API_KEY missing)');
-
-    const params = formatAnthropicRequest({
-      model: config.model,
-      messages,
-      toolDeclarations,
-      maxTokens: maxTokens,
-    });
-
-    const stream: any = await withCloudResilience(
-      () => client.messages.stream(params),
-      { provider: 'anthropic', model: config.model },
-    );
-
-    const textParts: string[] = [];
-    const toolCalls: ParsedToolCall[] = [];
-    // Accumulate tool_use blocks during stream (not just from finalMessage)
-    const toolUseAccumulators: Map<string, { id: string; name: string; args: Record<string, any> }> = new Map();
-
-    for await (const event of stream) {
-      if (event.type === 'text' && event.text) {
-        textParts.push(event.text);
-        onChunk(event.text);
-      }
-      if (event.type === 'content_block_start' && (event as any).content_block?.type === 'tool_use') {
-        const block = (event as any).content_block;
-        toolUseAccumulators.set(block.id, { id: block.id, name: block.name, args: {} });
-      }
-      if (event.type === 'content_block_delta' && (event as any).delta?.type === 'input_json_delta') {
-        const delta = (event as any).delta;
-        // Partial JSON — accumulate for complete parse at end
-        const acc = [...toolUseAccumulators.values()].find(a => !a.name || Object.keys(a.args).length === 0);
-        if (acc) {
-          try { acc.args = { ...acc.args, ...JSON.parse(delta.partial_json || '{}') }; } catch {}
-        }
-      }
-    }
-
-    // Get final message for complete tool use blocks + usage
-    const finalMessage = await stream.finalMessage();
-    // Prefer stream-accumulated tool calls; fall back to finalMessage blocks
-    if (toolUseAccumulators.size > 0) {
-      for (const acc of toolUseAccumulators.values()) {
-        toolCalls.push({ id: acc.id, name: acc.name, arguments: acc.args });
-      }
-    } else {
-      for (const block of finalMessage.content) {
-        if (block.type === 'tool_use') {
-          toolCalls.push({
-            id: block.id,
-            name: block.name,
-            arguments: block.input || {},
-          });
-        }
-      }
-    }
-
-    return {
-      text: textParts.length > 0 ? textParts.join('') : null,
-      toolCalls: toolCalls.length > 0 ? toolCalls : null,
-      usage: extractUsage(finalMessage),
-    };
   }
 
   throw new Error(`Unsupported streaming provider: ${config.provider}`);

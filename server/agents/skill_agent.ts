@@ -2,7 +2,7 @@
  * Auto-create a team agent when a skill is installed.
  *
  * Layer 1 of the two-layer design:
- *   Skill install → team agent created → Lumi can dispatch tasks to it
+ *   Skill install → team agent created → Gaea can dispatch tasks to it
  *
  * Each installed skill becomes a named agent visible in the Skill Hall team tab.
  * The orchestrator's matchWorkers() finds them by skillTag overlap.
@@ -46,13 +46,13 @@ export function createAgentForSkill(
       data: '{}',
       createdAt: new Date().toISOString(),
       status: 'active',
-      personalityId: 'lumi',
+      personalityId: 'gaea',
       modelPreference: '',
       memoryScope: 'shared',
       autonomyLevel: 'reactive',
       runtimeConfig: '{}',
       skillTags: tags,
-      executionMode: 'lumi',
+      executionMode: 'gaea',
       allowCrossPollination: true,
       territory: 'open',
       runtime,

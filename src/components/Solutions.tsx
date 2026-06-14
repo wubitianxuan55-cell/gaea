@@ -16,8 +16,8 @@ export function Solutions({ t }: { t: any }) {
     {
       id: 'org',
       title: t.orgSolutions,
-      subtitle: t.lumiNexusTitle,
-      desc: t.lumiNexusDesc,
+      subtitle: t.gaeaNexusTitle,
+      desc: t.gaeaNexusDesc,
       icon: <Building2 size={40} className="text-celestial-saturn" />,
       features: [
         { title: t.orgGrade, desc: t.highAvailability },
@@ -29,8 +29,8 @@ export function Solutions({ t }: { t: any }) {
     {
       id: 'industrial',
       title: t.industrialSolutions,
-      subtitle: t.lumiIndustrialTitle,
-      desc: t.lumiIndustrialDesc,
+      subtitle: t.gaeaIndustrialTitle,
+      desc: t.gaeaIndustrialDesc,
       icon: <Factory size={40} className="text-celestial-mars" />,
       features: [
         { title: t.edgeIntelligence, desc: t.subMillisecond },
@@ -42,8 +42,8 @@ export function Solutions({ t }: { t: any }) {
     {
       id: 'institutional',
       title: t.institutionalSolutions,
-      subtitle: t.lumiSanctuaryTitle,
-      desc: t.lumiSanctuaryDesc,
+      subtitle: t.gaeaSanctuaryTitle,
+      desc: t.gaeaSanctuaryDesc,
       icon: <Landmark size={40} className="text-celestial-glow" />,
       features: [
         { title: t.federatedLearning, desc: t.collabTraining },
@@ -63,7 +63,7 @@ export function Solutions({ t }: { t: any }) {
           animate={{ opacity: 1, y: 0 }}
           className="inline-block px-4 py-1.5 rounded-full bg-celestial-saturn/10 border border-celestial-saturn/20 text-celestial-saturn text-xs font-bold uppercase tracking-widest"
         >
-          {t.lumiForOrgs}
+          {t.gaeaForOrgs}
         </motion.div>
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
@@ -169,7 +169,7 @@ export function Solutions({ t }: { t: any }) {
             <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto group-hover:border-celestial-saturn/50 transition-colors">
               <Server className="text-celestial-saturn" />
             </div>
-            <h4 className="text-xl font-bold">{t.lumiCoreRack}</h4>
+            <h4 className="text-xl font-bold">{t.gaeaCoreRack}</h4>
             <p className="text-sm text-white/40">{t.rackUnits}</p>
           </div>
           <div className="space-y-4">

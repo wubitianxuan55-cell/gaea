@@ -37,7 +37,7 @@ interface UseWakeWordReturn {
   disable: () => void;
 }
 
-const PICOVOICE_ACCESS_KEY_STORAGE = 'lumi_picovoice_key';
+const PICOVOICE_ACCESS_KEY_STORAGE = 'gaea_picovoice_key';
 
 export function useWakeWord({
   socket,

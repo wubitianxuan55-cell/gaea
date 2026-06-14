@@ -68,7 +68,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
           setConfig(data[0]);
         }
       })
-      .catch(() => toast.error(t?.failedToLoadPersonalities || 'Failed to load Lumi config'))
+      .catch(() => toast.error(t?.failedToLoadPersonalities || 'Failed to load Gaea config'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -77,7 +77,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex items-center gap-3">
           <User className="text-celestial-saturn" />
-          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.lumiCore || 'Lumi Core Config'}</h3>
+          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.gaeaCore || 'Gaea Core Config'}</h3>
         </div>
         <p className="text-white/40 text-sm">{t?.loadingPersonalities || 'Loading...'}</p>
       </div>
@@ -89,7 +89,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex items-center gap-3">
           <User className="text-celestial-saturn" />
-          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.lumiCore || 'Lumi Core Config'}</h3>
+          <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.gaeaCore || 'Gaea Core Config'}</h3>
         </div>
         <p className="text-white/40 text-sm">{t?.noPersonalitiesDefined || 'No configuration found.'}</p>
       </div>
@@ -101,7 +101,7 @@ export function PersonalityEditor({ t }: { t?: any }) {
       {/* Tab bar */}
       <div className="flex items-center gap-1 p-1 bg-white/5 rounded-xl border border-white/5">
         {[
-          { id: 'personality' as const, label: t?.lumiCore || 'Personality', icon: <User size={14} /> },
+          { id: 'personality' as const, label: t?.gaeaCore || 'Personality', icon: <User size={14} /> },
           { id: 'contacts' as const, label: t?.contacts || 'Contacts', icon: <Users size={14} /> },
         ].map(item => (
           <button
@@ -123,12 +123,12 @@ export function PersonalityEditor({ t }: { t?: any }) {
         <>
       <div className="flex items-center gap-3">
         <User className="text-celestial-saturn" />
-        <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.lumiCore || 'Lumi Core Config'}</h3>
+        <h3 className="text-xl font-bold uppercase tracking-tighter text-white/90">{t?.gaeaCore || 'Gaea Core Config'}</h3>
         <span className="text-xs font-mono text-white/45 bg-white/5 px-2 py-0.5 rounded-full">v{config.version}</span>
       </div>
 
       <p className="text-sm text-white/40 max-w-xl">
-        {t?.lumiCoreDesc || 'Lumi\'s core personality evolves organically through Hebbian learning from interactions. This view shows the current configuration — changes happen automatically, not through manual editing.'}
+        {t?.gaeaCoreDesc || 'Lumi\'s core personality evolves organically through Hebbian learning from interactions. This view shows the current configuration — changes happen automatically, not through manual editing.'}
       </p>
 
       <div className="space-y-4">

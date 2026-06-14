@@ -1,12 +1,12 @@
 import { readDB, writeDB } from "../../db_layer";
 
-export interface LumiPlan {
+export interface GaeaPlan {
   id: string;
   title: string;
   description: string;
   status: "active" | "paused" | "completed" | "cancelled";
   priority: "low" | "medium" | "high" | "critical";
-  source: "user" | "lumi" | "auto";
+  source: "user" | "gaea" | "auto";
   steps: PlanStep[];
   tags: string[];
   createdAt: string;
@@ -29,12 +29,12 @@ export interface PlanStep {
 export function createPlan(
   title: string,
   description: string,
-  source: "user" | "lumi" | "auto" = "lumi",
+  source: "user" | "gaea" | "auto" = "gaea",
   priority: "low" | "medium" | "high" | "critical" = "medium",
   steps: { title: string; description?: string }[] = [],
   tags: string[] = [],
-): LumiPlan {
-  const plan: LumiPlan = {
+): GaeaPlan {
+  const plan: GaeaPlan = {
     id: `plan_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     title,
     description,
@@ -61,9 +61,9 @@ export function createPlan(
   return plan;
 }
 
-export function updatePlan(id: string, updates: Partial<Pick<LumiPlan, "title" | "description" | "status" | "priority" | "tags" | "result">>): LumiPlan | null {
+export function updatePlan(id: string, updates: Partial<Pick<GaeaPlan, "title" | "description" | "status" | "priority" | "tags" | "result">>): GaeaPlan | null {
   const db = readDB();
-  const idx = ((db as any).plans || []).findIndex((p: LumiPlan) => p.id === id);
+  const idx = ((db as any).plans || []).findIndex((p: GaeaPlan) => p.id === id);
   if (idx === -1) return null;
 
   const plan = (db as any).plans[idx];
@@ -75,9 +75,9 @@ export function updatePlan(id: string, updates: Partial<Pick<LumiPlan, "title" |
   return plan;
 }
 
-export function updatePlanStep(planId: string, stepId: string, updates: Partial<Pick<PlanStep, "status" | "title" | "description" | "result">>): LumiPlan | null {
+export function updatePlanStep(planId: string, stepId: string, updates: Partial<Pick<PlanStep, "status" | "title" | "description" | "result">>): GaeaPlan | null {
   const db = readDB();
-  const plan = ((db as any).plans || []).find((p: LumiPlan) => p.id === planId);
+  const plan = ((db as any).plans || []).find((p: GaeaPlan) => p.id === planId);
   if (!plan) return null;
 
   const step = plan.steps.find((s: PlanStep) => s.id === stepId);
@@ -96,9 +96,9 @@ export function updatePlanStep(planId: string, stepId: string, updates: Partial<
   return plan;
 }
 
-export function listPlans(filter?: { status?: string; source?: string; limit?: number }): LumiPlan[] {
+export function listPlans(filter?: { status?: string; source?: string; limit?: number }): GaeaPlan[] {
   const db = readDB();
-  let plans: LumiPlan[] = (db as any).plans || [];
+  let plans: GaeaPlan[] = (db as any).plans || [];
 
   if (filter?.status) plans = plans.filter(p => p.status === filter.status);
   if (filter?.source) plans = plans.filter(p => p.source === filter.source);
@@ -112,14 +112,14 @@ export function listPlans(filter?: { status?: string; source?: string; limit?: n
   return filter?.limit ? plans.slice(0, filter.limit) : plans;
 }
 
-export function getPlan(id: string): LumiPlan | null {
+export function getPlan(id: string): GaeaPlan | null {
   const db = readDB();
-  return ((db as any).plans || []).find((p: LumiPlan) => p.id === id) || null;
+  return ((db as any).plans || []).find((p: GaeaPlan) => p.id === id) || null;
 }
 
 export function deletePlan(id: string): boolean {
   const db = readDB();
-  const idx = ((db as any).plans || []).findIndex((p: LumiPlan) => p.id === id);
+  const idx = ((db as any).plans || []).findIndex((p: GaeaPlan) => p.id === id);
   if (idx === -1) return false;
   (db as any).plans.splice(idx, 1);
   writeDB(db);

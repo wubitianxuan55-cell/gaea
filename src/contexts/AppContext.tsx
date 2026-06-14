@@ -97,15 +97,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
-    const saved = localStorage.getItem('lumi_ai_config');
+    const saved = localStorage.getItem('gaea_ai_config');
     return saved ? JSON.parse(saved) : { provider: 'deepseek', model: 'deepseek-chat', apiKey: '' };
   });
   // Voice state
   const [selectedVoiceId, setSelectedVoiceIdState] = useState<string | undefined>(() => {
-    return localStorage.getItem('lumi_selected_voice_id') || undefined;
+    return localStorage.getItem('gaea_selected_voice_id') || undefined;
   });
   const [favoriteVoices, setFavoriteVoices] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lumi_favorite_voices') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('gaea_favorite_voices') || '[]'); } catch { return []; }
   });
 
   // Notifications state
@@ -114,20 +114,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Tool overrides state
   const [toolOverrides, setToolOverrides] = useState<Record<string, ToolOverride>>(() => {
-    try { return JSON.parse(localStorage.getItem('lumi_tool_overrides') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('gaea_tool_overrides') || '{}'); } catch { return {}; }
   });
 
   // Org state
   const [orgConnection, setOrgConnection] = useState<OrgConnection | null>(() => {
-    try { return JSON.parse(localStorage.getItem('lumi_org_connection') || 'null'); } catch { return null; }
+    try { return JSON.parse(localStorage.getItem('gaea_org_connection') || 'null'); } catch { return null; }
   });
   const [workDomain, setWorkDomain] = useState<'personal' | 'work'>(() => {
-    try { return (localStorage.getItem('lumi_work_domain') as 'personal' | 'work') || 'personal'; } catch { return 'personal'; }
+    try { return (localStorage.getItem('gaea_work_domain') as 'personal' | 'work') || 'personal'; } catch { return 'personal'; }
   });
 
   const switchDomain = async (domain: 'personal' | 'work') => {
     setWorkDomain(domain);
-    localStorage.setItem('lumi_work_domain', domain);
+    localStorage.setItem('gaea_work_domain', domain);
     // Notify server to issue a JWT with the org context (or clear it for personal)
     try {
       const orgId = domain === 'work' ? (orgConnection?.orgId || null) : null;
@@ -143,19 +143,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Persist the updated org connection from server response
         if (data.connection) {
           setOrgConnection(data.connection);
-          localStorage.setItem('lumi_org_connection', JSON.stringify(data.connection));
+          localStorage.setItem('gaea_org_connection', JSON.stringify(data.connection));
         }
       }
     } catch {}
   };
 
   const [operationMode, setOperationModeState] = useState<'desktop_control' | 'terminal' | 'autonomous'>(() => {
-    try { return (localStorage.getItem('lumi_operation_mode') as any) || 'desktop_control'; } catch { return 'desktop_control'; }
+    try { return (localStorage.getItem('gaea_operation_mode') as any) || 'desktop_control'; } catch { return 'desktop_control'; }
   });
 
   const setOperationMode = async (mode: 'desktop_control' | 'terminal' | 'autonomous') => {
     setOperationModeState(mode);
-    localStorage.setItem('lumi_operation_mode', mode);
+    localStorage.setItem('gaea_operation_mode', mode);
     try {
       await fetch('/api/preferences/operation_mode', {
         method: 'PUT',
@@ -172,7 +172,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let resolved = { ...newConfig };
       if (newConfig.provider && !newConfig.model) {
         const savedModels = (() => {
-          try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+          try { return JSON.parse(localStorage.getItem('gaea_llm_models') || '{}'); } catch { return {}; }
         })();
         const defaults: Record<string, string> = {
           qwen: 'qwen-plus', deepseek: 'deepseek-chat', openai: 'gpt-4o',
@@ -181,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resolved.model = savedModels[newConfig.provider] || defaults[newConfig.provider] || '';
       }
       const updated = { ...prev, ...resolved };
-      localStorage.setItem('lumi_ai_config', JSON.stringify(updated));
+      localStorage.setItem('gaea_ai_config', JSON.stringify(updated));
 
       // Also sync apiKey to server so LLM/STT/TTS providers can read it
       if (updated.apiKey && updated.provider) {
@@ -205,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Sync LLM prefs (provider + per-provider models) to server for personality evolution
       if (updated.provider || updated.model) {
         const allModels = (() => {
-          try { return JSON.parse(localStorage.getItem('lumi_llm_models') || '{}'); } catch { return {}; }
+          try { return JSON.parse(localStorage.getItem('gaea_llm_models') || '{}'); } catch { return {}; }
         })();
         if (updated.model && updated.provider) {
           allModels[updated.provider] = updated.model;
@@ -232,7 +232,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (u?.orgId) {
           const conn: OrgConnection = { orgId: u.orgId, orgRole: u.orgRole || 'member', orgName: '', connected: true };
           setOrgConnection(conn);
-          localStorage.setItem('lumi_org_connection', JSON.stringify(conn));
+          localStorage.setItem('gaea_org_connection', JSON.stringify(conn));
         }
         try { setAgents(await agentService.listAgents()); } catch {}
         // Load persisted notifications from server
@@ -253,7 +253,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const serverOverrides = await toRes.json();
             if (serverOverrides && Object.keys(serverOverrides).length > 0) {
               setToolOverrides(serverOverrides);
-              localStorage.setItem('lumi_tool_overrides', JSON.stringify(serverOverrides));
+              localStorage.setItem('gaea_tool_overrides', JSON.stringify(serverOverrides));
             }
           }
         } catch {}
@@ -276,7 +276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const needsRebootstrap = !me || !(me.user as any)?.orgId;
         if (needsRebootstrap && !cancelled) {
           // Clear stale token so apiBridge sends fresh one after bootstrap
-          try { localStorage.removeItem('lumi_auth_token'); } catch {}
+          try { localStorage.removeItem('gaea_auth_token'); } catch {}
           let result = await authService.bootstrap();
           for (let retry = 0; !result.success && retry < 8 && !cancelled; retry++) {
             const delay = 500 + retry * 500; // 0.5s, 1s, 1.5s, ..., 4s
@@ -300,7 +300,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async () => {
-    window.dispatchEvent(new CustomEvent('lumi:open-login'));
+    window.dispatchEvent(new CustomEvent('gaea:open-login'));
   };
 
   const logout = async () => {
@@ -362,9 +362,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setSelectedVoiceId = (id: string, provider?: string) => {
     setSelectedVoiceIdState(id);
-    localStorage.setItem('lumi_selected_voice_id', id);
+    localStorage.setItem('gaea_selected_voice_id', id);
     if (provider) {
-      localStorage.setItem('lumi_selected_voice_provider', provider);
+      localStorage.setItem('gaea_selected_voice_provider', provider);
       // Auto-switch TTS provider to match the selected voice
       fetch('/api/voice/provider', {
         method: 'POST',
@@ -377,7 +377,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleFavoriteVoice = (id: string) => {
     setFavoriteVoices(prev => {
       const next = prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id];
-      localStorage.setItem('lumi_favorite_voices', JSON.stringify(next));
+      localStorage.setItem('gaea_favorite_voices', JSON.stringify(next));
       return next;
     });
   };
@@ -403,7 +403,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setToolOverride = (name: string, override: ToolOverride) => {
     setToolOverrides(prev => {
       const next = { ...prev, [name]: override };
-      localStorage.setItem('lumi_tool_overrides', JSON.stringify(next));
+      localStorage.setItem('gaea_tool_overrides', JSON.stringify(next));
       // Sync to server for tool registry awareness
       fetch('/api/settings', {
         method: 'POST',

@@ -13,12 +13,12 @@ export function SetupWizard({ onFinish }: Props) {
   const [step, setStep] = useState<Step>('detect');
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'available' | 'not-found'>('checking');
   const [ollamaUrl, setOllamaUrl] = useState(() => {
-    try { return localStorage.getItem('lumi_ollama_url') || 'http://localhost:11434'; } catch { return 'http://localhost:11434'; }
+    try { return localStorage.getItem('gaea_ollama_url') || 'http://localhost:11434'; } catch { return 'http://localhost:11434'; }
   });
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [lmstudioStatus, setLmstudioStatus] = useState<'checking' | 'available' | 'not-found'>('checking');
   const [lmstudioUrl, setLmstudioUrl] = useState(() => {
-    try { return localStorage.getItem('lumi_lmstudio_url') || 'http://localhost:1234'; } catch { return 'http://localhost:1234'; }
+    try { return localStorage.getItem('gaea_lmstudio_url') || 'http://localhost:1234'; } catch { return 'http://localhost:1234'; }
   });
   const [lmstudioModels, setLmstudioModels] = useState<string[]>([]);
   const [apiKey, setApiKey] = useState('');
@@ -68,7 +68,7 @@ export function SetupWizard({ onFinish }: Props) {
 
   const handleOllamaUrlChange = (url: string) => {
     setOllamaUrl(url);
-    localStorage.setItem('lumi_ollama_url', url);
+    localStorage.setItem('gaea_ollama_url', url);
     fetch('/api/ollama/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -79,7 +79,7 @@ export function SetupWizard({ onFinish }: Props) {
 
   const handleLmstudioUrlChange = (url: string) => {
     setLmstudioUrl(url);
-    localStorage.setItem('lumi_lmstudio_url', url);
+    localStorage.setItem('gaea_lmstudio_url', url);
     fetch('/api/lmstudio/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -122,7 +122,7 @@ export function SetupWizard({ onFinish }: Props) {
     fetch('/api/voice/synthesize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: 'Hello. Your Lumi OS is ready.', voiceId: 'default' }),
+      body: JSON.stringify({ text: 'Hello. Your Gaea OS is ready.', voiceId: 'default' }),
     }).then(r => {
       setVoiceStatus(r.ok ? 'ok' : 'failed');
     }).catch(() => {
@@ -161,7 +161,7 @@ export function SetupWizard({ onFinish }: Props) {
               {localAIReady
                 ? 'Local LLM detected. Your conversations will be fast, private, and free.'
                 : (localAINotDetected
-                  ? 'No local model found. You can still use Lumi with a cloud API key, or install a local AI runtime.'
+                  ? 'No local model found. You can still use Gaea with a cloud API key, or install a local AI runtime.'
                   : '')
               }
             </p>
@@ -238,7 +238,7 @@ export function SetupWizard({ onFinish }: Props) {
                 onClick={() => setStep(localAIReady ? 'voice-test' : 'api-setup')}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-2xl text-white font-semibold transition-all"
               >
-                {localAIReady ? 'Start Using Lumi' : 'Set Up Cloud API Key'}
+                {localAIReady ? 'Start Using Gaea' : 'Set Up Cloud API Key'}
                 <ArrowRight size={18} />
               </button>
             )}
@@ -256,7 +256,7 @@ export function SetupWizard({ onFinish }: Props) {
             <CheckCircle size={64} className="mx-auto text-green-400" />
             <h2 className="text-2xl font-bold text-white">You're All Set</h2>
             <p className="text-white/40 text-sm">
-              Lumi will use your local model for everyday conversations. For complex tasks, it will automatically fall back to the cloud.
+              Gaea will use your local model for everyday conversations. For complex tasks, it will automatically fall back to the cloud.
             </p>
             <button onClick={() => setStep('voice-test')} className="w-full px-6 py-4 bg-green-600 hover:bg-green-500 rounded-2xl text-white font-semibold transition-colors">
               Test Voice <Volume2 size={18} className="inline ml-2" />
@@ -329,7 +329,7 @@ export function SetupWizard({ onFinish }: Props) {
               className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-2xl text-white font-semibold transition-all"
             >
               <Sparkles size={18} />
-              Launch Lumi
+              Launch Gaea
             </button>
           </div>
         )}
@@ -340,7 +340,7 @@ export function SetupWizard({ onFinish }: Props) {
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
               <Sparkles size={64} className="mx-auto text-celestial-saturn" />
             </motion.div>
-            <h2 className="text-2xl font-bold text-white">Lumi is Ready</h2>
+            <h2 className="text-2xl font-bold text-white">Gaea is Ready</h2>
             <p className="text-white/40 text-sm">Your personal AI is live. Start talking — it will learn and grow with you.</p>
           </div>
         )}

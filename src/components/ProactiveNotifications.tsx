@@ -20,14 +20,14 @@ export function ProactiveNotifications() {
       const taskId = data.type || data.taskId || 'unknown';
 
       // Voice-appropriate proactive events: also trigger spoken output
-      const voiceTasks = new Set(['proactive_lumi_scan', 'greeting', 'daily_summary', 'evening_wrapup']);
-      if (voiceTasks.has(taskId) && localStorage.getItem('lumi_allow_proactive_voice') === 'true') {
+      const voiceTasks = new Set(['proactive_gaea_scan', 'greeting', 'daily_summary', 'evening_wrapup']);
+      if (voiceTasks.has(taskId) && localStorage.getItem('gaea_allow_proactive_voice') === 'true') {
         socket.emit('proactive:request_speak', { message: data.message });
       }
 
       switch (taskId) {
         case 'greeting':
-          addNotification({ type: 'system', title: t.notifLumi || 'Lumi', message: data.message });
+          addNotification({ type: 'system', title: t.notifGaea || 'Gaea', message: data.message });
           toast(data.message, { duration: 8000, id: `proactive-${data.timestamp}` });
           break;
         case 'reminder_check':

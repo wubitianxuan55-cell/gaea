@@ -9,7 +9,7 @@ interface MusicAtmosphere {
   track: { name: string; artists: string[]; album?: string; coverUrl?: string; duration?: number };
   mood: string;
   weather?: string;
-  lumiReason?: string;
+  gaeaReason?: string;
   audioUrl?: string;
   lyrics?: Array<{ time: number; text: string }>;
   scene?: import('../music/scene_generator').MusicScene;

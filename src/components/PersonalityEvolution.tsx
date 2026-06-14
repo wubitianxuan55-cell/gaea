@@ -96,7 +96,7 @@ function getGridPoints(cx: number, cy: number, radius: number): string {
   }).join(' ');
 }
 
-export function PersonalityEvolution({ personalityId = 'lumi' }: Props) {
+export function PersonalityEvolution({ personalityId = 'gaea' }: Props) {
   const t = useT();
   const DIM_LABELS: Record<string, string> = {
     analytical: t.dimAnalytical || '分析型',
@@ -132,7 +132,7 @@ export function PersonalityEvolution({ personalityId = 'lumi' }: Props) {
     if (!socket) return;
     const handler = (event: { personalityId: string; version: string; narrative: string; mutations: any[]; timestamp: string }) => {
       if (event.personalityId === personalityId) {
-        toast.success(`${t.lumiEvolvedTo || 'Lumi evolved to'} ${event.version}!`, {
+        toast.success(`${t.gaeaEvolvedTo || 'Gaea evolved to'} ${event.version}!`, {
           description: event.narrative?.slice(0, 100),
         });
         // Re-fetch to get the full updated state
@@ -209,7 +209,7 @@ export function PersonalityEvolution({ personalityId = 'lumi' }: Props) {
       {!hasHistory ? (
         <div className="flex flex-col items-center justify-center h-64 gap-4 text-white/45">
           <TrendingUp size={48} />
-          <p className="text-xs">{t.noEvolutionHistory || "No evolution history yet. Lumi's personality grows with you."}</p>
+          <p className="text-xs">{t.noEvolutionHistory || "No evolution history yet. Gaea's personality grows with you."}</p>
         </div>
       ) : (
         <div className="flex h-[calc(100%-65px)]">

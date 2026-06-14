@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    __LUMI_API_BRIDGE_INSTALLED__?: boolean;
+    __GAEA_API_BRIDGE_INSTALLED__?: boolean;
   }
 }
 
@@ -23,7 +23,7 @@ export function getSocketOrigin(): string {
 }
 
 export function installApiBridge(): void {
-  if (typeof window === 'undefined' || window.__LUMI_API_BRIDGE_INSTALLED__) return;
+  if (typeof window === 'undefined' || window.__GAEA_API_BRIDGE_INSTALLED__) return;
 
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
@@ -43,7 +43,7 @@ export function installApiBridge(): void {
 
       // WebView2 may not send httpOnly cookies — inject stored auth token as fallback
       try {
-        const storedToken = localStorage.getItem('lumi_auth_token');
+        const storedToken = localStorage.getItem('gaea_auth_token');
         if (storedToken) {
           patched.headers = {
             ...(patched.headers as Record<string, string> || {}),
@@ -60,5 +60,5 @@ export function installApiBridge(): void {
     return nativeFetch(input, init);
   };
 
-  window.__LUMI_API_BRIDGE_INSTALLED__ = true;
+  window.__GAEA_API_BRIDGE_INSTALLED__ = true;
 }

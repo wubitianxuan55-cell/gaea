@@ -1,23 +1,12 @@
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getKey } from "../config/keys";
 import { readDB } from "../../db_layer";
 
-let openai: OpenAI | null = null;
-let anthropic: Anthropic | null = null;
-let gemini: GoogleGenerativeAI | null = null;
 let deepseek: OpenAI | null = null;
-let qwen: OpenAI | null = null;
-let ark: OpenAI | null = null;
 let ollama: OpenAI | null = null;
 let ollamaDetected = false;
 let lmstudio: OpenAI | null = null;
 let lmstudioDetected = false;
-let xiaomi: OpenAI | null = null;
-let kimi: OpenAI | null = null;
-let glm: OpenAI | null = null;
-let relay: OpenAI | null = null;
 
 /** Read Ollama base URL from settings (user-configured) or env var */
 function getOllamaBaseUrl(): string {
@@ -46,45 +35,11 @@ function getLmStudioBaseUrl(): string {
 }
 
 export interface LLMClients {
-  getOpenAI: () => OpenAI | null;
-  getAnthropic: () => Anthropic | null;
-  getGemini: () => GoogleGenerativeAI | null;
   getDeepSeek: () => OpenAI | null;
-  getQwen: () => OpenAI | null;
-  getArk: () => OpenAI | null;
   getOllama: () => OpenAI | null;
   isOllamaAvailable: () => boolean;
   getLmStudio: () => OpenAI | null;
   isLmStudioAvailable: () => boolean;
-  getXiaomi: () => OpenAI | null;
-  getKimi: () => OpenAI | null;
-  getGlm: () => OpenAI | null;
-  getRelay: () => OpenAI | null;
-}
-
-function getOpenAI() {
-  const key = process.env.OPENAI_API_KEY || getKey('OPENAI_API_KEY');
-  if (!openai && key) {
-    openai = new OpenAI({ apiKey: key });
-  }
-  return openai;
-}
-
-function getAnthropic() {
-  const key = process.env.ANTHROPIC_API_KEY || getKey('ANTHROPIC_API_KEY');
-  if (!anthropic && key) {
-    anthropic = new Anthropic({ apiKey: key });
-  }
-  return anthropic;
-}
-
-function getGemini() {
-  if (!gemini) {
-    const key = process.env.GEMINI_API_KEY || getKey('GEMINI_API_KEY');
-    if (!key) return null;
-    gemini = new GoogleGenerativeAI(key);
-  }
-  return gemini;
 }
 
 function getDeepSeek() {
@@ -100,25 +55,7 @@ function getDeepSeek() {
   return deepseek;
 }
 
-function getQwen() {
-  const key = process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY
-    || getKey('QWEN_API_KEY') || getKey('DASHSCOPE_API_KEY');
-  if (!qwen && key) {
-    qwen = new OpenAI({ apiKey: key, baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1" });
-  }
-  return qwen;
-}
-
-function getArk() {
-  const key = process.env.ARK_API_KEY || getKey('ARK_API_KEY');
-  if (!ark && key) {
-    ark = new OpenAI({
-      apiKey: key,
-      baseURL: process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
-    });
-  }
-  return ark;
-}
+// Backward-compatible: removed cloud providers (DeepSeek-only)
 
 function getOllama() {
   if (!ollama && ollamaDetected) {
@@ -173,51 +110,6 @@ function isLmStudioAvailable() {
   return lmstudioDetected;
 }
 
-function getXiaomi() {
-  const key = process.env.XIAOMI_API_KEY || getKey('XIAOMI_API_KEY');
-  if (!xiaomi && key) {
-    xiaomi = new OpenAI({
-      apiKey: key,
-      baseURL: process.env.XIAOMI_BASE_URL || 'https://api.xiaomi.com/v1',
-    });
-  }
-  return xiaomi;
-}
-
-function getKimi() {
-  const key = process.env.KIMI_API_KEY || getKey('KIMI_API_KEY');
-  if (!kimi && key) {
-    kimi = new OpenAI({
-      apiKey: key,
-      baseURL: process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1',
-    });
-  }
-  return kimi;
-}
-
-function getGlm() {
-  const key = process.env.GLM_API_KEY || getKey('GLM_API_KEY');
-  if (!glm && key) {
-    glm = new OpenAI({
-      apiKey: key,
-      baseURL: process.env.GLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4',
-    });
-  }
-  return glm;
-}
-
-function getRelay() {
-  const key = process.env.RELAY_API_KEY || getKey('RELAY_API_KEY');
-  const baseUrl = process.env.RELAY_BASE_URL || getKey('RELAY_BASE_URL') || 'https://api.example.com/v1';
-  if (!relay && key) {
-    relay = new OpenAI({
-      apiKey: key,
-      baseURL: baseUrl,
-    });
-  }
-  return relay;
-}
-
 async function detectLmStudio(): Promise<boolean> {
   try {
     const baseUrl = getLmStudioBaseUrl();
@@ -241,5 +133,5 @@ export function createLLMRuntime(): LLMClients {
   // Fire-and-forget: detect local Ollama and LM Studio in background
   detectOllama();
   detectLmStudio();
-  return { getOpenAI, getAnthropic, getGemini, getDeepSeek, getQwen, getArk, getOllama, isOllamaAvailable, getLmStudio, isLmStudioAvailable, getXiaomi, getKimi, getGlm, getRelay };
+  return { getDeepSeek, getOllama, isOllamaAvailable, getLmStudio, isLmStudioAvailable };
 }

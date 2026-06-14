@@ -3,9 +3,8 @@ import { setLang } from './lib/useT';
 import * as authService from './services/authService';
 import { Navbar } from './components/Navbar';
 import { UnifiedAgent } from './components/UnifiedAgent';
-import { LumiEcosystem } from './components/LumiEcosystem';
+import { GaeaEcosystem } from './components/GaeaEcosystem';
 import { JoinUs } from './components/JoinUs';
-import { usePlatform } from './hooks/usePlatform';
 import { LandingSections } from './components/LandingSections';
 import { Footer } from './components/Footer';
 import { Profile } from './components/Profile';
@@ -20,7 +19,6 @@ import { Solutions } from './components/Solutions';
 import { FoundersSanctuary } from './components/FoundersSanctuary';
 import { LocalAgentSphere } from './components/LocalAgentSphere';
 import { FloatingAgent } from './components/FloatingAgent';
-import { OrgHub } from './components/org/OrgHub';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CursorGlow } from './components/CursorGlow';
 import { ProactiveNotifications } from './components/ProactiveNotifications';
@@ -32,22 +30,10 @@ import { translations } from './lib/translations';
 import { useApp } from './contexts/AppContext';
 import { LoginRequired, LoginModal } from './core/components/Auth';
 
-const WebPlatform = lazy(() => import('./platforms/web/WebPlatform').then(m => ({ default: m.WebPlatform })));
 const DesktopPlatform = lazy(() => import('./platforms/desktop/DesktopPlatform').then(m => ({ default: m.DesktopPlatform })));
-const MobilePlatform = lazy(() => import('./platforms/mobile/MobilePlatform').then(m => ({ default: m.MobilePlatform })));
 
 export default function App() {
   const { user, loading: appLoading, logout: appLogout, login: appLogin, refreshUser } = useApp();
-  const { isDesktop } = usePlatform();
-  const [uiMode, setUiMode] = useState<'web' | 'desktop' | 'mobile'>(() => {
-    return isDesktop ? 'desktop' : 'web';
-  });
-
-  useEffect(() => {
-    if (isDesktop) {
-      setUiMode('desktop');
-    }
-  }, [isDesktop]);
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -63,16 +49,12 @@ export default function App() {
   }, [lang]);
 
   useEffect(() => {
-    if (uiMode === 'desktop') {
-      document.body.classList.add('overflow-hidden');
-    } else {
-      document.body.classList.remove('overflow-hidden');
-    }
-  }, [uiMode]);
+    document.body.classList.add('overflow-hidden');
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [activeTab, uiMode]);
+  }, [activeTab]);
 
   const handleLogout = async () => {
     await appLogout();
@@ -88,8 +70,8 @@ export default function App() {
 
   useEffect(() => {
     const handler = () => setIsLoginModalOpen(true);
-    window.addEventListener('lumi:open-login', handler);
-    return () => window.removeEventListener('lumi:open-login', handler);
+    window.addEventListener('gaea:open-login', handler);
+    return () => window.removeEventListener('gaea:open-login', handler);
   }, []);
 
   if (appLoading) {
@@ -102,7 +84,7 @@ export default function App() {
         >
           <Rocket size={48} className="text-celestial-saturn" />
           <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-celestial-mars to-celestial-saturn">
-            {t.appInitializing || 'Lumi Core v2.0 Initializing...'}
+            {t.appInitializing || 'Gaea Core v2.0 Initializing...'}
           </div>
           <div className="text-xs text-white/20 font-mono uppercase tracking-widest">
             {t.validatingEthics}
@@ -122,7 +104,7 @@ export default function App() {
       case 'ecosystem':
         return (
           <div className="space-y-24">
-            <LumiEcosystem t={t} onChatAgent={(agent) => { setSelectedAgent(agent); setActiveTab('agent-chat'); }} />
+            <GaeaEcosystem t={t} onChatAgent={(agent) => { setSelectedAgent(agent); setActiveTab('agent-chat'); }} />
             <SkillHall t={t} lang={lang} />
           </div>
         );
@@ -155,8 +137,6 @@ export default function App() {
         return <FoundersSanctuary t={t} user={user} onBack={() => setActiveTab('home')} />;
       case 'profile':
         return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <Profile t={t} />;
-      case 'org':
-        return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <OrgHub />;
       case 'settings':
         return !user ? <LoginRequired t={t} onLogin={handleLogin} /> : <Settings t={t} lang={lang} setLang={setLang} />;
       case 'voice':
@@ -172,11 +152,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden transition-all duration-1000 ${
-      isDesktop && uiMode === 'desktop' 
-        ? 'bg-transparent' 
-        : isDesktop 
-          ? 'bg-celestial-deep/90 backdrop-blur-3xl' 
-          : 'bg-celestial-deep'
+      'bg-transparent'
     }`}>
       <ErrorBoundary>
       <CursorGlow />
@@ -184,43 +160,16 @@ export default function App() {
       <Toaster position="top-right" theme="dark" />
       <Suspense fallback={<LoadingFallback />}>
         <AnimatePresence mode="wait">
-          {uiMode === 'mobile' ? (
-            <MobilePlatform
-              t={t}
-              user={user}
-              lang={lang}
-              setLang={setLang}
-              onLogin={handleLogin}
-              onExit={() => setUiMode('web')}
-              renderTabContent={renderTabContent}
-            />
-          ) : uiMode === 'desktop' ? (
-            <DesktopPlatform
-              t={t}
-              user={user}
-              lang={lang}
-              setLang={setLang}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              onLogin={handleLogin}
-              setUiMode={setUiMode}
-              renderTabContent={renderTabContent}
-            />
-          ) : (
-            <WebPlatform
-              user={user}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              lang={lang}
-              setLang={setLang}
-              t={t}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-              renderTabContent={renderTabContent}
-              isDesktop={isDesktop}
-              setUiMode={setUiMode}
-            />
-          )}
+          <DesktopPlatform
+            t={t}
+            user={user}
+            lang={lang}
+            setLang={setLang}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onLogin={handleLogin}
+            renderTabContent={renderTabContent}
+          />
         </AnimatePresence>
       </Suspense>
 
@@ -231,8 +180,6 @@ export default function App() {
         onLoginSuccess={() => refreshUser()}
         onGoogleLogin={handleGoogleLogin}
       />
-      
-      {uiMode === 'web' && !isDesktop && <FloatingAgent t={t} />}
       </ErrorBoundary>
     </div>
   );

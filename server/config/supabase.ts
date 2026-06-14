@@ -26,14 +26,16 @@ export function isSupabaseConfigured(): boolean {
   return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
 }
 
-/** Sync a local user to Supabase auth — idempotent, creates if not exists */
+/** Sync a local user to Supabase auth — idempotent, creates if not exists.
+ *  Requires both SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY AND GAEA_SUPABASE_SYNC=true. */
 export async function syncUserToSupabase(uid: string, username: string, passwordHash: string): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
+  if (process.env.GAEA_SUPABASE_SYNC !== 'true') return null;
   try {
     const supabase = getSupabase();
     // Check if user already exists in Supabase
     const { data: existing } = await supabase
-      .from('lumi_users')
+      .from('gaea_users')
       .select('id')
       .eq('local_uid', uid)
       .single();
@@ -41,7 +43,7 @@ export async function syncUserToSupabase(uid: string, username: string, password
     if (existing) return existing.id;
 
     const { data, error } = await supabase
-      .from('lumi_users')
+      .from('gaea_users')
       .insert({
         local_uid: uid,
         username,

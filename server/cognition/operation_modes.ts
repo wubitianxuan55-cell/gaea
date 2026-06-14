@@ -1,5 +1,5 @@
 /**
- * Operation Modes — how Lumi interacts with the user's system.
+ * Operation Modes — how Gaea interacts with the user's system.
  *
  * Each mode defines a toolPolicy (security preset) and a prompt overlay that
  * instructs the LLM HOW to operate. Unlike conversation modes (casual/teaching/...),

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(__filename), '..');
 const outDir = path.join(root, 'desktop-resources');
-const includeLocalVoice = process.env.LUMI_DESKTOP_WITH_LOCAL_VOICE === '1';
+const includeLocalVoice = process.env.GAEA_DESKTOP_WITH_LOCAL_VOICE === '1';
 
 const runtimeNodeModules = ['sqlite3', 'bindings', 'file-uri-to-path'];
 const ignoredNames = new Set([
@@ -122,5 +122,5 @@ await prepareWebView2Dll();
 
 console.log(`Prepared desktop resources at ${path.relative(root, outDir)}`);
 if (!includeLocalVoice) {
-  console.log('Local GPT-SoVITS resources skipped. Set LUMI_DESKTOP_WITH_LOCAL_VOICE=1 for the large offline voice bundle.');
+  console.log('Local GPT-SoVITS resources skipped. Set GAEA_DESKTOP_WITH_LOCAL_VOICE=1 for the large offline voice bundle.');
 }

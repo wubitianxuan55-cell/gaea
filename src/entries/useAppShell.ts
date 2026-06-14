@@ -12,8 +12,8 @@ export function useAppShell() {
   useEffect(() => { setLang(lang); }, [lang]);
   useEffect(() => {
     const handler = () => setIsLoginModalOpen(true);
-    window.addEventListener('lumi:open-login', handler);
-    return () => window.removeEventListener('lumi:open-login', handler);
+    window.addEventListener('gaea:open-login', handler);
+    return () => window.removeEventListener('gaea:open-login', handler);
   }, []);
 
   return {

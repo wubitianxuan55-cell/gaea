@@ -213,13 +213,13 @@ type LLMGetters = {
 async function callDistillLLM(
   prompt: string,
   llmGetters: LLMGetters,
-  provider: 'deepseek' | 'qwen' = 'deepseek',
+  provider: string = 'deepseek',
   model?: string,
 ): Promise<string> {
   const messages: NormalizedMessage[] = [{ role: 'user', content: prompt }];
   const result = await makeLLMCall(
     messages, [],
-    { provider, model: model || (provider === 'qwen' ? 'qwen-plus' : 'deepseek-chat'), maxTokens: 3000 },
+    { provider, model: model || 'deepseek-chat', maxTokens: 3000 },
     llmGetters.getDeepSeek, llmGetters.getGemini, llmGetters.getOpenAI, llmGetters.getAnthropic, llmGetters.getQwen,
   );
   return result.text || '';

@@ -106,7 +106,7 @@ export function TeamHub({ t }: { t?: any }) {
             {t?.teamHub || 'Agent Team'}
           </h2>
           <p className="text-sm text-white/40 max-w-xl mt-1">
-            {t?.teamDesc || "Lumi's team of agents. Each member has their own skills — Lumi can dispatch tasks through the orchestrator."}
+            {t?.teamDesc || "Lumi's team of agents. Each member has their own skills — Gaea can dispatch tasks through the orchestrator."}
           </p>
         </div>
         <button

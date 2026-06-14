@@ -9,11 +9,11 @@ import express from 'express';
 import http from 'http';
 import cookieParser from 'cookie-parser';
 
-const tmpRoot = path.join(os.tmpdir(), `lumi_test_${crypto.randomUUID().slice(0, 8)}`);
+const tmpRoot = path.join(os.tmpdir(), `gaea_test_${crypto.randomUUID().slice(0, 8)}`);
 const dataDir = path.join(tmpRoot, 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 fs.writeFileSync(path.join(dataDir, '.migration_skip'), '');
-process.env.LUMI_DATA_DIR = tmpRoot;
+process.env.GAEA_DATA_DIR = tmpRoot;
 process.env.JWT_SECRET = 'test-jwt-test-jwt'; // match JWT_SECRET constant below
 
 let dbReady: Promise<void> | null = null;

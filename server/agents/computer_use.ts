@@ -118,23 +118,17 @@ async function callVisionModel(
 ): Promise<string> {
   const g = llmGetters;
 
-  // Prefer OpenAI GPT-4o, fall back to Qwen-VL, Ark, then Gemini
-  let provider: 'openai' | 'qwen' | 'ark' | 'gemini';
+  // Prefer Ollama vision models, fall back to LM Studio
+  let provider: string;
   let model: string;
-  if (g.getOpenAI?.()) {
-    provider = 'openai';
-    model = 'gpt-4o';
-  } else if (g.getQwen?.()) {
-    provider = 'qwen';
-    model = 'qwen-vl-max';
-  } else if (g.getArk?.()) {
-    provider = 'ark';
-    model = 'doubao-1-5-vision-pro-32k';
-  } else if (g.getGemini?.()) {
-    provider = 'gemini';
-    model = 'gemini-2.0-flash';
+  if (g.getOllama?.()) {
+    provider = 'ollama';
+    model = 'llava:13b';
+  } else if (g.getLmStudio?.()) {
+    provider = 'lmstudio';
+    model = 'minicpm-v';
   } else {
-    throw new Error('Computer use requires a vision-capable model. Add an OpenAI, DashScope (Qwen), Ark (Doubao), or Gemini API key in Settings → API Matrix.');
+    throw new Error('Computer use requires a vision-capable local model. Start Ollama with llava or LM Studio with a vision model.');
   }
 
   const historyContext = actionHistory.length > 0
@@ -246,7 +240,7 @@ export async function computerUseLoop(
   const actionHistory: string[] = [];
   let consecutiveErrors = 0;
 
-  // ── Enter desktop control: show cursor glow so user sees where Lumi is clicking ──
+  // ── Enter desktop control: show cursor glow so user sees where Gaea is clicking ──
   try {
     await options.desktopRelay('desktop_cursor_glow_show', {});
     options.onProgress?.('光标光效已开启');

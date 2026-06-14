@@ -68,7 +68,7 @@ type SortKey = 'downloads' | 'rating' | 'newest';
 const FEATURED_SKILLS = [
   { id: 'pixelle', name: 'Pixelle Studio', icon: 'Palette', iconColor: 'from-purple-500 to-pink-500', desc: 'ComfyUI-powered AIGC studio. Text-to-image, image-to-video, sound generation — any ComfyUI workflow becomes an AI tool.', prompt: '帮我生成一张星空下的赛博朋克城市图片' },
   { id: 'minimax', name: 'MiniMax Studio', icon: 'Sparkles', iconColor: 'from-amber-400 to-yellow-500', desc: 'Multimodal creative powerhouse. Music generation, video creation, image synthesis, TTS, and voice cloning in one skill.', prompt: '帮我创作一首舒缓的钢琴曲，带有海浪的声音' },
-  { id: 'desktop-automation', name: 'Desktop Commander', icon: 'Monitor', iconColor: 'from-cyan-500 to-blue-500', desc: 'Full desktop control. Mouse, keyboard, windows, and OCR screen reading — LumiOS can see and operate your desktop.', prompt: '帮我把桌面上的文件按日期整理到文件夹里' },
+  { id: 'desktop-automation', name: 'Desktop Commander', icon: 'Monitor', iconColor: 'from-cyan-500 to-blue-500', desc: 'Full desktop control. Mouse, keyboard, windows, and OCR screen reading — Gaea can see and operate your desktop.', prompt: '帮我把桌面上的文件按日期整理到文件夹里' },
   { id: 'video-editor', name: 'Video Forge', icon: 'Film', iconColor: 'from-rose-500 to-orange-500', desc: 'Video & audio editing suite. Trim, merge, crop, rotate, effects, overlays, and audio extraction via natural language.', prompt: '帮我把这个视频裁剪掉前30秒并加上字幕' },
   { id: 'fetcher', name: 'Web Fetcher Pro', icon: 'Globe', iconColor: 'from-blue-500 to-cyan-400', desc: 'Smart web content fetching. Converts any URL into clean, readable Markdown using Playwright + Readability.', prompt: '帮我抓取这篇文章的内容并总结要点' },
   { id: 'code-sandbox', name: 'Code Sandbox', icon: 'Terminal', iconColor: 'from-green-500 to-emerald-400', desc: 'Secure cloud code execution. Run Python and JavaScript in isolated containers — safe, fast, unlimited.', prompt: '帮我写一段Python代码分析CSV数据并生成图表' },
@@ -359,7 +359,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
       </div>
 
       <p className="text-sm text-white/40 max-w-xl">
-        {t.skillMarketDesc || 'Browse, install and generate MCP skills. Each skill expands Lumi\'s capabilities with new tools, APIs, and automations. Installed skills appear in your MCP ecosystem.'}
+        {t.skillMarketDesc || `Browse, install and generate MCP skills. Each skill expands Gaea's capabilities with new tools, APIs, and automations. Installed skills appear in your MCP ecosystem.`}
       </p>
 
       {/* Tabs */}
@@ -406,7 +406,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
                           id: `skill-${skill.id}`,
                           name: skill.name,
                           description: skill.desc,
-                          author: 'Lumi Official',
+                          author: 'Gaea Official',
                           downloads: 0,
                           rating: 0,
                           category: '',
@@ -469,7 +469,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
                           id: `skill-${skill.id}`,
                           name: skill.name,
                           description: skill.desc,
-                          author: 'Lumi Official',
+                          author: 'Gaea Official',
                           downloads: 0,
                           rating: 0,
                           category: '',
@@ -843,7 +843,7 @@ export function SkillCenter({ t, lang }: { t: any; lang: 'en' | 'zh' }) {
                 <h4 className="text-sm font-bold uppercase tracking-tight text-white">{t.generateNewSkill || 'Generate a New Skill'}</h4>
               </div>
               <p className="text-xs text-white/55 leading-relaxed">
-                {t.skillGenerateDesc || 'Describe what the skill should do. Lumi generates a complete MCP server package.'}
+                {t.skillGenerateDesc || 'Describe what the skill should do. Gaea generates a complete MCP server package.'}
               </p>
               <div className="flex gap-2">
                 <Input value={genDescription} onChange={e => setGenDescription(e.target.value)}

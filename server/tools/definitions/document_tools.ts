@@ -7,7 +7,7 @@ import { execSync } from 'child_process';
 import { ToolRegistry } from '../registry';
 import { ingestDocument } from '../../agents/rag';
 
-const OUTPUT_DIR = path.join(process.cwd(), 'lumi_output');
+const OUTPUT_DIR = path.join(process.cwd(), 'gaea_output');
 
 function ensureOutputDir(): string {
   if (!fs.existsSync(OUTPUT_DIR)) {
@@ -332,7 +332,7 @@ $word.Quit()
 Write-Output '${outPathEsc}'
 `;
 
-  const tmpFile = path.join(require('os').tmpdir(), `lumi_docx_mod_${Date.now()}.ps1`);
+  const tmpFile = path.join(require('os').tmpdir(), `gaea_docx_mod_${Date.now()}.ps1`);
   fs.writeFileSync(tmpFile, '﻿' + psScript, 'utf-8');
   try {
     const result = execSync(
@@ -397,7 +397,7 @@ $word.Quit()
 Write-Output '${esc(outPath)}'
 `;
 
-  const tmpFile = path.join(require('os').tmpdir(), `lumi_docx2pdf_${Date.now()}.ps1`);
+  const tmpFile = path.join(require('os').tmpdir(), `gaea_docx2pdf_${Date.now()}.ps1`);
   fs.writeFileSync(tmpFile, '﻿' + psScript, 'utf-8');
   try {
     const result = execSync(
@@ -555,7 +555,7 @@ export function registerDocumentTools(registry: ToolRegistry): void {
 
   registry.register({
     name: 'create_xlsx',
-    description: 'Create a new Excel .xlsx spreadsheet. Supports multiple sheets with headers and data rows, or JSON arrays. Saves to the lumi_output directory.',
+    description: 'Create a new Excel .xlsx spreadsheet. Supports multiple sheets with headers and data rows, or JSON arrays. Saves to the gaea_output directory.',
     parameters: {
       type: 'object',
       properties: {
@@ -595,7 +595,7 @@ export function registerDocumentTools(registry: ToolRegistry): void {
 
   registry.register({
     name: 'create_docx',
-    description: 'Create a new Word .docx document with headings, paragraphs, and tables. Supports structured layout with title, heading levels (1-4), body paragraphs, and formatted tables with headers. Saves to lumi_output directory.',
+    description: 'Create a new Word .docx document with headings, paragraphs, and tables. Supports structured layout with title, heading levels (1-4), body paragraphs, and formatted tables with headers. Saves to gaea_output directory.',
     parameters: {
       type: 'object',
       properties: {
