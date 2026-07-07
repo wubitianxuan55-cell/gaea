@@ -139,6 +139,10 @@ func verifyStepEvidence(ctx context.Context, items []stepEvidence) (hostVerified
 	if !ok {
 		return 0, 0, nil
 	}
+	// 非严格模式下跳过主机端验证（命令精确匹配/路径全命中校验）
+	if !ledger.StrictVerification() {
+		return 0, 0, nil
+	}
 	for i, e := range items {
 		switch e.Kind {
 		case "verification":
@@ -177,6 +181,10 @@ func verifyStepEvidence(ctx context.Context, items []stepEvidence) (hostVerified
 func verifyTodoStep(ctx context.Context, step string) (evidence.TodoStepMatch, bool, error) {
 	ledger, ok := evidence.FromContext(ctx)
 	if !ok {
+		return evidence.TodoStepMatch{}, false, nil
+	}
+	// 非严格模式下跳过 todo step 匹配校验
+	if !ledger.StrictVerification() {
 		return evidence.TodoStepMatch{}, false, nil
 	}
 	match, hasTodo := ledger.MatchLatestTodoStep(step)

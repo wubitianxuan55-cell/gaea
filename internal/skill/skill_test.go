@@ -131,48 +131,48 @@ func TestReferencesInlined(t *testing.T) {
 	}
 }
 
-func TestBuiltinDocWriterIsSubagentSkill(t *testing.T) {
+func TestBuiltinSiteSurveyIsSubagentSkill(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	sk, ok := st.Read("doc-writer")
+	sk, ok := st.Read("site-survey")
 	if !ok {
-		t.Fatal("built-in doc-writer skill not found")
+		t.Fatal("built-in site-survey skill not found")
 	}
 	if sk.Scope != ScopeBuiltin || sk.RunAs != RunSubagent {
-		t.Errorf("doc-writer should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
+		t.Errorf("site-survey should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
 	}
-	if _, listed := find(st.List(), "doc-writer"); !listed {
-		t.Error("doc-writer should appear in List() so it reaches the slash menu")
+	if _, listed := find(st.List(), "site-survey"); !listed {
+		t.Error("site-survey should appear in List() so it reaches the slash menu")
 	}
 }
 
-func TestBuiltinSpecCheckerIsSubagentSkill(t *testing.T) {
+func TestBuiltinRemedPlanIsSubagentSkill(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	sk, ok := st.Read("spec-checker")
+	sk, ok := st.Read("remed-plan")
 	if !ok {
-		t.Fatal("built-in spec-checker skill not found")
+		t.Fatal("built-in remed-plan skill not found")
 	}
 	if sk.Scope != ScopeBuiltin || sk.RunAs != RunSubagent {
-		t.Errorf("spec-checker should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
+		t.Errorf("remed-plan should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
 	}
-	if _, listed := find(st.List(), "spec-checker"); !listed {
-		t.Error("spec-checker should appear in List() so it reaches the slash menu")
+	if _, listed := find(st.List(), "remed-plan"); !listed {
+		t.Error("remed-plan should appear in List() so it reaches the slash menu")
 	}
 }
 
 func TestBuiltinSubagentSkillsDeclareAllowedTools(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
 	cases := map[string][]string{
-		"doc-writer": {
-			"read_file", "write_file", "ls", "glob", "grep", "bash",
+		"site-survey": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash", "xlsx_read", "csv_parse", "spec_query", "spec_judge",
 		},
-		"data-analyst": {
-			"read_file", "write_file", "ls", "glob", "grep", "bash", "web_fetch", "web_search",
+		"bid-writer": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash", "docx_read", "pdf_extract",
 		},
-		"spec-checker": {
-			"read_file", "write_file", "ls", "glob", "grep", "bash",
+		"remed-plan": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash", "spec_query", "material_query", "calc_math",
 		},
-		"report-builder": {
-			"read_file", "write_file", "ls", "glob", "grep", "bash",
+		"cost-calc": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash", "xlsx_read", "xlsx_write", "csv_parse", "calc_stats",
 		},
 	}
 	for name, want := range cases {
@@ -196,16 +196,16 @@ func TestBuiltinSubagentSkillsDeclareAllowedTools(t *testing.T) {
 
 func TestBuiltinsPresentAndOverridable(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	if _, ok := find(st.List(), "doc-writer"); !ok {
-		t.Error("built-in doc-writer should be present")
+	if _, ok := find(st.List(), "site-survey"); !ok {
+		t.Error("built-in site-survey should be present")
 	}
 	// A user file named after a built-in overrides it.
 	home := t.TempDir()
-	writeSkill(t, home, ".gaeaW/skills/doc-writer.md", "---\ndescription: mine\nrunAs: inline\n---\nbody")
+	writeSkill(t, home, ".gaeaW/skills/site-survey.md", "---\ndescription: mine\nrunAs: inline\n---\nbody")
 	st2 := New(Options{HomeDir: home})
-	ex, _ := st2.Read("doc-writer")
+	ex, _ := st2.Read("site-survey")
 	if ex.Scope == ScopeBuiltin || ex.Description != "mine" {
-		t.Errorf("user doc-writer should override builtin: scope=%s desc=%q", ex.Scope, ex.Description)
+		t.Errorf("user site-survey should override builtin: scope=%s desc=%q", ex.Scope, ex.Description)
 	}
 }
 

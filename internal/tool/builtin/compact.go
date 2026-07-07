@@ -4,8 +4,6 @@ package builtin
 
 import "encoding/json"
 
-// compactDesc maps tool names to single-line Chinese descriptions (~15-25 chars),
-// used by CompactDescriptor to slash per-turn prompt tokens by ~75%.
 var compactDesc = map[string]string{
 	"read_file":      "读取文件(可选行范围/分页)",
 	"edit_file":      "精确替换文件字符串(须全局唯一)",
@@ -35,17 +33,32 @@ var compactDesc = map[string]string{
 	"read_skill":     "读取指定技能(skill)的完整内容",
 	"move_file":      "移动/重命名文件(自动建目录,工作区限制)",
 	"code_index":     "轻量符号索引(outline/search,Go AST+多语言regex)",
-	"csv_parse":      "CSV解析(结构化JSON+列统计)",
+	"csv_parse":      "CSV解析(自动编码/分隔符检测+列统计)",
 	"calc_math":      "数学表达式计算(AST解析+math函数)",
 	"calc_stats":     "基础统计分析(均值/中位数/标准差)",
 	"calc_unit":      "单位转换(长度/重量/温度/压力)",
 	"material_query": "工程材料属性查询(钢/铝/混凝土等)",
 	"gantt_gen":      "生成Mermaid甘特图(Markdown代码块)",
 	"project_init":   "初始化项目目录结构(工程标准模板)",
+	"spec_query":     "土壤修复规范智能查询(内置GB/HJ规范索引)",
+	"spec_judge":     "检测数据超标判定(对标GB 36600/15618)",
+	"survey_report":  "初调/详调报告模板(项目概况→结论建议)",
+	"bid_proposal":   "投标方案框架(技术路线+施工组织)",
+	"imple_plan":     "修复实施方案(工艺参数+设备选型)",
+	"cost_estimate":  "成本测算表(钻孔/检测/药剂/土方/人工七项)",
+	"xlsx_read":      "读取Excel文件(解析xlsx表格数据)",
+	"xlsx_write":     "创建Excel文件(表头+数据行→xlsx)",
+	"docx_read":      "读取Word文件(提取docx段落文本)",
+	"docx_write":     "创建Word文件(标题+多段正文→docx)",
+	"pdf_extract":    "PDF文本提取(支持页码范围)",
+	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown)",
+	"chart_gen":      "matplotlib图表生成(bar/line/pie/scatter)",
+	"doc_merge":      "多docx文档合并(逐元素追加)",
+	"archive":        "zip压缩/解压(支持目录递归)",
+	"save_template":  "保存多步骤工具链模板(JSON)",
+	"run_template":   "加载运行工具链模板(参数替换)",
 }
 
-// compactSchema maps tool names to stripped JSON Schema (properties without
-// descriptions/constraints), used by CompactDescriptor.
 var compactSchema = map[string]json.RawMessage{
 	"read_file": json.RawMessage(
 		`{"type":"object","properties":{"path":{"type":"string"},"offset":{"type":"integer"},"limit":{"type":"integer"},"line_numbers":{"type":"boolean"}},"required":["path"]}`),
@@ -104,7 +117,7 @@ var compactSchema = map[string]json.RawMessage{
 	"code_index": json.RawMessage(
 		`{"type":"object","properties":{"action":{"type":"string"},"path":{"type":"string"},"query":{"type":"string"},"kind":{"type":"string"},"limit":{"type":"integer"}},"required":["action"]}`),
 	"csv_parse": json.RawMessage(
-		`{"type":"object","properties":{"path":{"type":"string"},"delimiter":{"type":"string"},"has_header":{"type":"boolean"}},"required":["path"]}`),
+		`{"type":"object","properties":{"path":{"type":"string"},"delimiter":{"type":"string"},"has_header":{"type":"boolean"},"encoding":{"type":"string"},"limit":{"type":"integer"}},"required":["path"]}`),
 	"calc_math": json.RawMessage(
 		`{"type":"object","properties":{"expression":{"type":"string"}},"required":["expression"]}`),
 	"calc_stats": json.RawMessage(
@@ -117,4 +130,38 @@ var compactSchema = map[string]json.RawMessage{
 		`{"type":"object","properties":{"title":{"type":"string"},"tasks":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"start":{"type":"string"},"end":{"type":"string"},"duration":{"type":"string"},"depends":{"type":"string"},"section":{"type":"string"}},"required":["name"]}}},"required":["tasks"]}`),
 	"project_init": json.RawMessage(
 		`{"type":"object","properties":{"name":{"type":"string"},"type":{"type":"string"}},"required":["name","type"]}`),
+	"spec_query": json.RawMessage(
+		`{"type":"object","properties":{"question":{"type":"string"}},"required":["question"]}`),
+	"spec_judge": json.RawMessage(
+		`{"type":"object","properties":{"pollutants":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"value":{"type":"number"}},"required":["name","value"]}},"land_type":{"type":"string"},"soil_ph":{"type":"number"}},"required":["pollutants","land_type"]}`),
+	"survey_report": json.RawMessage(
+		`{"type":"object","properties":{"report_type":{"type":"string"},"site_name":{"type":"string"},"site_address":{"type":"string"},"site_area":{"type":"number"},"land_use":{"type":"string"},"past_use":{"type":"string"},"pollutants_suspected":{"type":"array","items":{"type":"string"}},"sampling_points":{"type":"integer"},"client":{"type":"string"},"survey_company":{"type":"string"},"include_toc":{"type":"boolean"}},"required":["site_name"]}`),
+	"bid_proposal": json.RawMessage(
+		`{"type":"object","properties":{"project_name":{"type":"string"},"bidder":{"type":"string"},"site_area":{"type":"number"},"soil_volume":{"type":"number"},"contaminants":{"type":"array","items":{"type":"string"}},"technology":{"type":"string"},"target_value":{"type":"string"},"construction_period":{"type":"string"},"team_size":{"type":"integer"},"key_equipment":{"type":"string"}},"required":["project_name","bidder"]}`),
+	"imple_plan": json.RawMessage(
+		`{"type":"object","properties":{"project_name":{"type":"string"},"site_address":{"type":"string"},"contaminants":{"type":"array","items":{"type":"string"}},"soil_volume":{"type":"number"},"repair_area":{"type":"number"},"technology":{"type":"string"},"target_value":{"type":"string"},"construction_period":{"type":"string"},"unit_name":{"type":"string"},"groundwater":{"type":"boolean"},"depth_range":{"type":"string"}},"required":["project_name","technology"]}`),
+	"cost_estimate": json.RawMessage(
+		`{"type":"object","properties":{"project_name":{"type":"string"},"soil_volume":{"type":"number"},"tech_type":{"type":"string"},"borehole_count":{"type":"integer"},"sampling_count":{"type":"integer"},"lab_cost_per_sample":{"type":"number"},"unit_medicament_cost":{"type":"number"},"unit_transport_cost":{"type":"number"},"unit_disposal_cost":{"type":"number"},"equipment_cost":{"type":"number"},"labor_months":{"type":"number"},"labor_monthly_rate":{"type":"number"},"overhead_rate":{"type":"number"},"profit_rate":{"type":"number"},"tax_rate":{"type":"number"}},"required":["project_name","soil_volume","tech_type"]}`),
+	"xlsx_read": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"all_sheets":{"type":"boolean"},"sheet_index":{"type":"integer"}},"required":["path"]}`),
+	"xlsx_write": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"sheet_name":{"type":"string"},"headers":{"type":"array","items":{"type":"string"}},"rows":{"type":"array","items":{"type":"array","items":{"type":"string"}}}},"required":["path","rows"]}`),
+	"docx_read": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}`),
+	"docx_write": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"title":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}`),
+	"pdf_extract": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"pages":{"type":"string"}},"required":["path"]}`),
+	"format_convert": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"output":{"type":"string"},"pages":{"type":"string"}},"required":["path"]}`),
+	"chart_gen": json.RawMessage(
+		`{"type":"object","properties":{"labels":{"type":"array","items":{"type":"string"}},"values":{"type":"array","items":{"type":"number"}},"chart_type":{"type":"string"},"title":{"type":"string"},"output":{"type":"string"}},"required":["labels","values"]}`),
+	"doc_merge": json.RawMessage(
+		`{"type":"object","properties":{"files":{"type":"array","items":{"type":"string"}},"output":{"type":"string"},"add_page_breaks":{"type":"boolean"}},"required":["files","output"]}`),
+	"archive": json.RawMessage(
+		`{"type":"object","properties":{"action":{"type":"string"},"source":{"type":"string"},"target":{"type":"string"},"files":{"type":"array","items":{"type":"string"}}},"required":["action","source"]}`),
+	"save_template": json.RawMessage(
+		`{"type":"object","properties":{"name":{"type":"string"},"description":{"type":"string"},"steps":{"type":"array","items":{"type":"object","properties":{"tool":{"type":"string"},"args":{"type":"object"}},"required":["tool"]}}},"required":["name","steps"]}`),
+	"run_template": json.RawMessage(
+		`{"type":"object","properties":{"name":{"type":"string"},"params":{"type":"object"}},"required":["name"]}`),
 }

@@ -1,27 +1,32 @@
 package builtin
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 
 	"gaeaW/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(csvParse{}) }
 
-// csvParse parses a CSV file and returns structured JSON with headers, rows, and basic statistics.
 type csvParse struct{}
 
 func (csvParse) Name() string { return "csv_parse" }
 
 func (csvParse) Description() string {
-	return "解析CSV文件，返回结构化JSON（表头+行数据+列统计）。支持自定义分隔符和表头选项。"
+	return "解析CSV文件，返回结构化JSON（表头+行数据+列统计）。支持自动编码检测（UTF-8/GBK）、分隔符自动检测，可限制行数和指定编码。"
 }
 
 func (csvParse) Schema() json.RawMessage {
@@ -29,8 +34,10 @@ func (csvParse) Schema() json.RawMessage {
 "type":"object",
 "properties":{
   "path":{"type":"string","description":"CSV文件路径"},
-  "delimiter":{"type":"string","description":"列分隔符，默认逗号(,)"},
-  "has_header":{"type":"boolean","description":"文件第一行是否为表头（默认true）"}
+  "delimiter":{"type":"string","description":"列分隔符（不指定则自动检测：逗号/制表符/分号/竖线）"},
+  "has_header":{"type":"boolean","description":"文件第一行是否为表头（默认true）"},
+  "encoding":{"type":"string","description":"文件编码：utf-8、gbk、gb2312、gb18030（不指定则自动检测）"},
+  "limit":{"type":"integer","description":"读取行数上限（默认1000）"}
 },
 "required":["path"]
 }`)
@@ -47,6 +54,8 @@ type csvResult struct {
 	RowCount int                `json:"row_count"`
 	ColCount int                `json:"col_count"`
 	Stats    map[string]colStat `json:"stats,omitempty"`
+	Encoding string             `json:"encoding"`
+	Delim    string             `json:"delimiter"`
 }
 
 type colStat struct {
@@ -59,50 +68,71 @@ type colStat struct {
 	StdDev  *float64 `json:"std_dev,omitempty"`
 }
 
+type csvParams struct {
+	Path      string `json:"path"`
+	Delimiter string `json:"delimiter,omitempty"`
+	HasHeader *bool  `json:"has_header,omitempty"`
+	Encoding  string `json:"encoding,omitempty"`
+	Limit     int    `json:"limit,omitempty"`
+}
+
 func (csvParse) Execute(ctx context.Context, args json.RawMessage) (string, error) {
-	var p struct {
-		Path      string `json:"path"`
-		Delimiter string `json:"delimiter,omitempty"`
-		HasHeader *bool  `json:"has_header,omitempty"`
-	}
+	var p csvParams
 	if err := json.Unmarshal(args, &p); err != nil {
-		return "", fmt.Errorf("invalid args: %w", err)
+		return "", fmt.Errorf("参数无效: %w", err)
 	}
 	if p.Path == "" {
-		return "", fmt.Errorf("path is required")
+		return "", fmt.Errorf("path 不能为空")
 	}
 
-	delim := ','
-	if p.Delimiter != "" {
-		runes := []rune(p.Delimiter)
-		if len(runes) != 1 {
-			return "", fmt.Errorf("delimiter must be a single character")
-		}
-		delim = runes[0]
+	// 读取文件头用于检测
+	raw, err := os.ReadFile(p.Path)
+	if err != nil {
+		return "", fmt.Errorf("打开文件失败: %w", err)
+	}
+	if len(raw) == 0 {
+		return `{"rows":[],"row_count":0,"col_count":0}`, nil
+	}
+
+	// 编码检测
+	encName, reader := detectEncoding(bytes.NewReader(raw), p.Encoding)
+
+	// 读取全部内容（通过编码转换）
+	decoded, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("解码失败: %w", err)
+	}
+
+	content := string(decoded)
+	// 检测分隔符
+	delim := detectDelimiter(content, p.Delimiter)
+
+	// 解析 CSV
+	r := csv.NewReader(strings.NewReader(content))
+	r.Comma = delim
+	r.LazyQuotes = true
+	r.FieldsPerRecord = -1
+
+	allRows, err := r.ReadAll()
+	if err != nil {
+		return "", fmt.Errorf("读取CSV失败: %w", err)
+	}
+	if len(allRows) == 0 {
+		return fmt.Sprintf(`{"rows":[],"row_count":0,"col_count":0,"encoding":"%s","delimiter":"%s"}`, encName, string(delim)), nil
+	}
+
+	// 限制行数
+	limit := p.Limit
+	if limit <= 0 {
+		limit = 1000
+	}
+	if len(allRows) > limit+1 { // +1 for header
+		allRows = allRows[:limit+1]
 	}
 
 	hasHeader := true
 	if p.HasHeader != nil {
 		hasHeader = *p.HasHeader
-	}
-
-	f, err := os.Open(p.Path)
-	if err != nil {
-		return "", fmt.Errorf("open %s: %w", p.Path, err)
-	}
-	defer f.Close()
-
-	r := csv.NewReader(f)
-	r.Comma = delim
-	r.LazyQuotes = true
-	r.FieldsPerRecord = -1 // allow variable number of fields
-
-	allRows, err := r.ReadAll()
-	if err != nil {
-		return "", fmt.Errorf("read csv %s: %w", p.Path, err)
-	}
-	if len(allRows) == 0 {
-		return `{"rows":[],"row_count":0,"col_count":0}`, nil
 	}
 
 	var headers []string
@@ -121,7 +151,7 @@ func (csvParse) Execute(ctx context.Context, args json.RawMessage) (string, erro
 		}
 	}
 
-	// Compute per-column statistics
+	// 列统计
 	stats := make(map[string]colStat)
 	if colCount > 0 {
 		for ci := 0; ci < colCount; ci++ {
@@ -181,11 +211,73 @@ func (csvParse) Execute(ctx context.Context, args json.RawMessage) (string, erro
 		RowCount: len(dataRows),
 		ColCount: colCount,
 		Stats:    stats,
+		Encoding: encName,
+		Delim:    string(delim),
+	}
+	out, _ := json.MarshalIndent(res, "", "  ")
+	return string(out), nil
+}
+
+// detectEncoding 检测文件编码并返回解码 Reader
+func detectEncoding(r io.Reader, hint string) (string, io.Reader) {
+	head, _ := io.ReadAll(io.LimitReader(r, 4096))
+	combined := append([]byte(nil), head...)
+
+	if hint != "" {
+		hint = strings.ToLower(hint)
+		switch hint {
+		case "gbk", "gb2312", "gb18030":
+			return hint, transform.NewReader(io.MultiReader(bytes.NewReader(combined), r), simplifiedchinese.GBK.NewDecoder())
+		default:
+			return hint, io.MultiReader(bytes.NewReader(combined), r)
+		}
 	}
 
-	out, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("marshal result: %w", err)
+	// 自动检测：尝试 UTF-8
+	if utf8.Valid(combined) {
+		return "utf-8", io.MultiReader(bytes.NewReader(combined), r)
 	}
-	return string(out), nil
+	// 默认按 GBK 处理（中文环境常见）
+	return "gbk", transform.NewReader(io.MultiReader(bytes.NewReader(combined), r), simplifiedchinese.GBK.NewDecoder())
+}
+
+// detectDelimiter 自动检测分隔符
+func detectDelimiter(content string, hint string) rune {
+	if hint != "" {
+		runes := []rune(hint)
+		if len(runes) == 1 {
+			return runes[0]
+		}
+		return ','
+	}
+
+	// 取前 2000 字符统计候选分隔符
+	sample := content
+	if len(sample) > 2000 {
+		sample = sample[:2000]
+	}
+
+	type cand struct {
+		r   rune
+		cnt int
+	}
+	candidates := []cand{{',', 0}, {'\t', 0}, {';', 0}, {'|', 0}}
+	firstLines := strings.SplitN(sample, "\n", 5)
+
+	for _, line := range firstLines {
+		for i := range candidates {
+			candidates[i].cnt += strings.Count(line, string(candidates[i].r))
+		}
+	}
+
+	best := candidates[0]
+	for _, c := range candidates[1:] {
+		if c.cnt > best.cnt {
+			best = c
+		}
+	}
+	if best.cnt > 0 {
+		return best.r
+	}
+	return ','
 }

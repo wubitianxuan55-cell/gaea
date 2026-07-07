@@ -128,8 +128,8 @@ func (a *AgentRunner) executeOne(ctx context.Context, call provider.ToolCall) to
 
 	cctx := withCallContext(ctx, call.ID, a.sink, a.asker)
 	if a.evidence != nil {
-		// V10.8: 严格验证只在 Plan Mode 下启用
-		a.evidence.SetStrictVerification(false)
+		// strictVerify 默认为 false（由 NewLedger 设定）。Plan Mode 下由外部
+		// 显式设为 true 后保留，不在每轮工具调用时重置。
 		cctx = evidence.WithLedger(cctx, a.evidence)
 	}
 	if a.jobs != nil {

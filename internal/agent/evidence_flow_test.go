@@ -83,6 +83,7 @@ func TestEvidenceFlowEndToEnd(t *testing.T) {
 	}}
 
 	a := New(prov, reg, NewSession(""), Options{}, event.Discard)
+	a.evidence.SetStrictVerification(true)
 	if _, err := a.Run(context.Background(), "run the suite and sign the step off"); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -117,6 +118,7 @@ func TestEvidenceFlowRejectsUncitedCommand(t *testing.T) {
 	}}
 
 	a := New(prov, reg, NewSession(""), Options{}, event.Discard)
+	a.evidence.SetStrictVerification(true)
 	if _, err := a.Run(context.Background(), "vet the tree and sign off"); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -157,6 +159,7 @@ func TestEvidenceFlowRejectsStepMissingFromTodoWrite(t *testing.T) {
 	}}
 
 	a := New(prov, reg, NewSession(""), Options{}, event.Discard)
+	a.evidence.SetStrictVerification(true)
 	if _, err := a.Run(context.Background(), "update todos then sign off the wrong step"); err != nil {
 		t.Fatalf("Run: %v", err)
 	}

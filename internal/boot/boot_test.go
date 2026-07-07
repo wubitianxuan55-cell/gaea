@@ -104,7 +104,7 @@ api_key_env = "TIANXUAN_TEST_KEY_UNSET"
 		switch s.Name {
 		case "projskill":
 			hasProj = true
-		case "doc-writer":
+		case "site-survey":
 			hasBuiltin = true
 		}
 	}
@@ -116,7 +116,7 @@ api_key_env = "TIANXUAN_TEST_KEY_UNSET"
 	if !strings.Contains(sys, "# Skills") {
 		t.Fatalf("skills index missing from system prompt:\n%s", sys)
 	}
-	if !strings.Contains(sys, "projskill") || !strings.Contains(sys, "doc-writer") {
+	if !strings.Contains(sys, "projskill") || !strings.Contains(sys, "site-survey") {
 		t.Fatalf("skill names missing from index:\n%s", sys)
 	}
 }
