@@ -358,16 +358,4 @@ func (a *App) AttachmentDataURL(path string) (string, error) {
 	return control.ImageDataURL(path)
 }
 
-// WorkspaceChanges returns the files modified during the current session.
-func (a *App) WorkspaceChanges() []WorkspaceChangeView {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return nil
-	}
-	changes := ctrl.WorkspaceChanges()
-	out := make([]WorkspaceChangeView, len(changes))
-	for i, ch := range changes {
-		out[i] = WorkspaceChangeView{Path: ch.Path, Added: ch.Added, Removed: ch.Removed}
-	}
-	return out
-}
+// WorkspaceChanges 在 gaeaW 中已移除。

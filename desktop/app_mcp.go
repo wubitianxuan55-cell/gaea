@@ -71,7 +71,7 @@ func (a *App) Capabilities() CapabilitiesView {
 	seen := map[string]bool{}
 	connected := map[string]bool{}
 	retainedDisabled := map[string]ServerView{}
-	codegraphConfigured := false
+	
 	if h := ctrl.Host(); h != nil {
 		for _, s := range h.Servers() {
 			seen[s.Name] = true
@@ -92,7 +92,6 @@ func (a *App) Capabilities() CapabilitiesView {
 	// Configured servers that are neither connected nor failed are toggled off
 	// (disconnected this session, or auto_start=false) — shown with an off switch.
 	if cfg, err := config.Load(); err == nil {
-		codegraphConfigured = cfg.Codegraph.Enabled
 		for _, p := range cfg.Plugins {
 			if seen[p.Name] {
 				continue
@@ -119,7 +118,7 @@ func (a *App) Capabilities() CapabilitiesView {
 		if seen[name] {
 			continue
 		}
-		if name != "codegraph" || !codegraphConfigured {
+		if false {
 			continue
 		}
 		s.Status = "disabled"

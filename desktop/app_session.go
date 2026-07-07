@@ -6,19 +6,9 @@ import (
 
 	"gaeaW/internal/agent"
 	"gaeaW/internal/config"
-	"gaeaW/internal/control"
 	"gaeaW/internal/provider"
 )
 
-// CheckpointMeta summarises one rewind point (a user turn) for the desktop.
-type CheckpointMeta struct {
-	Turn   int      `json:"turn"`
-	Prompt string   `json:"prompt"`
-	Files  []string `json:"files"` // paths changed during the turn
-	Time   int64    `json:"time"`  // unix milliseconds
-}
-
-// SessionMeta summarises one saved session for the history panel.
 type SessionMeta struct {
 	Path    string `json:"path"`
 	Preview string `json:"preview"`         // first user message
@@ -44,68 +34,6 @@ func (a *App) NewSession() error {
 	return ctrl.NewSession()
 }
 
-// Checkpoints lists the session's rewind points, oldest first, for the rewind UI.
-func (a *App) Checkpoints() []CheckpointMeta {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return []CheckpointMeta{}
-	}
-	metas := ctrl.Checkpoints()
-	out := make([]CheckpointMeta, 0, len(metas))
-	for _, m := range metas {
-		out = append(out, CheckpointMeta{Turn: m.Turn, Prompt: m.Prompt, Files: m.Paths, Time: m.Time.UnixMilli()})
-	}
-	return out
-}
-
-// Rewind restores the session to the start of turn. scope is "code",
-// "conversation", or "both" (anything else is treated as "both"). The frontend
-// re-reads History after this resolves.
-func (a *App) Rewind(turn int, scope string) error {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return nil
-	}
-	s := control.RewindBoth
-	switch scope {
-	case "code":
-		s = control.RewindCode
-	case "conversation":
-		s = control.RewindConversation
-	}
-	return ctrl.Rewind(turn, s)
-}
-
-// Fork branches the conversation at the start of turn into a new session
-// (preserving the current one), keeping code intact, and switches to the branch.
-// The frontend re-reads History after this resolves.
-func (a *App) Fork(turn int) error {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return nil
-	}
-	_, err := ctrl.Fork(turn)
-	return err
-}
-
-// SummarizeFrom / SummarizeUpTo compress the conversation from / up to the start
-// of turn into one summary (Claude Code's "summarize from/up to here"), keeping
-// code intact. The frontend re-reads History after this resolves.
-func (a *App) SummarizeFrom(turn int) error {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return nil
-	}
-	return ctrl.SummarizeFrom(a.ctx, turn)
-}
-
-func (a *App) SummarizeUpTo(turn int) error {
-	ctrl := a.ctrlByTabID("")
-	if ctrl == nil {
-		return nil
-	}
-	return ctrl.SummarizeUpTo(a.ctx, turn)
-}
 
 // ListSessions returns the saved sessions newest-first for the history panel,
 // marking the one the current conversation is writing to and attaching any

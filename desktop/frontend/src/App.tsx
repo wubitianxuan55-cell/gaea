@@ -156,7 +156,6 @@ export default function App() {
 
   const {
     sidebarCollapsed, sidebarWidth, sidebarResizing, effectiveSidebarWidth,
-    sidebarWidthRef,
     toggleSidebar, setExpandedSidebarWidth, startSidebarResize,
     resizeSidebarWithKeyboard,
   } = useSidebar();

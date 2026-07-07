@@ -1,15 +1,15 @@
-module tianxuan/desktop
+module gaeaW/desktop
 
 go 1.25.0
 
 require (
 	aead.dev/minisign v0.3.0
+	gaeaW v0.0.0-00010101000000-000000000000
 	github.com/getlantern/systray v1.2.2
 	github.com/minio/selfupdate v0.6.0
 	github.com/wailsapp/wails/v2 v2.12.0
 	golang.org/x/mod v0.36.0
 	golang.org/x/sys v0.46.0
-	tianxuan v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -53,4 +53,4 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 )
 
-replace tianxuan => ../
+replace gaeaW => ../
