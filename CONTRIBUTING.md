@@ -1,137 +1,76 @@
-# Contributing to Reasonix
+# Contributing to gaeaW
 
-Thank you for your interest in contributing to Reasonix! This guide covers
-everything you need to get started.
+感谢你对 gaeaW 的关注！本文档说明如何参与项目开发。
 
-## Prerequisites
+## 前置要求
 
-- **Go 1.25+** — the project targets the latest stable Go release
-- **Git** — for version control
-- **Node.js** (optional) — only if you work on the desktop app (`desktop/`)
+- **Go 1.25+** — 项目追踪最新的稳定 Go 版本
+- **Git** — 版本控制
+- **Node.js**（可选）— 仅当修改桌面端时需
 
-## Getting started
-
-```bash
-git clone https://github.com/esengine/DeepSeek-Reasonix.git
-cd DeepSeek-Reasonix
-go build ./cmd/reasonix    # builds the CLI binary
-go test ./...              # runs the full test suite
-```
-
-## Project structure
-
-| Directory | Purpose |
-|-----------|---------|
-| `cmd/reasonix` | CLI entry point |
-| `internal/agent` | Agent loop, session, coordinator |
-| `internal/cli` | TUI, subcommands, setup wizard |
-| `internal/control` | Transport-agnostic controller |
-| `internal/config` | TOML configuration loading |
-| `internal/tool/builtin` | Built-in tools (bash, read_file, …) |
-| `internal/provider` | Model-backend abstraction |
-| `internal/provider/openai` | OpenAI-compatible provider |
-| `internal/plugin` | MCP client (stdio + HTTP) |
-| `internal/event` | Typed event stream |
-| `internal/hook` | Shell hooks (PreToolUse, …) |
-| `internal/memory` | REASONIX.md hierarchy + auto-memory |
-| `internal/skill` | Skill discovery from Markdown |
-| `internal/sandbox` | OS-level sandboxing |
-| `internal/serve` | HTTP/SSE server frontend |
-| `internal/checkpoint` | Snapshot-based rewind |
-| `desktop/` | Wails-based desktop app (separate Go module) |
-| `docs/` | Engineering spec, migration guide |
-
-### Dependency direction
-
-```
-cli → {agent, plugin, config} → {tool, provider}
-```
-
-Built-in subpackages import their parent to self-register via `init()`.
-Parents never import children.
-
-## Development workflow
-
-### Building
+## 快速开始
 
 ```bash
-make build          # go build ./...
+go build ./cmd/gaeaW/    # 构建 CLI 二进制
+go test ./...            # 运行全部测试
+```
+
+## 项目结构
+
+| 目录 | 说明 |
+|------|------|
+| `cmd/gaeaW` | CLI 入口 |
+| `cmd/gaeaW-plugin-example` | MCP 插件参考实现 |
+| `internal/agent` | Agent 主循环、会话、协调器 |
+| `internal/config` | TOML 配置加载 |
+| `internal/tool/builtin` | 内置工具（bash, read_file 等） |
+| `internal/provider` | 模型后端抽象 |
+| `internal/provider/openai` | OpenAI 兼容 provider |
+| `internal/plugin` | MCP 客户端（stdio + HTTP） |
+| `internal/event` | 类型化事件流 |
+| `internal/memory` | 记忆系统（AGENTS.md） |
+| `internal/skill` | 技能发现（Markdown） |
+| `internal/sandbox` | OS 级沙箱 |
+| `internal/serve` | HTTP/SSE 服务器前端 |
+| `desktop/` | Wails 桌面端（独立 Go module） |
+
+## 开发工作流
+
+### 构建
+
+```bash
+make build          # go build ./cmd/gaeaW/
 make test           # go test ./...
 make vet            # go vet ./...
 make fmt            # gofmt -w .
-make hooks          # install git hooks (pre-push: go vet)
-make cross          # cross-compile for all 6 targets
+make cross          # 交叉编译 6 个目标
 ```
 
-### Running tests
+### 运行测试
 
 ```bash
-go test ./...                           # all tests
-go test ./internal/agent/ -v            # verbose, one package
-go test ./internal/tool/builtin/ -run TestGrep  # one test
+go test ./...                           # 全部测试
+go test ./internal/agent/ -v            # 详细输出
+go test ./internal/tool/builtin/ -run TestGrep
 ```
 
-### Code style
+### 编码规范
 
-- `gofmt` is enforced by CI — format before committing
-- Follow existing patterns: wrap errors with `fmt.Errorf("...: %w", err)`
-- Library code never calls `os.Exit` or prints to stdout/stderr
-- Only `cli/` and `main/` decide exit codes and user-facing messages
-- Exported identifiers must have doc comments
+- `gofmt` 由 CI 强制要求
+- 使用 `fmt.Errorf("...: %w", err)` 包装错误
+- 库代码不调用 `os.Exit` 或打印到 stdout/stderr
+- 导出的标识符必须有文档注释
 
-### Commit messages
+### 提交信息
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+遵循 [Conventional Commits](https://www.conventionalcommits.org/)：
 
 ```
-feat(glob): add ** recursive pattern support
+feat(tool): add new built-in tool
 fix: replace silent error discards with structured logging
-test(event): add comprehensive unit tests for event package
 docs: add CONTRIBUTING.md
-ci: add golangci-lint and govulncheck
 ```
 
-## Adding a new built-in tool
+## 许可
 
-1. Create `internal/tool/builtin/mytool.go`
-2. Implement the `tool.Tool` interface: `Name()`, `Description()`, `Schema()`, `ReadOnly()`, `Execute()`
-3. Register via `func init() { tool.RegisterBuiltin(myTool{}) }`
-4. Add tests in `internal/tool/builtin/builtin_test.go` or a separate `mytool_test.go`
-5. The tool is automatically available — `main` blank-imports `builtin`
-
-## Adding a new model provider
-
-(For MCP tool servers see `internal/plugin` instead — that's a different layer.)
-
-1. Create `internal/provider/myprovider/`
-2. Implement `provider.Provider`: `Name()`, `Stream()`
-3. Register via `func init() { provider.Register("mykind", New) }`
-4. The provider is available from config with `kind = "mykind"`
-
-## Adding i18n strings
-
-1. Add the field to `internal/i18n/i18n.go` (`Messages` struct)
-2. Add the value in `internal/i18n/messages_en.go` and `messages_zh.go`
-3. The `TestCatalogsComplete` test will fail if you miss a locale
-
-## Submitting changes
-
-1. Fork the repository
-2. Create a feature branch from `main-v2`
-3. Make your changes with tests
-4. Ensure `go test ./...` passes
-5. Ensure `gofmt -l .` shows no changes
-6. Submit a pull request to `main-v2`
-
-## Reporting issues
-
-Open an issue on GitHub with:
-- Steps to reproduce
-- Expected vs actual behavior
-- Go version and OS
-- Relevant logs or error messages
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the
-same license as the project.
+提交代码即表示你同意你的贡献遵循项目的 MIT 许可。

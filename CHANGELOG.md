@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.4.0 (2026-07-07)
+
+### 清理
+
+- **批量删除 tianxuan/reasonix 残留**：删除 `_archive/`、`benchmarks/`、`.codegraph/`、`.tianxuan/`、`.reasonix/`、`memory/`、`web/` 等 7 个顶级目录
+- **release/ 精简**：删除 13 个 tianxuan v10.* 版本目录（保留 gaeaW v0.0.1、v0.2.0）
+- **docs/ 清理**：删除 `superpowers/plans/` + `superpowers/specs/`（15 个设计文档）、`SPEC.md`、`CHECKPOINTS.md`、`MIGRATING.md`、截图和 Logo 等 10 个文件
+- **编码残留删除**：`cmd/e2ebench/`、`scripts/` 3 个旧脚本、`internal/agent/checkpoint.go` 及测试、`desktop/sorting/`、桌面旧二进制和发布目录
+
+### 品牌修正
+
+- **README.md / README.zh-CN.md**：重写为土壤修复工程办公AI助手定位
+- **CONTRIBUTING.md**：重写为 gaeaW 贡献指南
+- **Makefile**：产物命名 `bin/tianxuan` → `bin/gaeaW`，删除 CodeGraph 相关变量
+- **gaeaW.example.toml**：注释 `Reasonix` → `gaeaW`
+- **源码品牌**：`desktop/cmd/sign/`、`internal/memory/doc.go`、`internal/config/expand_test.go`、`cmd/gaeaW-plugin-example/main.go` 中 25+ 处 Tianxuan/TIANXUAN → gaeaW/GAEAW
+- **`TIANXUAN.md`**：删除（已由 AGENTS.md + 项目记忆取代）
+
+### 构建
+
+- CLI: `release/v0.4.0/gaeaW.exe`
+- Desktop: `release/v0.4.0/gaeaW-desktop.exe`
+- SHA256: `release/v0.4.0/SHA256SUMS`
+
+---
+
+## v0.3.0 (2026-07-07)
+
+### 桌面端 UI 增强
+
+- **品牌色系更新**：accent 从 `#22C55E`（绿）→ `#6366F1`（岩灰蓝/indigo），新增 `[data-theme="earth"]` 大地暖棕主题
+- **新 Logo**：极简几何线条大地图标（地表线+地下分层+叶芽），indigo 配色
+- **国际化文案**：三语（zh/en/zh-TW）全面修正为土壤修复场景
+- **欢迎页定制**：6 个土壤修复快捷命令（场地调查/风险评估/修复方案/成本测算/数据分析/投标文件）
+- **报告预览面板**：新建 `ReportPreviewPanel` 组件，支持通过 bridge API 读取报告文件列表
+- **Branding 修复**：`INPUT_HISTORY_KEY` → `gaeaW.inputHistory`，index.html 新增 SEO meta
+- **右侧面板 tab**：新增「报告」标签，支持 `/` 命令一键访问
+
+### 构建
+
+- CLI: `release/v0.3.0/gaeaW.exe`
+- Desktop: `release/v0.3.0/gaeaW-desktop.exe`
+- SHA256: `release/v0.3.0/SHA256SUMS`
+
+---
+
 ## v0.2.0 (2025-07-07)
 
 ### 新增

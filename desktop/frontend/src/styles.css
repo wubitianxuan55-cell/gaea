@@ -19,7 +19,7 @@
   --bg-elev-2: #272F42;
   --sidebar-bg: #0A111F;
   --sidebar-hover: #18202F;
-  --sidebar-active: rgba(34, 197, 94, 0.14);
+  --sidebar-active: rgba(99, 102, 241, 0.14);
   --border: #475569;
   --border-soft: #334155;
 
@@ -28,10 +28,10 @@
   --fg-dim: #CBD5E1;
   --fg-faint: #94A3B8;
 
-  /* ── brand accent — run green (code success) ───────────────────────── */
-  --accent: #22C55E;
-  --accent-fg: #0F172A;
-  --accent-soft: rgba(34, 197, 94, 0.14);
+  /* ── brand accent — 岩灰蓝 (indigo) ──────────────────────────────── */
+  --accent: #6366F1;
+  --accent-fg: #FFFFFF;
+  --accent-soft: rgba(99, 102, 241, 0.14);
 
   /* ── semantic — crisp, accessible ──────────────────────────────────── */
   --ok: #22C55E;
@@ -160,15 +160,15 @@
     --bg-elev-2: #F8FAFC;
     --sidebar-bg: #F1F5F9;
     --sidebar-hover: #E2E8F0;
-    --sidebar-active: rgba(59, 130, 246, 0.14);
+    --sidebar-active: rgba(99, 102, 241, 0.14);
     --border: #CBD5E1;
     --border-soft: #E2E8F0;
     --fg: #0F172A;
     --fg-dim: #475569;
     --fg-faint: #94A3B8;
-    --accent: #3B82F6;           /* blue — professional developer tool */
+    --accent: #6366F1;           /* 岩灰蓝 — indigo */
     --accent-fg: #FFFFFF;
-    --accent-soft: rgba(59, 130, 246, 0.14);
+    --accent-soft: rgba(99, 102, 241, 0.14);
     --ok: #22C55E;
     --warn: #F59E0B;
     --err: #EF4444;
@@ -202,15 +202,15 @@
   --bg-elev-2: #F8FAFC;
   --sidebar-bg: #F1F5F9;
   --sidebar-hover: #E2E8F0;
-  --sidebar-active: rgba(59, 130, 246, 0.14);
+  --sidebar-active: rgba(99, 102, 241, 0.14);
   --border: #CBD5E1;
   --border-soft: #E2E8F0;
   --fg: #0F172A;
   --fg-dim: #475569;
   --fg-faint: #94A3B8;
-  --accent: #3B82F6;           /* blue — professional developer tool */
+  --accent: #6366F1;           /* 岩灰蓝 — indigo */
   --accent-fg: #FFFFFF;
-  --accent-soft: rgba(59, 130, 246, 0.14);
+  --accent-soft: rgba(99, 102, 241, 0.14);
   --ok: #22C55E;
   --warn: #F59E0B;
   --err: #EF4444;
@@ -1854,15 +1854,15 @@ body::after {
   --bg-elev-2: #F8FAFC;
   --sidebar-bg: #F1F5F9;
   --sidebar-hover: #E2E8F0;
-  --sidebar-active: rgba(59, 130, 246, 0.14);
+  --sidebar-active: rgba(99, 102, 241, 0.14);
   --border: #CBD5E1;
   --border-soft: #E2E8F0;
   --fg: #0F172A;
   --fg-dim: #475569;
   --fg-faint: #94A3B8;
-  --accent: #3B82F6;
+  --accent: #6366F1;
   --accent-fg: #FFFFFF;
-  --accent-soft: rgba(59, 130, 246, 0.14);
+  --accent-soft: rgba(99, 102, 241, 0.14);
   --ok: #22C55E;
   --warn: #F59E0B;
   --err: #EF4444;
@@ -1962,7 +1962,43 @@ body::after {
   --error: #EF4444;
   --danger: #EF4444;
   --add-bg: rgba(34, 197, 94, 0.14);
-  --add-fg: #22C55E;
-  --del-bg: rgba(239, 68, 68, 0.14);
   --del-fg: #EF4444;
+}
+
+/* ── Earth: earthy dark — 大地暖棕点缀 ──────────────────────────────── */
+[data-theme="earth"] {
+  --bg: #1A1512;
+  --bg-soft: #231D18;
+  --bg-elev: #2D2520;
+  --bg-elev-2: #382E28;
+  --sidebar-bg: #15100D;
+  --sidebar-hover: #231D18;
+  --sidebar-active: rgba(168, 130, 94, 0.15);
+  --border: #4A3E36;
+  --border-soft: #382E28;
+  --fg: #EDE4D8;
+  --fg-dim: #C4B8A8;
+  --fg-faint: #8C7F6F;
+  --accent: #A8825E;           /* 大地暖棕 */
+  --accent-fg: #1A1512;
+  --accent-soft: rgba(168, 130, 94, 0.15);
+  --ok: #6A994E;
+  --warn: #D4A373;
+  --err: #BC4A3C;
+  --info: #A8825E;
+  --warning: #D4A373;
+  --error: #BC4A3C;
+  --danger: #BC4A3C;
+  --add-bg: rgba(106, 153, 78, 0.14);
+  --add-fg: #6A994E;
+  --del-bg: rgba(188, 74, 60, 0.14);
+  --del-fg: #BC4A3C;
+  --hl-keyword: #C89B7B;
+  --hl-string: #6A994E;
+  --hl-number: #D4A373;
+  --hl-comment: #6B5C4E;
+  --hl-func: #7CA5B8;
+  --hl-type: #C89B7B;
+  --hl-builtin: #7CA5B8;
+  --hl-meta: #8C7F6F;
 }

@@ -16,7 +16,7 @@ interface Attachment { path: string; previewUrl: string; }
 const COMPOSER_MIN_HEIGHT = 86;
 const COMPOSER_MAX_HEIGHT = 360;
 const COMPOSER_MAX_VIEWPORT_RATIO = 0.4;
-const INPUT_HISTORY_KEY = "reasonix.inputHistory";
+const INPUT_HISTORY_KEY = "gaeaW.inputHistory";
 const MAX_INPUT_HISTORY = 50;
 
 function useDebounce<T>(value: T, delay: number): T {

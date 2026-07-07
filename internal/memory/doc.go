@@ -1,5 +1,5 @@
-// Package memory implements Tianxuan's persistent memory. It mirrors Claude
-// Code's two-layer model while honoring Tianxuan's cache-first architecture:
+// Package memory implements gaeaW's persistent memory. It mirrors Claude
+// Code's two-layer model while honoring gaeaW's cache-first architecture:
 //
 //   - Hierarchical doc memory: TIANXUAN.md / AGENTS.md files discovered from the
 //     user config dir and up the project tree, with "@path" imports. This is the

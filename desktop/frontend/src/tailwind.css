@@ -34,7 +34,7 @@
   --color-fg-dim: var(--fg-dim);
   --color-fg-faint: var(--fg-faint);
 
-  /* ── brand accent (warm clay) ── */
+  /* ── brand accent (岩灰蓝 indigo) ── */
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);

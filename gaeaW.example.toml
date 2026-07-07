@@ -1,4 +1,4 @@
-# Reasonix configuration.
+# gaeaW configuration.
 # Resolution order: flag > ./reasonix.toml > ~/.config/reasonix/config.toml > built-in defaults.
 # Secrets come from the environment via api_key_env; never put keys here.
 

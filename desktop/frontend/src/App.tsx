@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { CSSProperties } from "react";
 import {
   BarChart3, SquarePen, Brain, Blocks, ChevronDown, Cpu, FolderGit2, FolderTree, GitBranch,
-  Settings as SettingsIcon, MessageSquare,
+  Settings as SettingsIcon, MessageSquare, FileText,
 } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { useT } from "./lib/i18n";
@@ -32,6 +32,7 @@ import { WorkspacePanel } from "./components/WorkspacePanel";
 import { StartupSplash, shouldShowStartupSplash } from "./components/StartupSplash";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
 import { SkillsPanel } from "./components/SkillsPanel";
+import { ReportPreviewPanel } from "./components/ReportPreviewPanel";
 import { StatsPanel, useStatsPersistence } from "./components/StatsPanel";
 import { MessageNavigator } from "./components/MessageNavigator";
 import { Skeleton } from "./components/Skeleton";
@@ -145,7 +146,7 @@ export default function App() {
   const newSessionAndReset = useCallback(async () => { setStatsReset(n => n + 1); await startNewSession(); }, [startNewSession]);
   const [statsReset, setStatsReset] = useState(0);
   const [capsOpen, setCapsOpen] = useState(false);
-  const [rightTab, setRightTab] = useState<"files" | "runtime" | "skills" | "stats" | "messages">("stats");
+  const [rightTab, setRightTab] = useState<"files" | "runtime" | "skills" | "stats" | "messages" | "reports">("stats");
   const [pendingViewMode, setPendingViewMode] = useState<"files" | "changed" | null>(null);
   const [compactMode, setCompactMode] = useState(() => { try { return localStorage.getItem("gaeaW.compactMode") === "1"; } catch { return false; } });
   const [scrollToTurn, setScrollToTurn] = useState<((turn: number) => void) | null>(null);
@@ -575,6 +576,13 @@ export default function App() {
               <span>技能</span>
             </button>
             <button
+              className={`flex items-center gap-1 px-3 py-2 text-xs bg-transparent border-0 border-b-2 cursor-pointer transition-[color,border-color] duration-[var(--dur-base)] hover:text-fg text-fg-dim border-transparent ${rightTab === "reports" ? "text-accent border-accent" : ""}`}
+              onClick={() => setRightTab("reports")}
+            >
+              <FileText size={13} />
+              <span>报告</span>
+            </button>
+            <button
               className={`flex items-center gap-1 px-3 py-2 text-xs bg-transparent border-0 border-b-2 cursor-pointer transition-[color,border-color] duration-[var(--dur-base)] hover:text-fg text-fg-dim border-transparent ${rightTab === "stats" ? "text-accent border-accent" : ""}`}
               onClick={() => setRightTab("stats")}
             >
@@ -604,6 +612,8 @@ export default function App() {
               <RuntimePanel counts={toolCounts} />
             ) : rightTab === "skills" ? (
               <SkillsPanel counts={skillCounts} />
+            ) : rightTab === "reports" ? (
+              <ReportPreviewPanel cwd={state.meta?.cwd} />
             ) : null}
             {rightTab === "stats" && (
               <StatsPanel

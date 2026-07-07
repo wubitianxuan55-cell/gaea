@@ -1,4 +1,4 @@
-// Command gaeaW-plugin-example is a reference Tianxuan plugin: a minimal MCP stdio
+// Command gaeaW-plugin-example is a reference gaeaW plugin: a minimal MCP stdio
 // server speaking newline-delimited JSON-RPC 2.0 on stdin/stdout. It exists to
 // document the contract end-to-end (the protocol the internal/plugin client
 // drives) and to give users a working example to copy.

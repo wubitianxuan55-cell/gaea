@@ -28,7 +28,7 @@ func TestSignFiles(t *testing.T) {
 	t.Setenv("MINISIGN_PASSWORD", "pw")
 
 	dir := t.TempDir()
-	artifact := filepath.Join(dir, "Tianxuan-linux-amd64.tar.gz")
+	artifact := filepath.Join(dir, "gaeaW-linux-amd64.tar.gz")
 	payload := []byte("pretend this is a release tarball")
 	if err := os.WriteFile(artifact, payload, 0o644); err != nil {
 		t.Fatal(err)
@@ -52,11 +52,11 @@ func TestSignFiles(t *testing.T) {
 func TestGenManifest(t *testing.T) {
 	dir := t.TempDir()
 	names := []string{
-		"Tianxuan-darwin-arm64.zip",
-		"Tianxuan-darwin-amd64.zip",
-		"Tianxuan-windows-amd64-installer.exe",
-		"Tianxuan-linux-amd64.tar.gz",
-		"Tianxuan-linux-amd64.tar.gz.minisig", // must be skipped
+		"gaeaW-darwin-arm64.zip",
+		"gaeaW-darwin-amd64.zip",
+		"gaeaW-windows-amd64-installer.exe",
+		"gaeaW-linux-amd64.tar.gz",
+		"gaeaW-linux-amd64.tar.gz.minisig", // must be skipped
 		"README.txt",                          // unmatched, must be skipped
 	}
 	for _, n := range names {
@@ -87,7 +87,7 @@ func TestGenManifest(t *testing.T) {
 	if !ok {
 		t.Fatal("windows-amd64 missing")
 	}
-	wantURL := "https://github.com/esengine/gaeaW/releases/download/desktop-v1.2.0/Tianxuan-windows-amd64-installer.exe"
+	wantURL := "https://github.com/esengine/gaeaW/releases/download/desktop-v1.2.0/gaeaW-windows-amd64-installer.exe"
 	if win.URL != wantURL {
 		t.Fatalf("windows url = %q, want %q", win.URL, wantURL)
 	}

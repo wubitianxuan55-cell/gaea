@@ -6,7 +6,7 @@ import type { DictKey } from "./en";
 
 export const zh: Record<DictKey, string> = {
   // 通用动词 / 框架
-  "app.splashSubtitle": "AI 办公助理",
+  "app.splashSubtitle": "土壤修复工程办公AI助手",
   "common.close": "关闭",
   "common.cancel": "取消",
   "common.save": "保存",
@@ -115,27 +115,27 @@ export const zh: Record<DictKey, string> = {
   "caps.noSkillMatches": "没有匹配的技能。",
 
   // 欢迎 / 空状态
-  "welcome.tagline": "一个编码智能体 —— 描述任务或随便问点什么。",
+  "welcome.tagline": "土壤修复工程办公专用AI助手 —— 描述任务或随便问点什么。",
   "welcome.hintCommands": "命令",
   "welcome.hintFiles": "引用文件",
   "welcome.hintSend": "发送",
   // V5.16: 快捷任务卡片
-  "welcome.card1.title": "了解项目",
-  "welcome.card1.desc": "快速理解文档结构和关键模块",
-  "welcome.card1.prompt": "请解释这个项目的整体结构、关键目录之间的关系，以及入口文件是如何串联的。",
-  "welcome.card2.title": "定位问题",
-  "welcome.card2.desc": "帮我找到 bug 根因并给出修复方案",
-  "welcome.card2.prompt": "我有一个任务。请帮我分析需求并提出执行方案。先读相关文档，不要急着改。",
-  "welcome.card3.title": "实现方案",
-  "welcome.card3.desc": "把需求拆成可执行的实现步骤",
-  "welcome.card3.prompt": "请把以下需求拆成实现方案，包含：要改的文件、每个文件的改动范围、测试策略和风险点。先给方案，确认后再动手。",
-  "welcome.ex1": "讲讲这个项目的架构",
-  "welcome.ex2": "总结最近的 git 改动",
-  "welcome.ex3": "智能体的运行主循环在哪，它做了什么？",
+  "welcome.card1.title": "场地环境调查",
+  "welcome.card1.desc": "启动初调/详调报告框架，梳理场地基本信息",
+  "welcome.card1.prompt": "请帮我启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。",
+  "welcome.card2.title": "污染风险评估",
+  "welcome.card2.desc": "对标 GB 36600/GB 15618 进行超标判定与风险计算",
+  "welcome.card2.prompt": "请根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。",
+  "welcome.card3.title": "费用估算",
+  "welcome.card3.desc": "生成七项汇总成本测算表，涵盖调查/修复全流程",
+  "welcome.card3.prompt": "请生成土壤修复工程七项汇总成本测算表，包括场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。",
+  "welcome.ex1": "土壤污染风险管控标准有哪些",
+  "welcome.ex2": "污染场地修复技术怎么选",
+  "welcome.ex3": "场地环境调查报告怎么写",
 
   // 加载
   "skeleton.title": "正在连接智能体…",
-  "skeleton.desc": "gaeaW 正在初始化引擎，请稍后。准备好后，你就可以开始工作了。",
+  "skeleton.desc": "gaeaW 正在初始化土壤修复引擎，请稍后。准备好后，你就可以开始工作了。",
   "skeleton.tools": "工具",
   "skeleton.toolsDesc": "文档/计算/规范工具",
   "skeleton.skills": "技能",

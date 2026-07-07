@@ -17,12 +17,12 @@ function formatTimeAgo(ms: number): string {
 }
 
 const QUICK_COMMANDS = [
-  { icon: <Search size={14} />, label: "文档检索", prompt: "search documents — find the relevant files and summarize their content" },
-  { icon: <FileText size={14} />, label: "撰写文档", prompt: "write a document: " },
-  { icon: <Zap size={14} />, label: "数据分析", prompt: "analyze the data and provide insights" },
-  { icon: <Search size={14} />, label: "规范检查", prompt: "check the specification against the requirements" },
-  { icon: <List size={14} />, label: "项目报告", prompt: "generate a project report for " },
-  { icon: <MessageSquare size={14} />, label: "通讯纪要", prompt: "summarize the meeting notes from " },
+  { icon: <Search size={14} />, label: "🏗️ 场地环境调查", prompt: "启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。" },
+  { icon: <FileText size={14} />, label: "⚖️ 污染风险评估", prompt: "根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。" },
+  { icon: <Zap size={14} />, label: "📋 修复技术方案", prompt: "撰写污染土壤修复实施方案，包括技术比选、工艺设计、施工部署等内容。" },
+  { icon: <Search size={14} />, label: "💰 成本测算", prompt: "生成土壤修复工程七项汇总成本测算表，涵盖场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。" },
+  { icon: <List size={14} />, label: "📊 检测数据分析", prompt: "导入检测数据CSV文件，进行统计分析，包括超标识别、空间分布、统计描述等。" },
+  { icon: <MessageSquare size={14} />, label: "📝 投标文件编制", prompt: "生成土壤修复工程技术标投标方案，包括工程概况、施工组织设计、质量保证措施等。" },
 ];
 
 export function Welcome({
