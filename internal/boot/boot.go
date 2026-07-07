@@ -15,10 +15,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"gaeaW/internal/agent"
 	"gaeaW/internal/archive"
+	"gaeaW/internal/bot"
 	"gaeaW/internal/cache"
 	"gaeaW/internal/command"
 	"gaeaW/internal/config"
@@ -31,7 +33,6 @@ import (
 	"gaeaW/internal/permission"
 	"gaeaW/internal/plugin"
 	"gaeaW/internal/provider"
-	"sync"
 	"gaeaW/internal/sandbox"
 	"gaeaW/internal/skill"
 	"gaeaW/internal/tool"
@@ -716,4 +717,19 @@ func newReadOnlyRegistry(full *tool.Registry) *tool.Registry {
 		}
 	}
 	return ro
+	return ro
+}
+
+// StartBot creates and starts a messaging bot from config + controller.
+// Returns nil when bot is disabled or config is incomplete.
+func StartBot(cfg config.BotConfig, ctrl *control.Controller) *bot.Bot {
+	if !cfg.Enabled {
+		return nil
+	}
+	b := bot.New(cfg, ctrl)
+	if err := b.Start(); err != nil {
+		fmt.Printf("[boot] bot start: %v\n", err)
+		return nil
+	}
+	return b
 }

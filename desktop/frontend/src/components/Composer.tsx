@@ -10,7 +10,7 @@ import { ArgMenu } from "./ArgMenu";
 import { FileMenu } from "./FileMenu";
 import { usePasteBlocks, PasteBlocksUI } from "./PasteManager";
 
-interface Attachment { path: string; previewUrl: string; }
+interface Attachment { path: string; previewUrl: string; type: "image" | "file"; }
 
 
 const COMPOSER_MIN_HEIGHT = 86;
@@ -155,24 +155,51 @@ export function Composer({
     onSend(displayText, submitText); setText(""); setAttachments([]);
   };
 
-  const attachImageFiles = async (files: File[]) => {
-    const images = files.filter((f) => f.type.startsWith("image/"));
-    if (images.length === 0) return;
+  // 附加文件：图片走已有流程，非图片用 base64 上传
+  const attachDroppedFiles = async (files: File[]) => {
+    const images: File[] = [];
+    const others: File[] = [];
+    for (const f of files) {
+      if (f.type.startsWith("image/")) images.push(f);
+      else others.push(f);
+    }
+    // 大文件提示
+    const bigFiles = files.filter((f) => f.size > 10 * 1024 * 1024);
+    if (bigFiles.length > 0) {
+      const names = bigFiles.map((f) => f.name).join(", ");
+      if (!confirm(`以下文件超过 10MB，可能上传较慢：\n${names}\n\n确定要继续吗？`)) return;
+    }
+    // 处理图片
     for (const file of images) {
       setPendingPaste((n) => n + 1);
       try {
         const dataUrl = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
         const path = await app.SavePastedImage(dataUrl);
         const previewUrl = await app.AttachmentDataURL(path);
-        setAttachments((prev) => [...prev, { path, previewUrl }]);
+        setAttachments((prev) => [...prev, { path, previewUrl, type: "image" }]);
+      } catch {} finally { setPendingPaste((n) => Math.max(0, n - 1)); }
+    }
+    // 处理非图片文件
+    for (const file of others) {
+      setPendingPaste((n) => n + 1);
+      try {
+        const buf = await new Promise<ArrayBuffer>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as ArrayBuffer); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
+        const bytes = new Uint8Array(buf);
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const b64 = btoa(bin);
+        const path = await app.SaveAttachmentFile(file.name, b64);
+        const atRef = `@${path}`;
+        setText((prev) => prev + (prev.endsWith(" ") || prev === "" ? "" : " ") + atRef + " ");
+        if (taRef.current) { taRef.current.focus(); taRef.current.selectionStart = taRef.current.selectionEnd = (text + " " + atRef + " ").length; }
       } catch {} finally { setPendingPaste((n) => Math.max(0, n - 1)); }
     }
   };
 
-  // 粘贴处理：先拦截图片，文本折叠交给 usePasteBlocks hook
+  // 粘贴处理
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
-    const files = Array.from(e.clipboardData.files).filter((f) => f.type.startsWith("image/"));
-    if (files.length > 0) { e.preventDefault(); void attachImageFiles(files); return; }
+    const files = Array.from(e.clipboardData.files);
+    if (files.length > 0) { e.preventDefault(); void attachDroppedFiles(files); return; }
     const hasImageData = Array.from(e.clipboardData.items).some(
       (it) => it.type.startsWith("image/")
     );
@@ -182,8 +209,8 @@ export function Composer({
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     const files = Array.from(e.dataTransfer.files);
-    if (!files.some((f) => f.type.startsWith("image/"))) return;
-    e.preventDefault(); setDragOver(false); void attachImageFiles(files);
+    if (files.length === 0) return;
+    e.preventDefault(); setDragOver(false); void attachDroppedFiles(files);
   };
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
     if (!Array.from(e.dataTransfer.items).some((it) => it.kind === "file")) return;
@@ -282,6 +309,19 @@ export function Composer({
 
   return (
     <div className="relative max-w-[--maxw] mx-auto">
+      {/* ── 拖放指示器 ── */}
+      {dragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-accent/10 border-2 border-dashed border-accent/40 backdrop-blur-[2px] pointer-events-none animate-[fadeIn_0.15s_ease-out]">
+          <div className="flex flex-col items-center gap-2 text-accent">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" x2="12" y1="15" y2="3" />
+            </svg>
+            <span className="text-sm font-medium">释放以添加文件</span>
+          </div>
+        </div>
+      )}
       {/* ── 工作区切换菜单 ── */}
       {workspaceMenuOpen && cwd && (
         <div
@@ -328,7 +368,14 @@ export function Composer({
         <div className="flex flex-wrap gap-1.5 px-1 pb-1.5">
           {attachments.map((a) => (
             <div className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 bg-bg-elev-2 border border-border-soft rounded-lg text-xs" key={a.path}>
-              <img src={a.previewUrl} alt="" className="w-8 h-8 rounded object-cover" />
+              {a.type === "image" ? (
+                <img src={a.previewUrl} alt="" className="w-8 h-8 rounded object-cover" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              )}
               <span className="max-w-[120px] truncate text-fg-dim font-mono text-[11px]">{a.path.split("/").pop()}</span>
               <button type="button" className="flex items-center justify-center w-5 h-5 bg-transparent border-0 rounded text-fg-faint cursor-pointer hover:text-err hover:bg-bg-soft transition-colors" title="移除" onClick={() => setAttachments((prev) => prev.filter((x) => x.path !== a.path))}><X size={13} /></button>
             </div>
@@ -442,4 +489,3 @@ export function Composer({
     </div>
   );
 }
-

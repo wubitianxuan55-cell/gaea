@@ -100,6 +100,7 @@ export interface AppBindings {
   WorkspaceChanges(): Promise<WorkspaceChangeView[]>;
   RevealWorkspacePath(rel: string): Promise<void>;
   SavePastedImage(dataUrl: string): Promise<string>;
+  SaveAttachmentFile(fileName: string, base64Data: string): Promise<string>;
   AttachmentDataURL(path: string): Promise<string>;
   Models(): Promise<ModelInfo[]>;
   SetModel(name: string): Promise<void>;

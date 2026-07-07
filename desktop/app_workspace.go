@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	goruntime "runtime"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -358,4 +360,39 @@ func (a *App) AttachmentDataURL(path string) (string, error) {
 	return control.ImageDataURL(path)
 }
 
-// WorkspaceChanges 在 gaeaW 中已移除。
+// SaveAttachmentFile saves a file under .gaeaW/attachments/ and returns the
+// relative @-reference path. Accepts base64-encoded content.
+func (a *App) SaveAttachmentFile(fileName, base64Data string) (string, error) {
+	raw, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		return "", fmt.Errorf("decode attachment: %w", err)
+	}
+	if len(raw) == 0 {
+		return "", fmt.Errorf("attachment is empty")
+	}
+	if len(raw) > 10*1024*1024 {
+		return "", fmt.Errorf("attachment exceeds 10 MB")
+	}
+	ext := filepath.Ext(fileName)
+	if ext == "" {
+		ext = ".bin"
+	}
+	// 确保附件目录存在
+	attachDir := filepath.Join(".gaeaW", "attachments")
+	if err := os.MkdirAll(attachDir, 0755); err != nil {
+		return "", fmt.Errorf("create attachment dir: %w", err)
+	}
+	// 生成唯一文件名
+	seq := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+	rel := filepath.Join(attachDir, fmt.Sprintf("file-%s%s", seq, ext))
+	f, err := os.Create(rel)
+	if err != nil {
+		return "", fmt.Errorf("create attachment: %w", err)
+	}
+	defer f.Close()
+	if _, err := f.Write(raw); err != nil {
+		os.Remove(rel)
+		return "", fmt.Errorf("write attachment: %w", err)
+	}
+	return rel, nil
+}

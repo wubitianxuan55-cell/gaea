@@ -378,6 +378,9 @@ export function makeMockApp(): AppBindings {
     async SavePastedImage(_dataUrl: string) {
       return ".gaeaW/attachments/mock.png";
     },
+    async SaveAttachmentFile(_fileName: string, _base64Data: string) {
+      return ".gaeaW/attachments/mock-file.bin";
+    },
     async AttachmentDataURL(_path: string) {
       return "data:image/png;base64,iVBORw0KGgo=";
     },

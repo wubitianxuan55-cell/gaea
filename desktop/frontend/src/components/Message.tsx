@@ -1,5 +1,6 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { ChevronRight, Brain } from "lucide-react";
+import { app } from "../lib/bridge";
 import { MemoMarkdown } from "./MemoMarkdown";
 import { useT } from "../lib/i18n";
 import { useCompact } from "../hooks/useCompact";
@@ -10,6 +11,38 @@ import { useTurnStartAt } from "../lib/store";
 import type { Item } from "../lib/store";
 
 type AssistantItem = Extract<Item, { kind: "assistant" }>;
+
+// 行内附件渲染：图片显示缩略图，文件显示图标
+function InlineAttachment({ path }: { path: string }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [isImage, setIsImage] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(path)) {
+      setIsImage(true);
+      app.AttachmentDataURL(path).then((url) => { if (live) setDataUrl(url); }).catch(() => {});
+    } else {
+      setIsImage(false);
+    }
+    return () => { live = false; };
+  }, [path]);
+  const fileName = path.split("/").pop() ?? path;
+  if (isImage && dataUrl) {
+    return <img src={dataUrl} alt={fileName} className="max-w-[240px] max-h-[180px] rounded-lg border border-border-soft my-1 object-cover" loading="lazy" />;
+  }
+  if (isImage) {
+    return <span className="text-accent/60 text-[12px] italic">[{fileName}]</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg-soft border border-border-soft text-fg-dim text-[11px] font-mono mx-0.5">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+      {fileName}
+    </span>
+  );
+}
 
 function UserAvatar({ size = 14 }: { size?: number }) {
   return (
@@ -42,7 +75,20 @@ export const UserMessage = memo(function UserMessage({
   const compact = useCompact();
   const canRewind = onRewind != null && turn != null;
   const rewind = (scope: string) => onRewind?.(turn as number, scope);
-  const displayText = text.replace(/@\.gaeaW\/attachments\/[^\s]+/g, "[image]");
+  // 解析 @ 附件引用 → 分段渲染
+  const textParts = useMemo(() => {
+    const parts: { type: "text" | "attachment"; value: string }[] = [];
+    const re = /(@\.gaeaW\/attachments\/[^\s)]+)/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push({ type: "text", value: text.slice(last, m.index) });
+      parts.push({ type: "attachment", value: m[1].slice(1) });
+      last = re.lastIndex;
+    }
+    if (last < text.length) parts.push({ type: "text", value: text.slice(last) });
+    return parts;
+  }, [text]);
   return (
     <div className="flex justify-end my-2 group" data-entrance={turn != null ? `u${turn}` : undefined}>
       <div className={`flex items-start gap-2 max-w-[85%] ${compact ? "min-w-[120px]" : "min-w-[160px]"}`}>
@@ -50,7 +96,10 @@ export const UserMessage = memo(function UserMessage({
           <div className={`rounded-2xl rounded-br-md px-3.5 py-2 bg-accent/10 border border-accent/15 ${
             compact ? "text-[13px]" : "text-[14px]"
           } text-fg leading-relaxed`}>
-            {displayText}
+            {textParts.map((part, i) => {
+              if (part.type === "text") return <span key={i}>{part.value}</span>;
+              return <InlineAttachment key={i} path={part.value} />;
+            })}
           </div>
           {canRewind && (
             <div className="flex justify-end mt-0.5">

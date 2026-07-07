@@ -51,6 +51,8 @@ var compactDesc = map[string]string{
 	"docx_read":      "读取Word文件(提取docx段落文本)",
 	"docx_write":     "创建Word文件(标题+多段正文→docx)",
 	"pdf_extract":    "PDF文本提取(支持页码范围)",
+	"pdf_create":     "创建PDF文件(标题+段落→pdf)",
+	"pptx_create":    "创建PPT文件(标题数组+要点列表→pptx)",
 	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown)",
 	"chart_gen":      "matplotlib图表生成(bar/line/pie/scatter)",
 	"doc_merge":      "多docx文档合并(逐元素追加)",
@@ -152,6 +154,10 @@ var compactSchema = map[string]json.RawMessage{
 		`{"type":"object","properties":{"path":{"type":"string"},"title":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}`),
 	"pdf_extract": json.RawMessage(
 		`{"type":"object","properties":{"path":{"type":"string"},"pages":{"type":"string"}},"required":["path"]}`),
+	"pdf_create": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"title":{"type":"string"},"content":{"type":"string"},"footer":{"type":"string"}},"required":["path","content"]}`),
+	"pptx_create": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"slides":{"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"content":{"type":"array","items":{"type":"string"}},"layout":{"type":"string"}}}},"required":["path","slides"]}`),
 	"format_convert": json.RawMessage(
 		`{"type":"object","properties":{"path":{"type":"string"},"output":{"type":"string"},"pages":{"type":"string"}},"required":["path"]}`),
 	"chart_gen": json.RawMessage(

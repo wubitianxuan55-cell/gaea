@@ -37,6 +37,7 @@ type Config struct {
 	// LSP          LSPConfig         `toml:"lsp"`
 	Search       SearchConfig      `toml:"search"`
 	Network      NetworkConfig     `toml:"network"`
+	Bot          BotConfig         `toml:"bot"`
 }
 
 // SearchConfig configures web search engines. Resolution order: local SearXNG
@@ -134,6 +135,19 @@ type NetworkProxyConfig struct {
 	Username string `toml:"username"`
 	Password string `toml:"password"`
 }
+
+// BotConfig configures external messaging platform integrations (bot).
+type BotConfig struct {
+	Enabled        bool   `toml:"enabled"`
+	CorpID         string `toml:"corp_id"`
+	AgentID        string `toml:"agent_id"`
+	AppSecret      string `toml:"app_secret"`
+	Token          string `toml:"token"`
+	EncodingAESKey string `toml:"encoding_aes_key"`
+	ListenAddr     string `toml:"listen_addr"`
+}
+
+// NetworkProxySpec returns a netclient.ProxySpec suitable for configuring
 
 // NetworkProxySpec returns a netclient.ProxySpec suitable for configuring
 // HTTP clients throughout gaeaW. An empty spec means no proxy.

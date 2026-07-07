@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.5.0 (2026-07-07)
+
+### 新增
+
+#### 文档生成工具（4个）
+- **`pdf_create`** — PDF 文件生成（纯 Go 实现 A4 页面文本排版，支持标题/多级标题/自动换行/分页/页脚，零外部依赖）
+- **`pptx_create`** — PPT 演示文稿生成（接收 JSON 幻灯片数组，生成兼容 PowerPoint/WPS 的 .pptx，含标题/正文要点布局和主题配色）
+- **docx_write 增强** — 新增 ### 三级标题（Heading3）、无序/有序列表（bullet/decimal）、Markdown 表格（`|col1|col2|` 管道语法）、行内 `**加粗**`/`*斜体*` 格式
+- **xlsx_write 增强** — 公式识别（`=`开头的单元格自动转为 `<f>`）、数值类型自动检测（`isNumeric`）、多工作表支持（`sheets` 参数）、列宽设置
+
+#### 拖拽 & 多模态输入增强
+- **非图片文件拖放** — 拖入任意文件（非图片）自动上传至 `.gaeaW/attachments/`，在输入框中插入 `@` 文件引用标签
+- **文件粘贴支持** — Ctrl+V 从资源管理器粘贴文件，走上传+引用插入流程
+- **视觉拖放指示器** — 拖入文件时显示半透明 overlay + 下载图标动画 + "释放以添加文件" 文案
+- **大文件警告** — >10MB 文件弹出确认提示
+- **消息历史中附件渲染** — `[image]` 文本替换为实际 `<img>` 缩略图（通过 `AttachmentDataURL` 安全 data URL），非图片文件显示文件图标+文件名
+
+#### 工作区文件管理面板
+- **FileTree 组件** — 递归目录树，按扩展名区分图标（文件夹/图片/文本/通用），展开/折叠，懒加载子目录，隐藏文件过滤
+- **FilePreview 组件** — 文本文件 `<pre>` 渲染、图片文件 `<img>` 渲染、二进制文件大小信息、"在外部程序打开"按钮
+- **WorkspacePanel 重写** — 替换原有的简化桩，左栏 FileTree（可变宽度拖拽）+ 右栏 FilePreview，顶部面包屑路径导航+刷新按钮
+
+#### 企业微信 Bot 接入
+- **Webhook 接收器** — HTTP endpoint `/webhook/wecom`，支持 GET URL 验证和 POST 消息回调
+- **消息验签解密** — 企业微信 `msg_signature`/`timestamp`/`nonce` 签名校验 + AES 解密回调消息体
+- **消息路由** — 解析文本消息，`/help` 帮助、`/status` 状态查询、常规消息转发给 `Controller.Submit`
+- **企业微信 API 回复** — 获取 `access_token`，通过 `message/send` 发送回复
+- **配置集成** — `[bot]` 配置段（`gaeaW.example.toml` + `config.BotConfig`）
+
+#### 自定义技能开发
+- **Skill Creator 技能** — `.gaeaW/skills/skill-creator/SKILL.md`，引导 AI 帮助用户创建/编辑/测试/部署自定义技能
+
+#### 土壤修复领域技能（5个）
+- `site-survey` — 场地环境调查全流程（更新：新增 `pdf_create`/`chart_gen` 输出能力）
+- `risk-assessment` — 风险评估与超标判定（新增）
+- `remed-design` — 修复方案设计（更新：增强 `docx_write` 表格/列表输出）
+- `bid-package` — 投标文件包生成（新增：含 `pptx_create` 演示 PPT）
+- `data-report` — 检测数据报告生成（新增）
+
+### 变更
+
+- **`.gitignore`** — 添加 `!.gaeaW/skills/` 例外，使项目技能文件可被版本控制
+- **删除** `.claude/skills/ui-ux-pro-max/`（tianxuan 遗留）
+
+### 构建
+
+- CLI: `release/v0.5.0/gaeaW.exe`
+- Desktop: `release/v0.5.0/gaeaW-desktop.exe`
+- SHA256: `release/v0.5.0/SHA256SUMS`
+
+---
+
+
+
 ## v0.4.0 (2026-07-07)
 
 ### 清理
