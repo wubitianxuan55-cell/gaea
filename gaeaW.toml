@@ -1,0 +1,38 @@
+# gaeaW configuration
+# Secrets come from .env via api_key_env; never put keys here.
+
+default_model = "deepseek-pro"
+
+[agent]
+max_steps   = 25
+temperature = 0.0
+
+[[providers]]
+name        = "deepseek"
+kind        = "openai"
+base_url    = "https://api.deepseek.com"
+models      = ["deepseek-v4-flash"]
+api_key_env = "DEEPSEEK_API_KEY"
+[providers.price]
+cache_hit = 0.02
+input     = 1
+output    = 2
+currency  = "¥"
+
+[[providers]]
+name        = "deepseek-pro"
+kind        = "openai"
+base_url    = "https://api.deepseek.com"
+models      = ["deepseek-v4-pro"]
+api_key_env = "DEEPSEEK_API_KEY"
+[providers.price]
+cache_hit = 0.025
+input     = 3
+output    = 6
+currency  = "¥"
+
+[[plugins]]
+name       = "context7"
+command    = "npx"
+args       = ["-y", "@upstash/context7-mcp"]
+auto_start = true
