@@ -81,11 +81,6 @@ func (a *AgentRunner) executeBatch(ctx context.Context, calls []provider.ToolCal
 		results[i] = outcomes[i].output
 
 		// V7.4: learn from tool errors across sessions
-		if a.patternExtractor != nil {
-			if p := a.patternExtractor.Extract(calls[i].Name, results[i]); p != nil {
-				a.patternExtractor.SaveStore()
-			}
-		}
 	}
 
 	for _, batch := range partitionToolCalls(a.tools, calls) {

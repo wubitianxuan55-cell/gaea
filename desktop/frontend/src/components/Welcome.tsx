@@ -1,4 +1,4 @@
-import { ArrowUp, FolderOpen, Bug, Code, Search, FileText, MessageSquare, Clock, Zap, PenTool, TestTube } from "lucide-react";
+import { ArrowUp, FolderOpen, Code, Search, FileText, MessageSquare, Clock, Zap, List } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "../assets/logo.png";
 import { useT } from "../lib/i18n";
@@ -17,12 +17,12 @@ function formatTimeAgo(ms: number): string {
 }
 
 const QUICK_COMMANDS = [
-  { icon: <Search size={14} />, label: "探索代码库", prompt: "explore this codebase — identify the key modules, their responsibilities, and how they connect" },
-  { icon: <Bug size={14} />, label: "修复 Bug", prompt: "fix this bug: " },
-  { icon: <PenTool size={14} />, label: "添加功能", prompt: "add a feature: " },
-  { icon: <Zap size={14} />, label: "代码审查", prompt: "review my recent changes for issues" },
-  { icon: <TestTube size={14} />, label: "写测试", prompt: "write tests for " },
-  { icon: <FileText size={14} />, label: "写文档", prompt: "write documentation for " },
+  { icon: <Search size={14} />, label: "文档检索", prompt: "search documents — find the relevant files and summarize their content" },
+  { icon: <FileText size={14} />, label: "撰写文档", prompt: "write a document: " },
+  { icon: <Zap size={14} />, label: "数据分析", prompt: "analyze the data and provide insights" },
+  { icon: <Search size={14} />, label: "规范检查", prompt: "check the specification against the requirements" },
+  { icon: <List size={14} />, label: "项目报告", prompt: "generate a project report for " },
+  { icon: <MessageSquare size={14} />, label: "通讯纪要", prompt: "summarize the meeting notes from " },
 ];
 
 export function Welcome({

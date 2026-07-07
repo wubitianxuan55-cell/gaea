@@ -152,7 +152,7 @@ type subagentSkillTool struct {
 }
 
 func (t *subagentSkillTool) Name() string        { return t.toolName }
-// ReadOnly is true: explore/research/review/security_review are all read-only by nature.
+// ReadOnly is true: doc-writer/data-analyst/spec-checker/report-builder are all read-only by nature.
 // The sub-agent itself inherits plan mode from the parent, so any writer tool
 // calls within the sub-agent are blocked at the sub-agent's own executeOne gate.
 // Making these available in plan mode enables research-heavy workflows without
@@ -217,18 +217,18 @@ func BuiltinSubagentTools(store *Store, runner SubagentRunner) []tool.Tool {
 	specs := []struct {
 		toolName, skillName, description, taskDesc string
 	}{
-		{"explore", "explore",
-			"Isolated subagent for read-only codebase investigation. Use for broad survey questions ('how does X work?'). Returns one distilled answer with file:line citations. Spares your context — its reads + reasoning never enter.",
-			"Concrete investigation question. The subagent has none of your context — write a self-contained prompt naming the symbol / pattern / behavior to survey."},
-		{"research", "research",
-			"Isolated subagent combining web_search + web_fetch + code reading. Use for questions needing external reference + local code verification ('is X supported by lib Y?'). Returns synthesis with code (file:line) and web (URL) citations.",
-			"Concrete research question. The subagent has none of your context — name the external thing to look up and the local code to compare against."},
-		{"review", "review",
-			"Isolated subagent reviewing current branch diff — flags correctness, security, missing-tests, hidden behavior per file:line. Read-only. Use before suggesting a PR or after finishing a multi-step edit.",
-			"What to focus the review on (e.g. 'focus on the auth changes' or 'general'). The subagent reads the diff itself."},
-		{"security_review", "security-review",
-			"Isolated subagent for security review of current branch diff — injection, authz, secrets, deserialization, path-traversal, crypto, severity-tagged. Read-only. Use when changes touch auth, input parsing, file IO, or external requests.",
-			"Optional scope hint (e.g. 'focus on token handling in internal/auth/') or 'full' for everything in the diff."},
+		{"doc-writer", "doc-writer",
+			"工程文档写作子代理：撰写技术报告、标书、计算书、会议纪要。返回结构化 Markdown 文档。使用前先收集素材和数据。",
+			"具体的写作任务描述。子代理没有你的上下文——写一个自包含的提示，说明文档类型、目标受众、关键内容要求。"},
+		{"data-analyst", "data-analyst",
+			"数据分析子代理：对 Excel/CSV 数据进行统计、图表生成、趋势分析。返回统计表格和图表。使用前确保数据文件已就绪。",
+			"具体的分析任务。子代理没有你的上下文——说明数据文件位置、需要什么分析、期望的输出格式。"},
+		{"spec-checker", "spec-checker",
+			"规范审查子代理：对照工程规范（GB/JGJ/ISO/ASME）检查设计参数合规性。返回合规检查表。",
+			"具体的审查任务。子代理没有你的上下文——说明设计参数、引用的规范号、需要检查的条款。"},
+		{"report-builder", "report-builder",
+			"报告生成子代理：从数据、图表、文字素材生成完整工程报告（Markdown/PDF/Word）。",
+			"具体的报告生成任务。子代理没有你的上下文——说明报告主题、素材位置、输出格式要求。"},
 	}
 	var out []tool.Tool
 	for _, s := range specs {

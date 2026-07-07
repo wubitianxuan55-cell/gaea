@@ -1,7 +1,6 @@
 package builtin
 
 import (
-	"path/filepath"
 
 	"gaeaW/internal/netclient"
 	"gaeaW/internal/sandbox"
@@ -41,16 +40,9 @@ func (w Workspace) Tools(enabled ...string) []tool.Tool {
 	all := []tool.Tool{
 		readFile{workDir: w.Dir},
 		writeFile{workDir: w.Dir, roots: roots},
-		editFile{workDir: w.Dir, roots: roots},
-		multiEdit{workDir: w.Dir, roots: roots},
-		deleteRange{workDir: w.Dir, roots: roots},
-		deleteSymbol{workDir: w.Dir, roots: roots},
 		bash{workDir: w.Dir, sb: w.Bash},
 		listDir{workDir: w.Dir},
-		globTool{workDir: w.Dir},
-		grepTool{workDir: w.Dir},
 		webFetch{proxySpec: w.ProxySpec},
-		gitWorktree{},
 	}
 	if len(enabled) == 0 {
 		return all
@@ -66,27 +58,6 @@ func (w Workspace) Tools(enabled ...string) []tool.Tool {
 		}
 	}
 	return out
-}
-
-// resolveIn maps a tool's path/pattern argument into a working directory. With
-// an empty workDir it returns p unchanged — the process-cwd behavior the
-// compile-time built-ins have always had, so existing callers are unaffected.
-// Otherwise a relative p is joined onto workDir; an absolute p is returned as-is
-// (an explicit absolute path is honored verbatim — the write-confiner, not this,
-// enforces the workspace boundary). An empty p resolves to workDir itself, so a
-// defaulted "." (ls/grep) targets the workspace root.
-func resolveIn(workDir, p string) string {
-	if workDir == "" {
-		if p == "" { return p }
-		return filepath.Clean(p)
-	}
-	if p == "" || p == "." {
-		return workDir
-	}
-	if filepath.IsAbs(p) {
-		return filepath.Clean(p)
-	}
-	return filepath.Clean(filepath.Join(workDir, p))
 }
 
 // vendorDirs are directory names grep and glob skip during a recursive walk:

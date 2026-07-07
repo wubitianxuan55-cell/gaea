@@ -115,3 +115,10 @@ enabled = []   # empty = all built-in tools
 # [[plugins]]
 # name    = "example"
 # command = "reasonix-plugin-example"
+
+[office]
+# 工程办公配置
+default_template_dir = "~/.gaeaW/templates"
+spec_library_dir = "~/.gaeaW/specs"
+unit_system = "SI"  # SI/Metric 或 Imperial
+calc_precision = 3  # 计算精度：小数位数

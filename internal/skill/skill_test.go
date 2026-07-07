@@ -131,81 +131,48 @@ func TestReferencesInlined(t *testing.T) {
 	}
 }
 
-func TestBuiltinExploreIsSubagentSkill(t *testing.T) {
+func TestBuiltinDocWriterIsSubagentSkill(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	sk, ok := st.Read("explore")
+	sk, ok := st.Read("doc-writer")
 	if !ok {
-		t.Fatal("built-in explore skill not found")
+		t.Fatal("built-in doc-writer skill not found")
 	}
 	if sk.Scope != ScopeBuiltin || sk.RunAs != RunSubagent {
-		t.Errorf("explore should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
+		t.Errorf("doc-writer should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
 	}
-	if _, listed := find(st.List(), "explore"); !listed {
-		t.Error("explore should appear in List() so it reaches the slash menu")
+	if _, listed := find(st.List(), "doc-writer"); !listed {
+		t.Error("doc-writer should appear in List() so it reaches the slash menu")
 	}
 }
 
-func TestBuiltinReviewIsSubagentSkill(t *testing.T) {
+func TestBuiltinSpecCheckerIsSubagentSkill(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	sk, ok := st.Read("review")
+	sk, ok := st.Read("spec-checker")
 	if !ok {
-		t.Fatal("built-in review skill not found")
+		t.Fatal("built-in spec-checker skill not found")
 	}
 	if sk.Scope != ScopeBuiltin || sk.RunAs != RunSubagent {
-		t.Errorf("review should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
+		t.Errorf("spec-checker should be a builtin subagent skill, got scope=%s runAs=%s", sk.Scope, sk.RunAs)
 	}
-	if _, listed := find(st.List(), "review"); !listed {
-		t.Error("review should appear in List() so it reaches the slash menu")
+	if _, listed := find(st.List(), "spec-checker"); !listed {
+		t.Error("spec-checker should appear in List() so it reaches the slash menu")
 	}
 }
 
 func TestBuiltinSubagentSkillsDeclareAllowedTools(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
 	cases := map[string][]string{
-		"explore": {
-			"read_file", "ls", "glob", "grep",
-			"mcp__codegraph__codegraph_context",
-			"mcp__codegraph__codegraph_trace",
-			"mcp__codegraph__codegraph_impact",
-			"mcp__codegraph__codegraph_search",
-			"mcp__codegraph__codegraph_explore",
-			"mcp__codegraph__codegraph_node",
-			"mcp__codegraph__codegraph_files",
-			"lsp_definition", "lsp_references", "lsp_hover",
+		"doc-writer": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash",
 		},
-		"research": {
-			"read_file", "ls", "glob", "grep",
-			"mcp__codegraph__codegraph_context",
-			"mcp__codegraph__codegraph_trace",
-			"mcp__codegraph__codegraph_impact",
-			"mcp__codegraph__codegraph_search",
-			"mcp__codegraph__codegraph_explore",
-			"mcp__codegraph__codegraph_node",
-			"mcp__codegraph__codegraph_files",
-			"lsp_definition", "lsp_references", "lsp_hover",
-			"web_fetch", "web_search",
+		"data-analyst": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash", "web_fetch", "web_search",
 		},
-		"review": {
-			"read_file", "grep",
-			"mcp__codegraph__codegraph_context",
-			"mcp__codegraph__codegraph_trace",
-			"mcp__codegraph__codegraph_impact",
-			"mcp__codegraph__codegraph_search",
-			"mcp__codegraph__codegraph_explore",
-			"mcp__codegraph__codegraph_node",
-			"git_status", "git_diff", "git_log",
-			"lsp_diagnostics", "lsp_definition", "lsp_references", "lsp_hover",
+		"spec-checker": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash",
 		},
-		"security-review": {
-			"read_file", "grep",
-			"mcp__codegraph__codegraph_context",
-			"mcp__codegraph__codegraph_trace",
-			"mcp__codegraph__codegraph_impact",
-			"mcp__codegraph__codegraph_search",
-			"mcp__codegraph__codegraph_explore",
-			"mcp__codegraph__codegraph_node",
-			"git_status", "git_diff", "git_log",
-			"lsp_diagnostics", "lsp_definition", "lsp_references", "lsp_hover",
+		"report-builder": {
+			"read_file", "write_file", "ls", "glob", "grep", "bash",
 		},
 	}
 	for name, want := range cases {
@@ -219,7 +186,7 @@ func TestBuiltinSubagentSkillsDeclareAllowedTools(t *testing.T) {
 		if !sameStrings(sk.AllowedTools, want) {
 			t.Errorf("%s AllowedTools = %v, want %v", name, sk.AllowedTools, want)
 		}
-		for _, meta := range []string{"task", "run_skill", "install_skill", "explore", "research", "review", "security_review"} {
+		for _, meta := range []string{"task", "run_skill", "install_skill"} {
 			if containsString(sk.AllowedTools, meta) {
 				t.Errorf("%s AllowedTools should not include meta-tool %q: %v", name, meta, sk.AllowedTools)
 			}
@@ -229,16 +196,16 @@ func TestBuiltinSubagentSkillsDeclareAllowedTools(t *testing.T) {
 
 func TestBuiltinsPresentAndOverridable(t *testing.T) {
 	st := New(Options{HomeDir: t.TempDir()})
-	if _, ok := find(st.List(), "explore"); !ok {
-		t.Error("built-in explore should be present")
+	if _, ok := find(st.List(), "doc-writer"); !ok {
+		t.Error("built-in doc-writer should be present")
 	}
 	// A user file named after a built-in overrides it.
 	home := t.TempDir()
-	writeSkill(t, home, ".gaeaW/skills/explore.md", "---\ndescription: mine\nrunAs: inline\n---\nbody")
+	writeSkill(t, home, ".gaeaW/skills/doc-writer.md", "---\ndescription: mine\nrunAs: inline\n---\nbody")
 	st2 := New(Options{HomeDir: home})
-	ex, _ := st2.Read("explore")
+	ex, _ := st2.Read("doc-writer")
 	if ex.Scope == ScopeBuiltin || ex.Description != "mine" {
-		t.Errorf("user explore should override builtin: scope=%s desc=%q", ex.Scope, ex.Description)
+		t.Errorf("user doc-writer should override builtin: scope=%s desc=%q", ex.Scope, ex.Description)
 	}
 }
 

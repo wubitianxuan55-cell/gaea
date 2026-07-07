@@ -62,7 +62,8 @@ func Run(args []string, version string) int {
 	case "mcp":
 		return mcpCommand(rest)
 	case "codegraph":
-		return codegraphCommand(rest)
+		fmt.Fprintln(os.Stderr, "codegraph: not available in gaeaW (engineering office assistant)")
+		return 1
 	case "update":
 		return updateCommand(rest, version)
 	case "doctor":

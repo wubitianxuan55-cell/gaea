@@ -113,18 +113,6 @@ func (a *AgentRunner) executeOne(ctx context.Context, call provider.ToolCall) to
 			}
 		}
 	}
-	// Checkpoint the file this writer is about to change, so the turn can be
-	// rewound. Fires after all gating (the edit is cleared to run) and only for
-	// tools that can describe their change; a Preview error means the edit will
-	// likely fail anyway, so we skip rather than snapshot a stale state.
-	if a.onPreEdit != nil && !t.ReadOnly() {
-		if pv, ok := t.(tool.Previewer); ok {
-			if change, perr := pv.Preview(json.RawMessage(call.Arguments)); perr == nil {
-				a.onPreEdit(change)
-				a.pendingDiffs = append(a.pendingDiffs, change)
-			}
-		}
-	}
 	// V4.2: tool result cache — avoid redundant disk IO for repeat file reads
 	if call.Name == "read_file" && a.tc != nil {
 		var ra struct {

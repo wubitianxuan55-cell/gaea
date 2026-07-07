@@ -20,10 +20,8 @@ import (
 
 	"gaeaW/internal/agent"
 	"gaeaW/internal/billing"
-	"gaeaW/internal/checkpoint"
 	"gaeaW/internal/command"
 	tiancontext "gaeaW/internal/context"
-	"gaeaW/internal/diff"
 	"gaeaW/internal/event"
 	"gaeaW/internal/hook"
 	"gaeaW/internal/jobs"
@@ -75,19 +73,6 @@ type Controller struct {
 
 	ctxMgr            *tiancontext.ContextManager     // V3.0 Phase 5
 
-	// Checkpoints (snapshot-based rewind). cp is the per-session store rebound when
-	// the session path changes; cpRoot is the workspace root used to guard restore
-	// writes. cpTurn is the monotonic turn counter (decoupled from the store so it
-	// never collides after a restructure); cpBound[turn] records len(Session.Messages)
-	// at that turn's start — the truncation boundary for a conversation rewind/fork.
-	// Boundaries are persisted in each checkpoint and rebuilt from the store on
-	// resume (so a reopened session can still rewind conversation / fork), but
-	// dropped after a summarize restructures the log so those operations report
-	// "unavailable" rather than mis-truncating; code rewind (file-based) is unaffected.
-	cp      *checkpoint.Store
-	cpRoot  string
-	cpTurn  int
-	cpBound map[int]int
 
 	// promptMu serialises approval prompts so at most one is outstanding at a
 	// time (parallel read-only tool calls don't normally gate, writers run
@@ -159,7 +144,6 @@ type Options struct {
 	Registry  *tool.Registry
 	PluginCtx context.Context
 	CtxMgr         *tiancontext.ContextManager     // V3.0 Phase 5
-	// WorkspaceRoot is the project root checkpoint restores are confined to ("" =
 	// no confinement). Frontends pass the cwd they launched the session in.
 	WorkspaceRoot string
 }
@@ -195,59 +179,18 @@ func New(opts Options) *Controller {
 		reg:          opts.Registry,
 		pluginCtx:    pluginCtx,
 		ctxMgr:           opts.CtxMgr,
-		cpRoot:           opts.WorkspaceRoot,
 		permLevel:    "ask",
 		approvals:    map[string]chan approvalReply{},
 		asks:         map[string]chan []event.AskAnswer{},
 		granted:      map[string]bool{},
 	}
 	// Checkpoints: bind a store to the session and route writer pre-edits into it.
-	c.rebindCheckpoints(opts.SessionPath)
 	if c.executor != nil {
-		c.executor.SetPreEditHook(func(ch diff.Change) {
-			if c.cp != nil {
-				c.cp.Snapshot(ch)
-			}
-		})
-		c.executor.SetMemoryQueue(c)
 		c.executor.SetSessionSaver(c)
 		c.executor.SetPromoter(c)
 	}
 	return c
 }
-// rebindCheckpoints points the store at the (possibly new) session, loading any
-// checkpoints already on disk, and resets the turn boundaries. Called on
-// construction and whenever the session path changes (NewSession/Resume/SetSessionPath).
-func (c *Controller) rebindCheckpoints(sessionPath string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.cp = checkpoint.New(ckptDir(sessionPath), c.cpRoot)
-	c.cpTurn = c.cp.NextTurn() // continue numbering past any checkpoints on disk
-	c.cpBound = c.cp.Bounds()  // rebuilt from persisted checkpoints so a resumed
-	if c.cpBound == nil {      // session can still rewind conversation / fork
-		c.cpBound = map[int]int{}
-	}
-}
-
-// beginCheckpoint opens a checkpoint for the turn about to run, recording the
-// current message count as the conversation-rewind boundary. Called at the top of
-// runTurn, before the user message is appended.
-func (c *Controller) beginCheckpoint(input string) {
-	if c.cp == nil || c.executor == nil {
-		return
-	}
-	c.mu.Lock()
-	turn := c.cpTurn
-	c.cpTurn++
-	msgIndex := len(c.executor.Session().Messages)
-	c.cpBound[turn] = msgIndex
-	c.mu.Unlock()
-	c.cp.Begin(turn, input, msgIndex)
-}
-
-// --- commands (frontend → controller) ---
-
-// runGuarded runs body on a background goroutine under a fresh cancellable
 // context, guarding against concurrent turns and emitting a TurnDone event when
 // it finishes (Err set on failure; nil also for a user Cancel). A no-op if a
 // turn is already in flight.
@@ -316,7 +259,6 @@ func (c *Controller) runTurnWithRaw(ctx context.Context, input, raw string) erro
 	input = c.Compose(input)
 	// Open a checkpoint for this turn before the user message is appended, so the
 	// recorded message boundary precedes it and pre-edit snapshots land here.
-	c.beginCheckpoint(input)
 	// UserPromptSubmit / Stop hooks bracket the whole turn (incl. the plan
 	// research + approved-execution sub-turns below): a gating UserPromptSubmit
 	// aborts before any model call; Stop fires once when the turn returns.
@@ -625,7 +567,6 @@ func (c *Controller) NewSession() error {
 		c.mu.Unlock()
 	}
 	c.executor.SetSession(agent.NewSession(c.systemPrompt))
-	c.rebindCheckpoints(c.SessionPath())
 	// Reset V3.0 TCCA state so the new session starts clean.
 	if c.ctxMgr != nil {
 		c.ctxMgr.Flow().ReplaceMessages(nil)
@@ -647,7 +588,6 @@ func (c *Controller) Resume(s *agent.Session, path string) {
 	c.mu.Lock()
 	c.sessionPath = path
 	c.mu.Unlock()
-	c.rebindCheckpoints(path)
 }
 
 // Snapshot writes the executor's conversation to the active session file. No-op
@@ -677,7 +617,6 @@ func (c *Controller) SetSessionPath(p string) {
 	c.mu.Lock()
 	c.sessionPath = p
 	c.mu.Unlock()
-	c.rebindCheckpoints(p)
 }
 
 // SessionDir reports the directory new session files land in ("" disables
@@ -751,13 +690,6 @@ func (c *Controller) SessionCache() (hit, miss int) {
 	return c.executor.SessionCache()
 }
 
-// WorkspaceChanges returns the files modified during the current session.
-func (c *Controller) WorkspaceChanges() []diff.Change {
-	if c.executor == nil {
-		return nil
-	}
-	return c.executor.PendingDiffs()
-}
 
 // Balance queries the active provider's wallet balance, or (nil, nil) when the
 // provider declares no balance_url — so a caller treats "not configured" and

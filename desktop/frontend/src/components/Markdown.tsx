@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { Check, Copy } from "lucide-react";
-import { CodeViewer } from "./CodeViewer";
+
 import { openExternal } from "../lib/bridge";
 
 // KaTeX CSS 延迟注入：避免非数学对话的 ~23KB CSS 开销。
@@ -64,7 +64,7 @@ const components: Components = {
       return (
         <div className="my-3 rounded-md border border-border-soft overflow-hidden">
           <CodeBlockHeader language={lang} text={text} />
-          <CodeViewer value={text} language={lang} maxHeight={400} />
+          <pre className="px-3 py-2.5 font-mono text-[12.5px] leading-[1.55] overflow-auto whitespace-pre text-fg"><code>{text}</code></pre>
         </div>
       );
     }

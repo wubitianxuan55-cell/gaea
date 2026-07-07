@@ -58,7 +58,6 @@ func (a *AgentRunner) runDirect(ctx context.Context, input string) (*TurnResult,
 		a.bgStartKillStreak = 0  // 新用户轮次重置循环计数
 		a.staleWrittenFiles = nil   // 每轮重置 stale anchor 追踪
 		a.staleReadFiles = nil
-	a.pendingDiffs = nil
 	a.preMu.Unlock()
 	a.repeatSuccessCounts = nil // 每轮重置成功循环计数
 	// per-turn TurnResult tracking — accumulated here and returned by Run().

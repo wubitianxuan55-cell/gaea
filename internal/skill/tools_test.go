@@ -73,10 +73,10 @@ func TestRunSkillSubagentRequiresArgs(t *testing.T) {
 
 func TestCleanSkillName(t *testing.T) {
 	cases := map[string]string{
-		"explore":              "explore",
-		"explore [🧬 subagent]": "explore",
-		"[🧬 subagent] explore": "explore",
-		" review ":             "review",
+		"doc-writer":              "doc-writer",
+		"doc-writer [🧬 subagent]": "doc-writer",
+		"[🧬 subagent] doc-writer": "doc-writer",
+		" spec-checker ":             "spec-checker",
 		"[only a tag]":         "",
 		"":                     "",
 	}
@@ -94,22 +94,22 @@ func TestBuiltinSubagentToolsRunner(t *testing.T) {
 		return "ok", nil
 	}
 	tools := BuiltinSubagentTools(New(Options{HomeDir: t.TempDir()}), runner)
-	var explore interface {
+	var docWriter interface {
 		Name() string
 		Execute(context.Context, json.RawMessage) (string, error)
 	}
 	for _, tl := range tools {
-		if tl.Name() == "explore" {
-			explore = tl
+		if tl.Name() == "doc-writer" {
+			docWriter = tl
 		}
 	}
-	if explore == nil {
-		t.Fatal("explore wrapper tool not built")
+	if docWriter == nil {
+		t.Fatal("doc-writer wrapper tool not built")
 	}
-	if _, err := explore.Execute(context.Background(), json.RawMessage(`{"task":"map the loop"}`)); err != nil {
+	if _, err := docWriter.Execute(context.Background(), json.RawMessage(`{"task":"write a report"}`)); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	if ran != "explore:map the loop" {
+	if ran != "doc-writer:write a report" {
 		t.Errorf("runner not invoked correctly: %q", ran)
 	}
 }

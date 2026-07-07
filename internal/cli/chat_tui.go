@@ -153,12 +153,6 @@ type chatTUI struct {
 	// run goroutine is blocked awaiting ctrl.AnswerQuestion and keys drive the card.
 	chooser *chooser
 
-	// rewind holds the Esc-Esc / "/rewind" picker (nil when closed); while set,
-	// keys drive it and it renders as an overlay. lastEsc times the double-Esc
-	// gesture that opens it on an empty composer.
-	rewind  *rewindPicker
-	lastEsc time.Time
-
 	// lastCtrlCAt records when Ctrl+C was pressed while idle, enabling a
 	// "press again to quit" confirmation pattern (1.5s window).
 	lastCtrlCAt time.Time
@@ -537,7 +531,7 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state != tuiRunning && m.attachPastedImages(msg.Content) {
 			return m, finalize(m, cmds)
 		}
-		if !m.chooserTyping() && m.pendingApproval == nil && m.rewind == nil && m.shouldFoldPaste(msg.Content) {
+		if !m.chooserTyping() && m.pendingApproval == nil && m.shouldFoldPaste(msg.Content) {
 			m.insertFoldedPaste(msg.Content)
 			m.growInputToFit()
 			m.updateCompletion()
@@ -587,10 +581,6 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m.handleChooserKey(msg)
 		}
-		// The rewind picker is modal while open: keys navigate it.
-		if m.rewind != nil {
-			return m.handleRewindKey(msg)
-		}
 		// A pending tool approval is modal: keystrokes answer it (y/a/n, Enter,
 		// Esc) rather than reaching the input.
 		if m.pendingApproval != nil {
@@ -632,20 +622,8 @@ func (m chatTUI) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case len(m.attachments) > 0 && strings.TrimSpace(m.input.Value()) == "":
 				m.attachments = nil
 			default:
-				// Idle with nothing to back out: a double-Esc on an empty composer
-				// opens the rewind picker (Claude Code's gesture); a first Esc just
-				// arms it. Non-empty input clears as before.
-				if strings.TrimSpace(m.input.Value()) == "" {
-					if !m.lastEsc.IsZero() && time.Since(m.lastEsc) < 600*time.Millisecond {
-						m.lastEsc = time.Time{}
-						m.openRewind()
-					} else {
-						m.lastEsc = time.Now()
-					}
-				} else {
-					m.input.Reset()
-					m.pastedBlocks = nil
-				}
+				m.input.Reset()
+				m.pastedBlocks = nil
 			}
 			return m, nil
 		case "ctrl+c":
@@ -916,7 +894,6 @@ func (m chatTUI) bottomRows() int {
 		m.renderTodoPanel(),
 		m.renderApprovalBanner(),
 		m.renderChooser(),
-		m.renderRewind(),
 		m.renderCompletion(),
 	} {
 		if s != "" {
@@ -1771,14 +1748,9 @@ func (m *chatTUI) runSlashCommand(input string) tea.Cmd {
 		m.notice(i18n.M.SlashTodoCleared)
 	case "/verbose":
 		m.toggleVerboseReasoning(true)
-	case "/rewind":
-		m.openRewind()
 	case "/tree":
-		m.showBranchTree()
 	case "/branch":
-		m.runBranchCommand(input)
 	case "/switch":
-		m.runSwitchCommand(input)
 	case "/mcp":
 		m.runMCPSubcommand(input)
 	case "/model":

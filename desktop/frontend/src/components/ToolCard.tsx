@@ -6,8 +6,8 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { CodeViewer } from "./CodeViewer";
-import { DiffView } from "./DiffView";
+
+
 import { ICONS, mcpOr } from "./tool_icons";
 import { useT } from "../lib/i18n";
 import { useCompact } from "../hooks/useCompact";
@@ -116,7 +116,7 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
           {diffs.map((d, i) => (
             <div className={`${innerPx} ${innerPb}`} key={i}>
               {d.label && <div className="text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">{d.label}</div>}
-              <DiffView original={d.original} modified={d.modified} language={d.lang} maxHeight={220} />
+              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{d.original}</code></pre>
             </div>
           ))}
 
@@ -130,13 +130,13 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
 
           {hasArgs && (
             <div className={`${innerPx} ${innerPb}`}>
-              {item.args && <CodeViewer value={pretty(item.args)} language="json" maxHeight={60} />}
+              {item.args && <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{pretty(item.args)}</code></pre>}
             </div>
           )}
           {hasOutput && (
             <div className={`${innerPx} ${innerPb}`}>
               <div className="text-[9px] text-fg-faint/60 uppercase tracking-wider mb-0.5 select-none">输出 · {outputLines}L</div>
-              <CodeViewer value={item.output!} maxHeight={160} />
+              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{item.output}</code></pre>
               {item.truncated && (
                 <div className="mt-1 px-2 py-0.5 border border-border-soft rounded bg-bg-soft text-fg-dim text-[11px]">
                   {t("tool.truncated")}

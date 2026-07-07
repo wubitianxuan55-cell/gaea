@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"gaeaW/internal/codegraph"
 	"gaeaW/internal/config"
 )
 
@@ -180,18 +179,6 @@ func mcpList() int {
 		return 1
 	}
 	listed := 0
-	// CodeGraph is a built-in server injected by boot, not a [[plugins]] entry, so
-	// report its resolved status here too — otherwise `mcp list` looks empty even
-	// when codegraph will load. This doubles as a headless preflight: it shows
-	// whether the binary resolves before you enter a session.
-	if cfg.Codegraph.Enabled {
-		if bin, ok := codegraph.Resolve(cfg.Codegraph.Path); ok {
-			fmt.Printf("%-16s (stdio, built-in)  %s serve --mcp\n", "codegraph", bin)
-		} else {
-			fmt.Printf("%-16s (built-in, not installed)  run `gaeaW codegraph install` (or it auto-installs on first use)\n", "codegraph")
-		}
-		listed++
-	}
 	for _, p := range cfg.Plugins {
 		typ := p.Type
 		if typ == "" {

@@ -35,6 +35,13 @@ var compactDesc = map[string]string{
 	"read_skill":     "读取指定技能(skill)的完整内容",
 	"move_file":      "移动/重命名文件(自动建目录,工作区限制)",
 	"code_index":     "轻量符号索引(outline/search,Go AST+多语言regex)",
+	"csv_parse":      "CSV解析(结构化JSON+列统计)",
+	"calc_math":      "数学表达式计算(AST解析+math函数)",
+	"calc_stats":     "基础统计分析(均值/中位数/标准差)",
+	"calc_unit":      "单位转换(长度/重量/温度/压力)",
+	"material_query": "工程材料属性查询(钢/铝/混凝土等)",
+	"gantt_gen":      "生成Mermaid甘特图(Markdown代码块)",
+	"project_init":   "初始化项目目录结构(工程标准模板)",
 }
 
 // compactSchema maps tool names to stripped JSON Schema (properties without
@@ -96,4 +103,18 @@ var compactSchema = map[string]json.RawMessage{
 		`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
 	"code_index": json.RawMessage(
 		`{"type":"object","properties":{"action":{"type":"string"},"path":{"type":"string"},"query":{"type":"string"},"kind":{"type":"string"},"limit":{"type":"integer"}},"required":["action"]}`),
+	"csv_parse": json.RawMessage(
+		`{"type":"object","properties":{"path":{"type":"string"},"delimiter":{"type":"string"},"has_header":{"type":"boolean"}},"required":["path"]}`),
+	"calc_math": json.RawMessage(
+		`{"type":"object","properties":{"expression":{"type":"string"}},"required":["expression"]}`),
+	"calc_stats": json.RawMessage(
+		`{"type":"object","properties":{"values":{"type":"array","items":{"type":"number"}}},"required":["values"]}`),
+	"calc_unit": json.RawMessage(
+		`{"type":"object","properties":{"value":{"type":"number"},"from_unit":{"type":"string"},"to_unit":{"type":"string"}},"required":["value","from_unit","to_unit"]}`),
+	"material_query": json.RawMessage(
+		`{"type":"object","properties":{"material":{"type":"string"},"property":{"type":"string"}},"required":["material"]}`),
+	"gantt_gen": json.RawMessage(
+		`{"type":"object","properties":{"title":{"type":"string"},"tasks":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"start":{"type":"string"},"end":{"type":"string"},"duration":{"type":"string"},"depends":{"type":"string"},"section":{"type":"string"}},"required":["name"]}}},"required":["tasks"]}`),
+	"project_init": json.RawMessage(
+		`{"type":"object","properties":{"name":{"type":"string"},"type":{"type":"string"}},"required":["name","type"]}`),
 }

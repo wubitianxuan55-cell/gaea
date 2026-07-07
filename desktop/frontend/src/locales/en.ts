@@ -5,7 +5,7 @@
 
 export const en = {
   // shared verbs / chrome
-  "app.splashSubtitle": "AI coding agent",
+  "app.splashSubtitle": "AI office assistant",
   "common.close": "Close",
   "common.cancel": "Cancel",
   "common.save": "Save",
@@ -114,7 +114,7 @@ export const en = {
   "caps.noSkillMatches": "No matching skills.",
 
   // welcome / empty state
-  "welcome.tagline": "A coding agent — describe a task or ask anything.",
+  "welcome.tagline": "An office assistant — describe a task or ask anything.",
   "welcome.hintCommands": "commands",
   "welcome.hintFiles": "reference files",
   "welcome.hintSend": "send",
@@ -127,22 +127,22 @@ export const en = {
   "welcome.card2.prompt": "I have a bug. Please help me locate the root cause and propose a fix. Read relevant code first — don't jump to changes.",
   "welcome.card3.title": "Plan Implementation",
   "welcome.card3.desc": "Break a requirement into executable steps",
-  "welcome.card3.prompt": "Please break the following requirement into an implementation plan, including: files to change, scope of each change, testing strategy, and risks. Present the plan first; I'll confirm before you start coding.",
+  "welcome.card3.prompt": "Please break the following requirement into an implementation plan, including: files to change, scope of each change, testing strategy, and risks. Present the plan first; I'll confirm before you start working.",
   "welcome.ex1": "Explain this codebase's architecture",
   "welcome.ex2": "Summarize the recent git changes",
   "welcome.ex3": "Where is the agent run loop, and what does it do?",
 
   // loading
   "skeleton.title": "Connecting…",
-  "skeleton.desc": "gaeaW is initializing. Sit tight — you'll be coding in a moment.",
+  "skeleton.desc": "gaeaW is initializing. Sit tight — you'll be working in a moment.",
   "skeleton.tools": "Tools",
-  "skeleton.toolsDesc": "20+ built-in tools",
+  "skeleton.toolsDesc": "Doc/calc/spec tools",
   "skeleton.skills": "Skills",
-  "skeleton.skillsDesc": "Adaptive learning",
+  "skeleton.skillsDesc": "Office skill adaptive",
   "skeleton.models": "Models",
-  "skeleton.modelsDesc": "Multi-model switching",
+  "skeleton.modelsDesc": "Multi-model smart switch",
   "skeleton.cache": "Cache",
-  "skeleton.cacheDesc": "Smart prefix cache",
+  "skeleton.cacheDesc": "Smart cache boost",
 
   // composer
   "composer.placeholder": "Message gaeaW…  ( / commands · @ files )",

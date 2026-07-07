@@ -10,11 +10,9 @@ import (
 
 	"gaeaW/internal/archive"
 	tiancontext "gaeaW/internal/context"
-	"gaeaW/internal/diff"
 	"gaeaW/internal/event"
 	"gaeaW/internal/evidence"
 	"gaeaW/internal/jobs"
-	"gaeaW/internal/learning"
 	"gaeaW/internal/memory"
 	"gaeaW/internal/nilutil"
 	"gaeaW/internal/provider"
@@ -233,21 +231,9 @@ type AgentRunner struct {
 	// nil in headless runs. Safe for concurrent reads.
 	asker Asker
 
-	// onPreEdit, when non-nil, is called with a writer tool's previewed change
-	// just before it runs �� the seam the checkpoint store uses to snapshot a
 	// file's pre-edit content. Only fires for non-ReadOnly tools that implement
-	// tool.Previewer (so bash, whose targets are unknowable, is never tracked).
-	// Set via SetPreEditHook.
-	onPreEdit func(diff.Change)
-
-	// pendingDiffs collects writer tool diffs for post-turn injection.
-	pendingDiffs []diff.Change
 
 	// patternExtractor learns from recurring tool errors across sessions.
-	patternExtractor interface {
-		Extract(toolName, result string) *learning.Pattern
-		SaveStore() error
-	}
 
 	// jobs, when non-nil, is the session's background-job manager. executeOne
 	// stamps it onto each tool call's context so the background tools (bash
@@ -302,11 +288,6 @@ type AgentRunner struct {
 
 	// V5.15: Ԥ���ſء���׷�ٻỰ�ۼƷ��ã�80%����/100%��ϡ�
 	budgetGate *BudgetGate
-	// lspManager runs LSP diagnostics on files modified by writer tools
-	// and injects results so the model can fix compilation errors.
-	lspManager interface {
-		Diagnostics(ctx context.Context, file string) (string, error)
-	}
 
 	// auditFunc, when non-nil, is called after each tool execution for
 	// audit trail logging (V3.2).
@@ -418,11 +399,6 @@ func (a *AgentRunner) SetSessionSaver(s memory.SessionSaver) { a.sessionSaver = 
 func (a *AgentRunner) SetPromoter(p memory.SessionFactPromoter) { a.promoter = p }
 // SetArchive installs the session archive store for cross-session Dream/Distill.
 // nil disables archiving. V7.0.
-func (a *AgentRunner) SetLSPManager(m interface {
-	Diagnostics(ctx context.Context, file string) (string, error)
-}) {
-	a.lspManager = m
-}
 
 // Sink returns the current event sink. SetSink replaces it.
 func (a *AgentRunner) Sink() event.Sink { return a.sink }
@@ -431,12 +407,6 @@ func (a *AgentRunner) Sink() event.Sink { return a.sink }
 // Run() — this is intended for one-time setup or between-turn sink wrapping.
 func (a *AgentRunner) SetSink(s event.Sink) { a.sink = s }
 
-func (a *AgentRunner) SetPatternExtractor(e interface {
-	Extract(toolName, result string) *learning.Pattern
-	SaveStore() error
-}) {
-	a.patternExtractor = e
-}
 func (a *AgentRunner) SetArchive(ar *archive.Store, sessionID string) {
 	a.archive = ar
 	a.sessionID = sessionID
@@ -444,17 +414,6 @@ func (a *AgentRunner) SetArchive(ar *archive.Store, sessionID string) {
 
 // SetPreEditHook installs the pre-edit snapshot hook (see onPreEdit). The
 // controller wires it to its per-session checkpoint store; nil disables capture.
-func (a *AgentRunner) SetPreEditHook(fn func(diff.Change)) { a.onPreEdit = fn }
-
-// PendingDiffs returns the file changes recorded during the current turn.
-// Used by the WorkspacePanel to show session-level file modifications.
-func (a *AgentRunner) PendingDiffs() []diff.Change {
-	a.preMu.Lock()
-	defer a.preMu.Unlock()
-	out := make([]diff.Change, len(a.pendingDiffs))
-	copy(out, a.pendingDiffs)
-	return out
-}
 
 // Session returns the agent's current conversation, useful for persistence
 // hooks that need to read the message log between turns. sessMu serialises this

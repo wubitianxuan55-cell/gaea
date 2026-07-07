@@ -26,11 +26,11 @@ func ConfineWriters(roots []string) []tool.Tool {
 	rs := realRoots(roots)
 	return []tool.Tool{
 		writeFile{roots: rs},
-		editFile{roots: rs},
-		multiEdit{roots: rs},
-		notebookEdit{roots: rs},
-		deleteRange{roots: rs},
-		deleteSymbol{roots: rs},
+		
+		
+		
+		
+		
 	}
 }
 
@@ -104,4 +104,13 @@ func within(root, path string) bool {
 		return false
 	}
 	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
+}
+
+// resolveIn resolves a path relative to workDir if the path is relative.
+// workDir defaults to cwd when empty.
+func resolveIn(workDir, p string) string {
+	if workDir == "" || filepath.IsAbs(p) {
+		return p
+	}
+	return filepath.Join(workDir, p)
 }

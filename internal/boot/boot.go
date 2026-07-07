@@ -27,8 +27,6 @@ import (
 	"gaeaW/internal/event"
 	"gaeaW/internal/hook"
 	"gaeaW/internal/jobs"
-	"gaeaW/internal/lsp"
-	"gaeaW/internal/learning"
 	"gaeaW/internal/memory"
 	"gaeaW/internal/permission"
 	"gaeaW/internal/plugin"
@@ -134,13 +132,11 @@ if cfg.Agent.Effort != "" { entry.Effort = cfg.Agent.Effort }
 		bashWarnOnce.Do(func() { fmt.Fprintln(stderr, "warning: bash not found on PATH; the shell tool will run commands under Windows PowerShell. Install Git for Windows or WSL to use bash.") })
 	}
 	addBuiltins(reg, cfg.Tools.Enabled, cfg.WriteRoots(), bashSpec, stderr)
-	builtin.ResolveRgPath() // V10.29: enable ripgrep delegation when rg is on PATH
 	// Always construct a host, even with no plugins configured, so the controller's
 	// host pointer is stable for the session and `/mcp add` can hot-add into it.
 	// V10.22: plugins + LSP assembled in plugins.go
 	po := startPlugins(ctx, cfg, reg, sink, opts.Stderr)
 	pluginHost := po.host
-	lspMgr := po.lspMgr
 	cleanup := po.cleanup
 	maxSteps := cfg.Agent.MaxSteps
 	if opts.MaxSteps > 0 {
@@ -314,22 +310,7 @@ if cfg.Agent.Effort != "" { entry.Effort = cfg.Agent.Effort }
 		slashEntries = append(slashEntries, command.SlashEntry{
 			Name:        sk.Name,
 			Description: sk.Description,
-			Render:      func(args []string) string { return skill.Render(sk, strings.Join(args, " ")) },
 		})
-	}
-	if lspMgr != nil {
-		executor.SetLSPManager(lspMgr)
-	}
-
-	// V7.4: cross-session error pattern learning
-	if patPath, err := resolvePatternsPath(); err == nil {
-		if patternStore, err2 := learning.LoadStore(patPath); err2 == nil {
-			patternExtractor := learning.NewExtractor(patPath)
-			executor.SetPatternExtractor(patternExtractor)
-			if active := learning.ActivePatterns(patternStore, 3); len(active) > 0 {
-				sysPrompt += "\n\n" + learning.FormatGuide(active)
-			}
-		}
 	}
 
 	for _, cmd := range cmds {
@@ -615,39 +596,6 @@ func MCPStartupNotice(failures []plugin.Failure) (text string, ok bool) {
 		len(failures), strings.Join(names, ", "), more), true
 }
 
-// LSPSpecs returns the language → server map: the built-in defaults overlaid with
-// any user overrides. A user entry may set only the fields it wants to change;
-// empty fields keep the default for that language.
-func LSPSpecs(cfg config.LSPConfig) map[string]lsp.ServerSpec {
-	specs := lsp.DefaultSpecs()
-	for lang, s := range cfg.Servers {
-		spec := specs[lang]
-		if s.Command != "" {
-			spec.Command = s.Command
-		}
-		if s.Args != nil {
-			spec.Args = s.Args
-		}
-		if s.Env != nil {
-			spec.Env = s.Env
-		}
-		if s.LanguageID != "" {
-			spec.LanguageID = s.LanguageID
-		}
-		if s.Extensions != nil {
-			spec.Extensions = s.Extensions
-		}
-		if s.InstallHint != "" {
-			spec.InstallHint = s.InstallHint
-		}
-		if spec.LanguageID == "" {
-			spec.LanguageID = lang
-		}
-		specs[lang] = spec
-	}
-	return specs
-}
-
 func providerNames(cfg *config.Config) string {
 	names := make([]string, len(cfg.Providers))
 	for i, p := range cfg.Providers {
@@ -724,20 +672,6 @@ func applyCompactToolset(reg *tool.Registry) {
 
 	// File listing: glob is redundant with ls (which supports patterns)
 	reg.HideUnlessOnly([]string{"glob"}, []string{"ls"})
-}
-
-// resolvePatternsPath returns the path to the project's learned-patterns.toml,
-// or an error if the .gaeaW directory doesn't exist.
-func resolvePatternsPath() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	// Use .gaeaW/ relative to cwd
-	if _, err := os.Stat(filepath.Join(cwd, ".gaeaW")); err == nil {
-		return filepath.Join(cwd, learning.DefaultPatternsPath), nil
-	}
-	return learning.DefaultPatternsPath, nil
 }
 
 // newReadOnlyRegistry builds a tool registry containing only the read-only tools

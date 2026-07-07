@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"gaeaW/internal/diff"
 	"gaeaW/internal/provider"
 )
 
@@ -62,15 +61,6 @@ type CompactDescriptor interface {
 	CompactSchema() json.RawMessage
 }
 
-// Previewer is an optional capability a writer Tool may implement: given the
-// same raw JSON args Execute would receive, compute the file change the call
-// *would* make — without touching disk. A front-end uses it to show an approval
-// card or a changed-files panel before the call runs (the permission gate, not
-// Preview, decides whether it may proceed). Type-assert a Tool to Previewer to
-// discover support; the file-writing built-ins implement it, most tools do not.
-type Previewer interface {
-	Preview(args json.RawMessage) (diff.Change, error)
-}
 
 // --- process-global built-in set (populated by builtin subpackage init) ---
 

@@ -66,7 +66,6 @@ func (m *chatTUI) runResumeCommand(input string) {
 	// Persist the conversation we're leaving so switching back later restores it.
 	_ = m.ctrl.Snapshot()
 	m.ctrl.Resume(loaded, target.Path)
-	m.replayActiveBranch(i18n.M.ResumedTitle)
 }
 
 // showSessions renders the recent-session list with 1-based indices, timestamp,

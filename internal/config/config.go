@@ -29,10 +29,12 @@ type Config struct {
 	Sandbox      SandboxConfig     `toml:"sandbox"`
 	Plugins      []PluginEntry     `toml:"plugins"`
 	Skills       SkillsConfig      `toml:"skills"`
-	Codegraph    CodegraphConfig   `toml:"codegraph"`
+	// [office 配置适配] Codegraph 配置段已废弃
+	// Codegraph    CodegraphConfig   `toml:"codegraph"`
 	Statusline   StatuslineConfig  `toml:"statusline"`
 	Notify       NotifyConfig      `toml:"notifications"`
-	LSP          LSPConfig         `toml:"lsp"`
+	// [office 配置适配] LSP 配置段已废弃
+	// LSP          LSPConfig         `toml:"lsp"`
 	Search       SearchConfig      `toml:"search"`
 	Network      NetworkConfig     `toml:"network"`
 }
@@ -85,6 +87,32 @@ func (c *SearchConfig) SearchTimeout() time.Duration {
 }
 
 // ── Network proxy (V10.31) ──────────────────────────────────────────
+
+// [office 配置适配] LSP/Codegraph 配置类型已废弃 · 开始
+// LSPConfig governs the optional Language Server Protocol tools (lsp_definition,
+// lsp_references, lsp_hover, lsp_diagnostics). Enabled defaults to true; the
+// servers themselves are never bundled — each resolves on PATH and the tool
+// returns an install hint when it is missing, so the capability is dormant until
+// the user installs a server. Servers overrides or extends the built-in language
+// → server map, keyed by language id (e.g. "go", "rust", "python").
+// type LSPConfig struct {
+// 	Enabled bool                 `toml:"enabled"`
+// 	Servers map[string]LSPServer `toml:"servers"`
+// }
+
+// LSPServer overrides a built-in language's server or, when keyed by a new
+// language, adds one. An empty field falls back to the built-in default for that
+// language; Extensions is required when adding a language the built-ins don't
+// cover (e.g. ".ex" for Elixir) so files route to it.
+// type LSPServer struct {
+// 	Command     string            `toml:"command"`
+// 	Args        []string          `toml:"args"`
+// 	Env         map[string]string `toml:"env"`
+// 	LanguageID  string            `toml:"language_id"`
+// 	Extensions  []string          `toml:"extensions"`
+// 	InstallHint string            `toml:"install_hint"`
+// }
+// [office 配置适配] LSP/Codegraph 配置类型已废弃 · 结束
 
 // NetworkConfig controls how outgoing HTTP requests reach the internet.
 // ProxyMode selects the strategy: "auto" (system proxy), "env" (HTTP_PROXY/
@@ -161,6 +189,7 @@ type NotifyConfig struct {
 	MinDuration int  `toml:"min_duration"` // seconds; minimum turn duration before a notification fires (default 5)
 }
 
+// [office 配置适配] CodegraphConfig 已废弃
 // CodegraphConfig governs the built-in CodeGraph MCP server — symbol/call-graph
 // code intelligence (tree-sitter + SQLite) that gives the agent codegraph_*
 // search / context / explore / trace / node tools. Enabled defaults to true; set
@@ -169,11 +198,12 @@ type NotifyConfig struct {
 // use; set false to require an explicit `gaeaW codegraph install` (e.g. for
 // air-gapped or headless runs). Path overrides binary resolution; empty resolves
 // the cache, then a `codegraph` on PATH, then a bundle beside the executable.
-type CodegraphConfig struct {
-	Enabled     bool   `toml:"enabled"`
-	AutoInstall bool   `toml:"auto_install"`
-	Path        string `toml:"path"`
-}
+// type CodegraphConfig struct {
+// 	Enabled     bool   `toml:"enabled"`
+// 	AutoInstall bool   `toml:"auto_install"`
+// 	Path        string `toml:"path"`
+// }
+// [office 配置适配] CodegraphConfig 已废弃
 
 // SkillsConfig configures skill discovery. Paths adds extra "custom"-scope skill
 // roots — each a directory of SKILL.md / <name>.md playbooks — scanned between
@@ -448,29 +478,36 @@ func (c *Config) AutoStartPlugins() []PluginEntry {
 }
 
 // DefaultSystemPrompt is used when config provides none.
-const DefaultSystemPrompt = `你是 gaeaW，一个中文编程助手。所有思考和输出必须使用中文。
-你是 gaeaW，一个专注于执行代码任务的编码代理。
+const DefaultSystemPrompt = `你是 gaeaW，一个中文专业工程办公助理。所有思考和输出必须使用中文。
+你是 gaeaW，专注于文档处理、工程计算、规范查询、图表生成、项目管理等工程办公任务。
 使用提供的工具读取和写入文件以及运行 shell 命令。
 
 **原则：**
 - 理解请求后再行动；用工具验证而非猜测；保持变更最小且正确；完成后简要总结。
 - 遇到用户真正需要决策的问题时（方案选择、范围、影响重大的判断），使用 ask 工具列出 2-4 个具体选项，不要猜测或把问题埋在文字里。有明确默认值时直接选择，不要为了确认而提问。
 - 多步骤任务使用 todo_write 跟踪进度：列出步骤，始终保持恰好一个 in_progress，每完成一步就标记为 completed。随时更新列表，不要等到最后。
-- 复杂任务先探索代码库、制定方案，用 todo_write 列出步骤。等用户发送"批准"或"继续"确认后再逐步骤执行。每完成一步用 complete_step 附验证证据（命令输出、文件变更、检查结果）。权限系统自动管控写入——放心读代码和探索，写文件时系统会按需弹出确认。
+- 复杂任务先制定方案，用 todo_write 列出步骤。等用户发送"批准"或"继续"确认后再逐步骤执行。每完成一步用 complete_step 附验证证据（命令输出、计算结果、文件变更）。权限系统自动管控写入——放心读取和探索，写文件时系统会按需弹出确认。
 - 所有独立操作必须在一个响应中完成：并行读取多个文件、编辑不同文件、运行 shell 命令。只有顺序操作（编辑+验证同一文件、任务子代理）才分开发送。工具系统支持非冲突工具的并行执行——积极利用。
+- 输出风格强调结构化文档、表格和计算过程，保持清晰可追溯。
+
+**工程办公规范：**
+- 文档格式规范：严格遵守标题层级、编号、段落结构，确保文档专业一致
+- 计算精度要求：工程计算保留适当有效数字，标明单位，附计算公式和中间结果
+- 标准引用规范：引用工程规范时必须注明标准编号、条款号和版本号
+- 所有工程文档输出应包含版本号、日期、编制人信息
 
 **子代理：**
 task 工具可派发隔离子代理。以下场景优先使用子代理：
-- 需读取 3+ 文件：用 explore 子代理一次返回提炼结果，节省上下文
-- 需同时查代码和外部文档：用 research
-- 准备 PR 或多文件变更完成前：用 review 子代理审查 diff
-- 安全敏感变更（认证、输入解析、文件 IO、令牌）：用 security-review
-子代理在独立上下文中运行——其工具调用不会撑大你的上下文。犹豫时直接派发。内置子代理技能（explore/research/review/security-review）见下方 Skills 索引，用 run_skill 按名称调用或直接用 task。
+- 需撰写技术报告、标书、计算书、会议纪要：用 doc-writer 子代理
+- 需处理 Excel/CSV 统计数据、生成图表、分析趋势：用 data-analyst 子代理
+- 需对照工程规范检查设计参数：用 spec-checker 子代理
+- 需从数据生成完整 PDF/Word 报告：用 report-builder 子代理
+子代理在独立上下文中运行——其工具调用不会撑大你的上下文。犹豫时直接派发。内置子代理技能（doc-writer/data-analyst/spec-checker/report-builder）见下方 Skills 索引，用 run_skill 按名称调用或直接用 task。
 
 **记忆：**
 用 remember/forget 跨会话持久化事实：
 - 用户纠正偏好或事实：记住，避免后续重复犯错
-- 发现非显而易见的项目事实（构建命令、架构决策、复杂依赖）：记住供后续参考
+- 发现非显而易见的项目事实（设计参数、规范版本、决策依据）：记住供后续参考
 - 记忆被证明错误：用 forget 删除
 不要记录瞬时状态或用户明确要求不保存的内容。记忆是持久的——只保存跨会话不变的事实。`
 
@@ -506,10 +543,9 @@ func Default() *Config {
 		// as a built-in MCP server, and AutoInstall fetches it into the cache on
 		// first use. Set enabled = false to opt out, or auto_install = false to
 		// require an explicit `gaeaW codegraph install`.
-		Codegraph: CodegraphConfig{Enabled: true, AutoInstall: true},
-		// LSP tools on by default, but dormant until a language server is on PATH;
-		// a missing server yields an install hint rather than an error.
-		LSP: LSPConfig{Enabled: true},
+		// [office 配置适配] Codegraph/LSP 默认值已废弃
+		// Codegraph: CodegraphConfig{Enabled: true, AutoInstall: true},
+		// LSP: LSPConfig{Enabled: true},
 		Notify: NotifyConfig{Enabled: true, MinDuration: 5},
 		Tools: ToolsConfig{Enabled: []string{
 			"read_file", "write_file", "edit_file", "edit_lines", "move_file",

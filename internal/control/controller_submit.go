@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"gaeaW/internal/config"
@@ -193,63 +192,6 @@ func (c *Controller) Submit(input string) {
 		// Read-only management verbs (/model /memory /skill /hooks /mcp) emit a
 		// listing Notice, so Submit-based frontends (desktop, HTTP) get them with
 		// no extra wiring. (The chat TUI handles these itself with richer output.)
-		fields := strings.Fields(trimmed)
-		switch fields[0] {
-		case "/tree":
-			c.notice(c.BranchTreeText())
-			return
-		case "/branch":
-			args := strings.TrimSpace(strings.TrimPrefix(trimmed, fields[0]))
-			if turn, name, fromTurn, err := ParseBranchTarget(args); err != nil {
-				c.notice(err.Error())
-			} else if fromTurn {
-				if _, err := c.ForkNamed(turn-1, name); err != nil {
-					c.notice(err.Error())
-				}
-			} else {
-				if _, err := c.Branch(name); err != nil {
-					c.notice(err.Error())
-				}
-			}
-			return
-		case "/switch":
-			ref := strings.TrimSpace(strings.TrimPrefix(trimmed, fields[0]))
-			if _, err := c.SwitchBranch(ref); err != nil {
-				c.notice(err.Error())
-			}
-			return
-		case "/undo":
-			args := strings.TrimSpace(strings.TrimPrefix(trimmed, fields[0]))
-			n := 1
-			if args != "" {
-				if parsed, err := strconv.Atoi(args); err == nil && parsed > 0 {
-					n = parsed
-				}
-			}
-			checkpoints := c.Checkpoints()
-			if len(checkpoints) == 0 {
-				c.notice("undo: nothing to undo (no checkpoints)")
-				return
-			}
-			target := len(checkpoints) - n
-			if target < 0 {
-				target = 0
-			}
-			if target >= len(checkpoints) {
-				c.notice(fmt.Sprintf("undo: only %d turn(s) available", len(checkpoints)))
-				return
-			}
-			turn := checkpoints[target].Turn
-			if err := c.Rewind(turn, RewindBoth); err != nil {
-				c.notice("undo failed: " + err.Error())
-				return
-			}
-			c.notice(fmt.Sprintf("undo: rewound to turn %d (%d turn(s))", turn, n))
-			return
-		}
-		if c.managementNotice(trimmed) {
-			return
-		}
 		// A custom command wins over a skill of the same name; both resolve to a
 		// turn. (Built-in slash verbs like /compact are handled above.)
 		if sent, ok := c.CustomCommand(trimmed); ok {

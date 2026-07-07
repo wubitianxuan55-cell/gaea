@@ -1,9 +1,8 @@
 package skill
 
-// Built-in skills ship with Tianxuan and back the dedicated subagent tools
-// (explore / research / review / security_review) plus inline playbooks
-// (tdd / lsp / debug / init). A user/project file with the same name
-// overrides the built-in (see Store.List / Store.Read).
+// Built-in skills ship with gaeaW and back the dedicated subagent tools
+// (doc-writer / data-analyst / spec-checker / report-builder). A user/project
+// file with the same name overrides the built-in (see Store.List / Store.Read).
 
 // negativeClaimRule keeps subagents honest about "found nothing" answers.
 const negativeClaimRule = `When you claim something does NOT exist (no caller, no usage, not implemented), say which searches you ran to reach that conclusion — a negative claim is only as trustworthy as the search behind it.`
@@ -11,207 +10,171 @@ const negativeClaimRule = `When you claim something does NOT exist (no caller, n
 // tuiFormatting nudges concise, terminal-friendly output.
 const tuiFormatting = `Keep the final answer compact and terminal-friendly: short paragraphs or bullets, no walls of text, no restating the question.`
 
-// --- Tool-name constants (used in build tags and skill bodies) ---
-
-const (
-	cgContext = "mcp__codegraph__codegraph_context"
-	cgTrace   = "mcp__codegraph__codegraph_trace"
-	cgImpact  = "mcp__codegraph__codegraph_impact"
-	cgSearch  = "mcp__codegraph__codegraph_search"
-	cgExplore = "mcp__codegraph__codegraph_explore"
-	cgNode    = "mcp__codegraph__codegraph_node"
-	cgFiles   = "mcp__codegraph__codegraph_files"
-)
-
 // --- Skill bodies ---
 
-const builtinExploreBody = `You are running as an exploration subagent. Investigate the codebase and return one focused, distilled answer.
+const builtinDocWriterBody = `你作为工程文档写作子代理运行。撰写高质量的工程技术文档并返回。
 
-## Fast Path (use first to save time)
+## 工具选择指南
 
-If the task is a simple symbol lookup or definition search:
-1. Try ` + "`" + cgSearch + "`" + ` or ` + "`" + cgNode + "`" + ` first — single tool call, immediate answer
-2. If found with sufficient context, return immediately — no further exploration needed
-3. Only use deep exploration (cgContext chain) for architecture questions or broad surveys
+| 文档类型 | 推荐工具 | 说明 |
+|----------|----------|------|
+| 技术报告 | read_file + bash | 读取数据文件和模板，生成结构化报告 |
+| 标书 | read_file + write_file | 按招标要求逐项编制 |
+| 计算书 | bash + write_file | 执行数值计算并附完整计算过程 |
+| 会议纪要 | write_file | 根据输入要点整理为结构化纪要 |
 
-## Tool Selection Guide
+## 操作方式
 
-| Question type | Best tool | Why |
-|---------------|-----------|-----|
-| "How does X work?" / architecture overview | ` + "`" + cgContext + "`" + ` | Entry points + related symbols + key code in ONE call — often the only tool you need |
-| "How does request reach database?" / call chain | ` + "`" + cgTrace + "`" + ` | Full path from A to B with each hop's code inlined |
-| "What would break if I change X?" | ` + "`" + cgImpact + "`" + ` | Sorted by depth: d=1 WILL BREAK, d=2 likely affected |
-| "Where is X defined?" / quick symbol lookup | ` + "`" + cgSearch + "`" + ` | Fast, returns locations only. Use ` + "`" + cgContext + "`" + ` for richer context |
-| "Show me the code for X, Y, Z" / multi-symbol source | ` + "`" + cgExplore + "`" + ` | Verbatim source for several symbols in ONE capped call — replaces chained read_file |
-| Deep-dive on one symbol after cgContext | ` + "`" + cgNode + "`" + ` | Location + signature + callers/callees; use includeCode=true for body |
-| "What's the project structure?" | ` + "`" + cgFiles + "`" + ` | Indexed file tree with language + symbol counts |
-| "Where is symbol defined?" / "Who uses it?" | lsp_definition / lsp_references | LSP-level precision for a specific file+line |
-| File-name search | glob | Pattern-match filenames (NOT content) |
-| Content search | grep | Regex over file contents — use when codegraph is unavailable or for comments/strings |
+1. 先确认文档类型和目标读者
+2. 如需模板，用 read_file 或 glob 搜索已有模板
+3. 文档结构必须包含：标题、版本号、日期、编制人、正文、附录（如需要）
+4. 使用表格呈现对比数据、参数清单
+5. 技术报告和计算书必须附计算公式、中间结果、单位
+6. 所有工程术语使用标准中文名称，首次出现标注英文
+7. 完成后用 write_file 输出文档
 
-## How to operate
+## 最终输出
 
-1. Start with ` + "`" + cgContext + "`" + ` — it's the highest-signal tool. Describe what you're investigating; it returns entry points + related symbols + their code. This alone answers ~70% of questions.
-2. Follow the trail: if cgContext reveals a symbol of interest, use ` + "`" + cgNode + "`" + ` (includeCode=true) or lsp_definition for its callers/callees.
-3. For flow questions, jump to ` + "`" + cgTrace + "`" + ` — the whole path in one call.
-4. For impact questions, use ` + "`" + cgImpact + "`" + ` with direction=upstream.
-5. Use read_file only when you need context codegraph doesn't capture (comments, surrounding invariants, test files). Budget: ≤3 read_file calls.
-6. Don't read every file — be selective. Breadth on the first pass, depth only where the question demands it.
-7. Stop as soon as you can answer. The parent doesn't see your tool calls, so over-exploration is pure waste.
-8. Cap at ~10 tool calls. If you can't converge, return what you have plus a note on what's missing.
-
-## Your final answer
-
-- One paragraph (or a few short bullets). Lead with the conclusion.
-- Cite specific file:line positions for every claim.
-- If a tool returns empty/error, say which tool and what you asked — don't guess from silence.
-- Distinguish verified facts from deductions.
-- If the question can't be answered from what you found, say so plainly and suggest where to look next.
+- 返回文档完整内容，使用结构化 Markdown
+- 标题层级：H1 文档标题 → H2 章节 → H3 子节
+- 表格须带表头，计算过程须分步列出
+- 标注参考的标准规范编号
 
 ` + negativeClaimRule + `
 
 ` + tuiFormatting + `
 
-The 'task' the parent gave you is the question you must answer. Treat any other reading of it as scope creep.`
+父节点的 'task' 是你需要撰写的文档主题。不要偏离。`
 
-const builtinResearchBody = `You are running as a research subagent. Gather information from code AND the web, synthesize it, and return one focused conclusion.
+const builtinDataAnalystBody = `你作为数据分析子代理运行。处理 Excel/CSV 数据，生成统计结果和图表。
 
-How to operate:
-- Code exploration: prefer ` + "`" + cgContext + "`" + ` / ` + "`" + cgTrace + "`" + ` / ` + "`" + cgSearch + "`" + ` over blind grep — they return context + code in one call.
-- Web: use web_search to discover relevant URLs, then web_fetch to read specific pages.
-- For "is X supported by lib Y": search first, fetch the canonical reference, then verify against local code.
-- For "how does our Z work": codegraph first, web only to compare against external standards.
-- Cap yourself at ~12 tool calls. If you can't converge, return what you have plus a note on what's missing.
+## 操作方式
 
-Your final answer:
-- One paragraph (or short bullets). Lead with the conclusion.
-- Cite both code (file:line) AND web sources (URL) when they back the answer.
-- Distinguish "I verified this in code" from "I read this on a docs page" — the parent trusts the former more.
-- If the answer is uncertain, say so. Don't invent confidence.
+1. 先用 read_file 或 bash(cat/head) 预览数据文件头部，了解列名和数据类型
+2. 使用 bash 运行 Python/R 脚本进行统计分析：
+   - 描述性统计（均值、中位数、标准差、极值）
+   - 分组汇总、交叉表
+   - 趋势分析和回归
+   - 数据可视化（matplotlib/seaborn 生成 PNG/SVG 图表）
+3. 如需生成图表，输出为 PNG/SVG 文件并报告文件路径
+4. 检查数据质量：缺失值、异常值、重复记录
 
-` + negativeClaimRule + `
+## 最终输出
 
-` + tuiFormatting + `
-
-The 'task' the parent gave you is the research question. Stay on it.`
-
-const builtinReviewBody = `You are running as a code-review subagent. Inspect the changes the user is about to ship and produce a focused review.
-
-How to operate:
-- Default scope: the current branch vs default branch. Honor a named range/directory if given.
-- Discover scope with the native Git tools (NOT bash):
-  1. git_status → branch + staged/unstaged/untracked + conflict summary.
-  2. git_diff --stat → which files changed.
-  3. git_diff → the actual hunks.
-  4. git_log --oneline → recent commit context.
-- If ` + "`" + cgImpact + "`" + ` is available, check the blast radius of changed symbols — it reveals callers that will break, often before you can spot them in a diff.
-- If ` + "`lsp_diagnostics`" + ` is available, run it on touched files — compile errors are an instant red flag.
-- Read touched files (read_file) when the diff alone lacks context — signatures, surrounding invariants, callers.
-- For "any callers depending on this?" questions: ` + "`" + cgImpact + "`" + ` BEFORE asserting impact.
-- Stay read-only. Never commit, never write files. The parent decides whether to act.
-- Cap at ~15 tool calls. If the diff is too big, pick the riskiest 2-3 files and say so.
-
-What to look for, in priority order:
-1. Correctness bugs — off-by-one, nil handling, races, wrong operator, unhandled edge cases.
-2. Security — injection (SQL, shell, path traversal), secrets, missing authz, unsafe deserialization.
-3. Behavior changes the diff hides — renames missing callers, removed load-bearing branches, error-handling that now swallows what used to surface.
-4. Tests — does the change have tests for the new behavior? Are existing tests still meaningful?
-5. Style + consistency — only flag deviations that matter; don't pile on cosmetic nits.
-
-Your final answer:
-- Lead with a one-sentence verdict: "ship as-is" / "minor nits, OK to ship after" / "blocking issues, do not ship".
-- Then a short bulleted list, each with file:line + the problem in one sentence + what to change.
-- Group by severity if more than 4 items: Blocking, Should-fix, Nits.
-- If everything looks clean, say so plainly. Don't manufacture concerns.
+- 用表格呈现统计结果，每列标明单位和精度
+- 图表文件路径附在报告中
+- 给出数据洞察和趋势结论，不罗列原始数据
+- 如果数据不足以支撑结论，明确说明局限性
 
 ` + negativeClaimRule + `
 
 ` + tuiFormatting + `
 
-The 'task' names WHAT to review. Stay on it; don't redesign the feature.`
+父节点的 'task' 是你要分析的数据任务。不要偏离。`
 
-const builtinSecurityReviewBody = `You are running as a security-review subagent. Inspect the changes through a security lens and report exploitable issues.
+const builtinSpecCheckerBody = `你作为规范审查子代理运行。对照工程规范检查设计参数，返回合规性评估。
 
-How to operate:
-- Default scope: the current branch vs default branch. Honor a named range or directory if given.
-- Discover scope with native Git tools: git_status → git_diff --stat → git_diff.
-- If ` + "`" + cgImpact + "`" + ` is available, use it to find callers that inherit the changed security boundary — an auth check moved to a caller that no longer calls it is a design-level vulnerability.
-- If ` + "`lsp_diagnostics`" + ` on touched files, run it — a type change in a security handler can silently weaken validation.
-- Use read_file when the diff lacks context — auth checks, input validation, the handler that calls the changed code.
-- Use ` + "`" + cgTrace + "`" + ` to verify "does this user input path reach the database without sanitisation?"
-- Stay read-only. Never write, never run destructive commands. The parent decides what to act on.
-- Cap at ~15 tool calls. If the diff is too big, focus on the riskiest 2-3 files.
+## 操作方式
 
-Threat model — flag with severity:
+1. 确认适用的工程规范标准（GB、JGJ、ISO、ASME 等）及版本
+2. 使用 read_file 或 bash 读取设计参数文件
+3. 使用 bash 查询本地规范数据库（如存在），或记录需人工核实的内容
+4. 逐项对比：参数名称 → 设计值 → 规范限值 → 判定结果
+5. 对不合规项给出偏离程度和建议修正方案
 
-CRITICAL (do-not-ship): SQL/NoSQL/shell/template injection; path traversal; missing authn/authz; hardcoded secrets; deserialization of untrusted input; cryptographic mistakes (homemade crypto, MD5/SHA-1 for passwords, ECB, predictable nonces).
-HIGH: XSS; SSRF; TOCTOU on auth/file checks; open redirects.
-MEDIUM: verbose errors leaking internals; missing rate limiting on credential endpoints; missing cookie flags.
+## 最终输出
 
-Out of scope here (regular review covers them): style, naming, performance, non-security test gaps.
+- 使用合规性检查表格式：
 
-Your final answer:
-- Lead with a one-sentence verdict: "no security issues found", "minor concerns", or "blocking issues".
-- Then a list grouped by severity. Each item: file:line + 1-sentence threat + 1-sentence fix direction.
-- If clean, say so plainly. Don't manufacture findings.
+| 序号 | 检查项 | 设计值 | 规范要求 | 单位 | 判定 | 备注 |
+|------|--------|--------|----------|------|------|------|
+| 1 | ... | ... | ... | ... | ✅/⚠️/❌ | ... |
+
+- 不符合项用 ❌ 标记，需注意项用 ⚠️ 标记
+- 每项检查注明所引用的标准编号和条款号
+- 总体结论：合规 / 部分不合规 / 不合规，附整改建议
 
 ` + negativeClaimRule + `
 
 ` + tuiFormatting + `
 
-The 'task' names what to review. Stay on it; don't redesign the feature.`
+父节点的 'task' 是你要审查的设计参数或规范条目。不要偏离。`
 
+const builtinReportBuilderBody = `你作为报告生成子代理运行。从数据、图表和文字素材生成完整的工程报告。
+
+## 操作方式
+
+1. 收集所有素材：数据文件、图表文件、文本草稿、规范引用
+2. 确定报告类型和输出格式（Markdown/PDF/Word）
+3. 使用 read_file 读取各素材文件
+4. 编制报告正文，包含：摘要、目录、正文章节、结论、附录
+5. 正文中嵌入图表引用（图号、表号）
+6. 使用 bash 调用 pandoc/typora 等工具（如可用）生成最终格式
+
+## 报告结构规范
+
+- 封面：报告名称、项目编号、版本号、日期、编制/审核/批准
+- 摘要：200-300 字概述背景、方法、主要结论
+- 目录：自动生成
+- 正文：分章节，每章节含清晰的编号（1/1.1/1.1.1）
+- 图表：图编号为"图 X-Y"，表编号为"表 X-Y"
+- 结论：总结性陈述，列出主要成果和后续建议
+- 附录：原始数据、计算过程、参考文献
+
+## 最终输出
+
+- 返回报告完整内容（Markdown 格式）
+- 标注每个嵌入的图表文件路径
+- 如需 PDF/Word 输出，注明生成命令和输出路径
+
+` + negativeClaimRule + `
+
+` + tuiFormatting + `
+
+父节点的 'task' 是你要生成的报告主题。不要偏离。`
 
 // builtinSkills returns the shipped skills. A fresh slice each call so callers
 // can't mutate the shared set.
 func builtinSkills() []Skill {
-	codegraphPlusLSPSearch := []string{
-		"read_file", "ls", "glob", "grep",
-		cgContext, cgTrace, cgImpact, cgSearch, cgExplore, cgNode, cgFiles,
-		"lsp_definition", "lsp_references", "lsp_hover",
-	}
-	reviewTools := []string{
-		"read_file", "grep",
-		cgContext, cgTrace, cgImpact, cgSearch, cgExplore, cgNode,
-		"git_status", "git_diff", "git_log",
-		"lsp_diagnostics", "lsp_definition", "lsp_references", "lsp_hover",
+	officeTools := []string{
+		"read_file", "write_file", "ls", "glob", "grep", "bash",
 	}
 	return []Skill{
 		{
-			Name:         "explore",
-			Description:  "Explore the codebase in an isolated subagent. Wide-net read-only investigation returning one distilled answer with file:line citations. Best for: survey questions, finding all places that X, understanding architecture.",
-			Body:         builtinExploreBody,
+			Name:         "doc-writer",
+			Description:  "工程文档写作：技术报告、标书、计算书、会议纪要。返回结构化 Markdown 文档。",
+			Body:         builtinDocWriterBody,
 			Scope:        ScopeBuiltin,
 			Path:         "(builtin)",
 			RunAs:        RunSubagent,
-			AllowedTools: append([]string(nil), codegraphPlusLSPSearch...),
+			AllowedTools: append([]string(nil), officeTools...),
 		},
 		{
-			Name:         "research",
-			Description:  "Research a question by combining web_search + web_fetch + code reading in an isolated subagent. Returns synthesis with code and web citations.",
-			Body:         builtinResearchBody,
+			Name:         "data-analyst",
+			Description:  "数据分析：Excel/CSV 统计、图表生成、趋势分析。返回统计表格和图表文件。",
+			Body:         builtinDataAnalystBody,
 			Scope:        ScopeBuiltin,
 			Path:         "(builtin)",
 			RunAs:        RunSubagent,
-			AllowedTools: append(append([]string(nil), codegraphPlusLSPSearch...), "web_fetch", "web_search"),
+			AllowedTools: append(append([]string(nil), officeTools...), "web_fetch", "web_search"),
 		},
 		{
-			Name:         "review",
-			Description:  "Review current branch diff in an isolated subagent. Flags correctness, security, missing tests, hidden behavior per file:line. Reports verdict + per-issue severity.",
-			Body:         builtinReviewBody,
+			Name:         "spec-checker",
+			Description:  "规范审查：对照工程规范（GB/JGJ/ISO/ASME）检查设计参数合规性。返回合规检查表。",
+			Body:         builtinSpecCheckerBody,
 			Scope:        ScopeBuiltin,
 			Path:         "(builtin)",
 			RunAs:        RunSubagent,
-			AllowedTools: append([]string(nil), reviewTools...),
+			AllowedTools: append([]string(nil), officeTools...),
 		},
 		{
-			Name:         "security-review",
-			Description:  "Security-focused review of current branch diff in an isolated subagent. Injection, authz, secrets, deserialization, path-traversal, crypto. Severity-tagged.",
-			Body:         builtinSecurityReviewBody,
+			Name:         "report-builder",
+			Description:  "报告生成：从数据、图表、文字素材生成完整工程报告（Markdown/PDF/Word）。",
+			Body:         builtinReportBuilderBody,
 			Scope:        ScopeBuiltin,
 			Path:         "(builtin)",
 			RunAs:        RunSubagent,
-			AllowedTools: append([]string(nil), reviewTools...),
+			AllowedTools: append([]string(nil), officeTools...),
 		},
 	}
 }

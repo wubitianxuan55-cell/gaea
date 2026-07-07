@@ -28,6 +28,7 @@ const HistoryPanel = lazy(() => import("./components/HistoryPanel").then(m => ({
 const SettingsPanel = lazy(() => import("./components/SettingsPanel").then(m => ({ default: m.SettingsPanel })));
 const CapabilitiesPanel = lazy(() => import("./components/CapabilitiesPanel").then(m => ({ default: m.CapabilitiesPanel })));
 import { RuntimePanel } from "./components/RuntimePanel";
+import { WorkspacePanel } from "./components/WorkspacePanel";
 import { StartupSplash, shouldShowStartupSplash } from "./components/StartupSplash";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
 import { SkillsPanel } from "./components/SkillsPanel";
@@ -35,7 +36,7 @@ import { StatsPanel, useStatsPersistence } from "./components/StatsPanel";
 import { MessageNavigator } from "./components/MessageNavigator";
 import { Skeleton } from "./components/Skeleton";
 import { UpdateBanner } from "./components/UpdateBanner";
-import { WorkspacePanel } from "./components/WorkspacePanel";
+
 import { downloadMarkdown, exportAsMarkdown } from "./lib/export";
 import type { MemorySuggestion, MemorySuggestionsView, MemoryView, SessionMeta, SkillSuggestion } from "./lib/types";
 import { useTodoExtractor } from "./hooks/useTodoExtractor";
@@ -44,12 +45,9 @@ import { useSessionManager } from "./hooks/useSessionManager";
 import { useBridgeWatch } from "./hooks/useBridgeWatch";
 import { useToolStats } from "./hooks/useToolStats";
 import { useSidebar } from "./hooks/useSidebar";
-import { useWorkspacePanel } from "./hooks/useWorkspacePanel";
-import { CHAT_MIN_WIDTH, WORKSPACE_PANEL_MIN_WIDTH,
+
+import {
   SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH,
-  WORKSPACE_PANEL_DEFAULT_WIDTH, WORKSPACE_PANEL_MAX_WIDTH,
-  WORKSPACE_FILE_TREE_PANEL_DEFAULT_WIDTH,
-  WORKSPACE_FILE_TREE_PANEL_MIN_WIDTH, WORKSPACE_FILE_TREE_PANEL_MAX_WIDTH,
 } from "./hooks/useLayoutSizes";
 import CompactContext from "./hooks/useCompact";
 import { fmtTokens } from "./lib/stats";
@@ -160,16 +158,12 @@ export default function App() {
     sidebarCollapsed, sidebarWidth, sidebarResizing, effectiveSidebarWidth,
     sidebarWidthRef,
     toggleSidebar, setExpandedSidebarWidth, startSidebarResize,
-    resizeSidebarWithKeyboard, handleWorkspacePreviewModeChange,
+    resizeSidebarWithKeyboard,
   } = useSidebar();
 
-  const {
-    workspacePanelOpen, workspacePanelResizing, workspacePanelMaximized,
-    workspacePreviewModeActive, effectiveWorkspacePanelWidth,
-    setWorkspacePanel, toggleWorkspacePanel,
-    startWorkspacePanelResize, resizeWorkspacePanelWithKeyboard,
-    setSavedWorkspacePanelWidth, setWorkspacePanelMaximized,
-  } = useWorkspacePanel(effectiveSidebarWidth, viewportWidth);
+  const [workspacePanelOpen, setWorkspacePanel] = useState(false);
+  const [workspacePanelMaximized, setWorkspacePanelMaximized] = useState(false);
+  const toggleWorkspacePanel = useCallback(() => setWorkspacePanel((o) => !o), []);
   const { alive: bridgeAlive, onReconnect } = useBridgeWatch();
   useEffect(() => {
     onReconnect(() => { refreshMeta(); });
@@ -211,8 +205,6 @@ export default function App() {
     [switchModel, openMemory, send],
   );
 
-  const panelOpenRef = useRef(workspacePanelOpen);
-  panelOpenRef.current = workspacePanelOpen;
   const reopenTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // 清理 reopen timer
@@ -222,8 +214,7 @@ export default function App() {
     const onResize = () => {
       const w = window.innerWidth;
       setViewportWidth(w);
-      const minForPanel = sidebarWidthRef.current + CHAT_MIN_WIDTH + WORKSPACE_PANEL_MIN_WIDTH;
-      if (w < minForPanel && panelOpenRef.current) setWorkspacePanel(false);
+      // Workspace panel width check removed
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -231,8 +222,7 @@ export default function App() {
 
   // 首次挂载时也检查窗口宽度，窄窗口自动关面板
   useEffect(() => {
-    const minForPanel = effectiveSidebarWidth + CHAT_MIN_WIDTH + WORKSPACE_PANEL_MIN_WIDTH;
-    if (window.innerWidth < minForPanel) setWorkspacePanel(false);
+    // Workspace panel width check removed
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -392,9 +382,9 @@ export default function App() {
     () =>
       ({
         "--sidebar-expanded-width": `${sidebarWidth}px`,
-        "--workspace-width": `${effectiveWorkspacePanelWidth}px`,
+
       }) as CSSProperties,
-    [effectiveWorkspacePanelWidth, sidebarWidth],
+    [sidebarWidth],
   );
   const activePhase = useMemo(() => {
     for (let i = state.items.length - 1; i >= 0; i--) {
@@ -417,7 +407,7 @@ export default function App() {
           sidebarCollapsed ? "layout--sidebar-collapsed" : "",
           sidebarResizing ? "layout--resizing layout--sidebar-resizing" : "",
           workspacePanelOpen ? "layout--workspace-open" : "",
-          workspacePanelResizing ? "layout--resizing layout--workspace-resizing" : "",
+          
           workspacePanelOpen && workspacePanelMaximized ? "layout--workspace-maximized" : "",
         ]
           .filter(Boolean)
@@ -559,26 +549,7 @@ export default function App() {
           </footer>
         </section>
 
-        {workspacePanelOpen && !workspacePanelMaximized && (
-          <button
-            className="workspace-panel-resizer"
-            type="button"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label={t("workspace.resizePanel")}
-            aria-valuemin={workspacePreviewModeActive ? WORKSPACE_PANEL_MIN_WIDTH : WORKSPACE_FILE_TREE_PANEL_MIN_WIDTH}
-            aria-valuemax={workspacePreviewModeActive ? WORKSPACE_PANEL_MAX_WIDTH : WORKSPACE_FILE_TREE_PANEL_MAX_WIDTH}
-            aria-valuenow={effectiveWorkspacePanelWidth}
-            onPointerDown={startWorkspacePanelResize}
-            onKeyDown={resizeWorkspacePanelWithKeyboard}
-            onDoubleClick={() =>
-              setSavedWorkspacePanelWidth(
-                workspacePreviewModeActive ? WORKSPACE_PANEL_DEFAULT_WIDTH : WORKSPACE_FILE_TREE_PANEL_DEFAULT_WIDTH,
-              )
-            }
-            title={t("workspace.resizePanel")}
-          />
-        )}
+
 
         {workspacePanelOpen && (
         <div className="flex flex-col min-w-0 overflow-hidden border-l border-border-soft bg-bg transition-all duration-200">
@@ -625,10 +596,9 @@ export default function App() {
                 open={workspacePanelOpen}
                 cwd={state.meta?.cwd}
                 maximized={workspacePanelMaximized}
-                panelWidth={workspacePanelMaximized ? viewportWidth - effectiveSidebarWidth : effectiveWorkspacePanelWidth}
+                panelWidth={workspacePanelMaximized ? viewportWidth - effectiveSidebarWidth : 400}
                 onClose={() => { setWorkspacePanel(false); setPendingViewMode(null); }}
                 onToggleMaximized={() => setWorkspacePanelMaximized((value: boolean) => !value)}
-                onPreviewModeChange={handleWorkspacePreviewModeChange}
                 initialViewMode={pendingViewMode ?? undefined}
               />
             ) : rightTab === "runtime" ? (

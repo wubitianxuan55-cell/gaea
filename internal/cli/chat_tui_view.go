@@ -31,8 +31,6 @@ func (m chatTUI) View() tea.View {
 	ctxTag := m.contextTag()
 	var status string
 	switch {
-	case m.rewind != nil:
-		status = "  " + modeTag + " · ⟲ rewind"
 	case m.chooser != nil:
 		status = "  " + modeTag + " · " + i18n.M.ChatStatusQuestion
 	case m.pendingApproval != nil:
@@ -84,10 +82,6 @@ func (m chatTUI) View() tea.View {
 		rowsAboveBox += strings.Count(banner, "\n") + 1
 	}
 	if card := m.renderChooser(); card != "" {
-		parts = append(parts, card)
-		rowsAboveBox += strings.Count(card, "\n") + 1
-	}
-	if card := m.renderRewind(); card != "" {
 		parts = append(parts, card)
 		rowsAboveBox += strings.Count(card, "\n") + 1
 	}

@@ -133,7 +133,7 @@ export const zhTW: Record<DictKey, string> = {
 
   // 載入
   "skeleton.title": "正在連線智慧體…",
-  "skeleton.desc": "gaeaW 正在初始化引擎。準備好後，你就可以開始編寫程式碼了。",
+  "skeleton.desc": "gaeaW 正在初始化引擎。準備好後，你就可以開始工作了。",
   "skeleton.tools": "工具",
   "skeleton.toolsDesc": "20+ 內建工具",
   "skeleton.skills": "技能",
