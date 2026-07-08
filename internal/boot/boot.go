@@ -717,9 +717,7 @@ func newReadOnlyRegistry(full *tool.Registry) *tool.Registry {
 		}
 	}
 	return ro
-	return ro
 }
-
 // StartBot creates and starts a messaging bot from config + controller.
 // Returns nil when bot is disabled or config is incomplete.
 func StartBot(cfg config.BotConfig, ctrl *control.Controller) *bot.Bot {

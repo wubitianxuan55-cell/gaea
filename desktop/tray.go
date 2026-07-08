@@ -12,7 +12,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// trayIconPNG is a 32x32 holographic hexagon icon in PNG format.
+// trayIconPNG is a 32x32 minimalist sprout icon in PNG format.
 //
 //go:embed tray_icon.png
 var trayIconPNG []byte

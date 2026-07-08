@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"strings"
 	"testing"
 
 	"gaeaW/internal/memory"
@@ -53,7 +54,7 @@ func TestRecallReminderNudgeConstant(t *testing.T) {
 	}
 	verbs := []string{"%s", "%d", "%v", "%q", "%f", "%t", "%x", "%T"}
 	for _, verb := range verbs {
-		if containsStr(recallReminderNudge, verb) {
+		if strings.Contains(recallReminderNudge, verb) {
 			t.Fatalf("recallReminderNudge contains format verb %q", verb)
 		}
 	}

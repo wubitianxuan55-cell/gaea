@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
-  BarChart3, SquarePen, Brain, Blocks, ChevronDown, Cpu, FolderGit2, FolderTree, GitBranch,
-  Settings as SettingsIcon, MessageSquare, FileText,
+  BarChart3, SquarePen, Brain, ChevronDown, Cpu, FolderGit2, FolderTree, GitBranch,
+  PanelRightOpen, PanelRightClose, Settings as SettingsIcon, MessageSquare, FileText,
 } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { useT } from "./lib/i18n";
@@ -23,18 +23,16 @@ import { ToolbarButton } from "./components/ToolbarButton";
 import { StatusBar } from "./components/StatusBar";
 import { ContextBar } from "./components/StatusBar";
 import { ModelSwitcher } from "./components/ModelSwitcher";
+import { MessageNavigator } from "./components/MessageNavigator";
 const MemoryPanel = lazy(() => import("./components/MemoryPanel").then(m => ({ default: m.MemoryPanel })));
 const HistoryPanel = lazy(() => import("./components/HistoryPanel").then(m => ({ default: m.HistoryPanel })));
 const SettingsPanel = lazy(() => import("./components/SettingsPanel").then(m => ({ default: m.SettingsPanel })));
 const CapabilitiesPanel = lazy(() => import("./components/CapabilitiesPanel").then(m => ({ default: m.CapabilitiesPanel })));
-import { RuntimePanel } from "./components/RuntimePanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { StartupSplash, shouldShowStartupSplash } from "./components/StartupSplash";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
-import { SkillsPanel } from "./components/SkillsPanel";
 import { ReportPreviewPanel } from "./components/ReportPreviewPanel";
 import { StatsPanel, useStatsPersistence } from "./components/StatsPanel";
-import { MessageNavigator } from "./components/MessageNavigator";
 import { Skeleton } from "./components/Skeleton";
 import { UpdateBanner } from "./components/UpdateBanner";
 
@@ -146,7 +144,7 @@ export default function App() {
   const newSessionAndReset = useCallback(async () => { setStatsReset(n => n + 1); await startNewSession(); }, [startNewSession]);
   const [statsReset, setStatsReset] = useState(0);
   const [capsOpen, setCapsOpen] = useState(false);
-  const [rightTab, setRightTab] = useState<"files" | "runtime" | "skills" | "stats" | "messages" | "reports">("stats");
+  const [rightTab, setRightTab] = useState<"files" | "stats" | "messages" | "reports">("stats");
   const [pendingViewMode, setPendingViewMode] = useState<"files" | "changed" | null>(null);
   const [compactMode, setCompactMode] = useState(() => { try { return localStorage.getItem("gaeaW.compactMode") === "1"; } catch { return false; } });
   const [scrollToTurn, setScrollToTurn] = useState<((turn: number) => void) | null>(null);
@@ -486,9 +484,11 @@ export default function App() {
                   setWorkspacePanel(true);
                 }
               }} title="查看文件变更"><GitBranch size={13} /></ToolbarButton>
+              <ToolbarButton onClick={() => void toggleWorkspacePanel()} title={workspacePanelOpen ? "收起面板" : "展开面板"}>
+                {workspacePanelOpen ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
+              </ToolbarButton>
               <ToolbarButton onClick={() => { const v = !compactMode; setCompactMode(v); try { localStorage.setItem("gaeaW.compactMode", v ? "1" : "0"); } catch {} }} title={compactMode ? "展开模式" : "紧凑模式"}>{compactMode ? "⊞" : "⊟"}</ToolbarButton>
               <ToolbarButton onClick={() => downloadMarkdown(exportAsMarkdown(state.items))} disabled={state.items.length===0}>导出</ToolbarButton>
-              <ToolbarButton onClick={() => void newSessionAndReset()} disabled={state.running||state.items.length===0}>清空</ToolbarButton>
               <ThemeSwitcher theme={themeNow} onSet={applyTheme} onStore={setTheme} />
             </div>
           </header>
@@ -562,20 +562,6 @@ export default function App() {
               <span>文件</span>
             </button>
             <button
-              className={`flex items-center gap-1 px-3 py-2 text-xs bg-transparent border-0 border-b-2 cursor-pointer transition-[color,border-color] duration-[var(--dur-base)] hover:text-fg text-fg-dim border-transparent ${rightTab === "runtime" ? "text-accent border-accent" : ""}`}
-              onClick={() => setRightTab("runtime")}
-            >
-              <Cpu size={13} />
-              <span>工具</span>
-            </button>
-            <button
-              className={`flex items-center gap-1 px-3 py-2 text-xs bg-transparent border-0 border-b-2 cursor-pointer transition-[color,border-color] duration-[var(--dur-base)] hover:text-fg text-fg-dim border-transparent ${rightTab === "skills" ? "text-accent border-accent" : ""}`}
-              onClick={() => setRightTab("skills")}
-            >
-              <Blocks size={13} />
-              <span>技能</span>
-            </button>
-            <button
               className={`flex items-center gap-1 px-3 py-2 text-xs bg-transparent border-0 border-b-2 cursor-pointer transition-[color,border-color] duration-[var(--dur-base)] hover:text-fg text-fg-dim border-transparent ${rightTab === "reports" ? "text-accent border-accent" : ""}`}
               onClick={() => setRightTab("reports")}
             >
@@ -608,10 +594,6 @@ export default function App() {
                 onToggleMaximized={() => setWorkspacePanelMaximized((value: boolean) => !value)}
                 initialViewMode={pendingViewMode ?? undefined}
               />
-            ) : rightTab === "runtime" ? (
-              <RuntimePanel counts={toolCounts} />
-            ) : rightTab === "skills" ? (
-              <SkillsPanel counts={skillCounts} />
             ) : rightTab === "reports" ? (
               <ReportPreviewPanel cwd={state.meta?.cwd} />
             ) : null}
@@ -693,7 +675,7 @@ export default function App() {
       </Suspense>
 
       <Suspense fallback={null}>
-        {capsOpen && <CapabilitiesPanel onClose={() => setCapsOpen(false)} />}
+        {capsOpen && <CapabilitiesPanel onClose={() => setCapsOpen(false)} toolCounts={toolCounts} skillCounts={skillCounts} />}
       </Suspense>
 
       <CommandPalette

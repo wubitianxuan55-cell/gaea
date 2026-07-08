@@ -1,21 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { X, Globe } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { X, Globe, Cpu, ChevronDown, Search } from "lucide-react";
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
 import type { CapabilitiesView, MCPServerInput, ServerView, SkillView } from "../lib/types";
 import { DrawerHeader, DrawerTitle, DrawerSubtitle } from "./DrawerHeader";
 import { ResizableDrawer } from "./ResizableDrawer";
+import { useGSAPCollapse } from "../lib/useGSAPCollapse";
 
 // CapabilitiesPanel is the desktop MCP & Skills drawer — the GUI counterpart to
 // the CLI's /mcp + /skill, aligning with Claude Code's Customize → Connectors:
 // each server shows a connected/failed dot, transport, and tool/prompt/resource
 // counts, with add / remove / retry; skills list their scope and run mode.
-type CapTab = "servers" | "skills";
-
+type CapTab = "servers" | "tools" | "skills";
 export function CapabilitiesPanel({
   onClose,
+  toolCounts = {},
+  skillCounts = {},
 }: {
   onClose: () => void;
+  toolCounts?: Record<string, number>;
+  skillCounts?: Record<string, number>;
 }) {
   const t = useT();
   const [view, setView] = useState<CapabilitiesView | null>(null);
@@ -141,7 +145,6 @@ export function CapabilitiesPanel({
         ) : (
           <div className="overflow-y-auto px-4 py-3.5 flex flex-col gap-5">
             {err && <div className="shrink-0 px-4 py-2 text-[12.5px] bg-del-bg text-err border-b border-border-soft">{err}</div>}
-
             <div className="flex border-b border-border-soft mb-3" role="tablist" aria-label={t("caps.title")}>
               <button
                 className={`flex-1 px-4 py-2 border-0 border-b-2 bg-transparent text-[13px] font-medium cursor-pointer transition-[color,border] duration-[var(--dur-fast)] ${
@@ -149,6 +152,15 @@ export function CapabilitiesPanel({
                 }`}
                 role="tab" aria-selected={tab === "servers"} onClick={() => setTab("servers")}
               >{t("caps.connectorsTab")}</button>
+              <button
+                className={`flex-1 px-4 py-2 border-0 border-b-2 bg-transparent text-[13px] font-medium cursor-pointer transition-[color,border] duration-[var(--dur-fast)] ${
+                  tab === "tools" ? "text-accent border-accent" : "text-fg-dim border-transparent hover:text-fg hover:border-fg-faint"
+                }`}
+                role="tab" aria-selected={tab === "tools"} onClick={() => setTab("tools")}
+              >
+                <Cpu size={12} className="inline mr-1 align-middle -mt-px" />
+                <span>工具</span>
+              </button>
               <button
                 className={`flex-1 px-4 py-2 border-0 border-b-2 bg-transparent text-[13px] font-medium cursor-pointer transition-[color,border] duration-[var(--dur-fast)] ${
                   tab === "skills" ? "text-accent border-accent" : "text-fg-dim border-transparent hover:text-fg hover:border-fg-faint"
@@ -212,6 +224,8 @@ export function CapabilitiesPanel({
                   <AddServerForm busy={busy} onCancel={() => setAdding(false)} onAdd={async (input) => (await mutate(() => app.AddMCPServer(input))) && setAdding(false)} />
                 ) : null}
               </section>
+            ) : tab === "tools" ? (
+              <ToolsTabContent toolCounts={toolCounts} />
             ) : (
               <section className="mb-3">
                 <div className="mb-2">
@@ -233,6 +247,7 @@ export function CapabilitiesPanel({
                       <SkillRow
                         key={sk.name}
                         skill={sk}
+                        count={skillCounts[sk.name] ?? 0}
                         expanded={expandedSkills.has(sk.name)}
                         onToggle={() => toggleSkill(sk.name)}
                       />
@@ -475,13 +490,213 @@ function serverActionLabel(s: ServerView, t: ReturnType<typeof useT>): string {
   }
   return t("caps.retry");
 }
+// ── Tool list (from RuntimePanel, inlined) ──────────────────────────────
+
+type Counts = Record<string, number>;
+
+const TOOL_DESC: Record<string, string> = {
+  read_file: "读取文件内容(可选行范围/分页)",
+  write_file: "写入/覆盖文件(自动建父目录)",
+  edit_file: "精确替换文件字符串(须全局唯一)",
+  multi_edit: "原子化批量编辑(单文件N步依次执行)",
+  edit_lines: "按行号替换文件连续行(起止行号定位)",
+  delete_range: "删除文件连续行(起止锚点定位)",
+  delete_symbol: "删除Go符号(函数/类型/接口等,AST解析)",
+  glob: "通配符匹配文件名(支持**递归)",
+  grep: "正则搜索文件内容(返回path:行:文本,限200条)",
+  ls: "列目录条目(子目录带/)",
+  notebook_edit: "编辑Jupyter Notebook单元格(.ipynb)",
+  bash: "执行shell命令(合并stdout+stderr,限2分钟)",
+  bash_output: "读取后台任务的增量输出(不阻塞)",
+  wait: "阻塞等待后台任务结束(可设超时)",
+  kill_shell: "终止后台任务(SIGTERM→SIGKILL)",
+  git_status: "显示工作区状态(分支/暂存/未暂存/未跟踪/冲突)",
+  git_diff: "显示行级别变更(--staged可选,path可限文件)",
+  git_log: "显示提交历史(支持count/path/author过滤)",
+  git_commit: "提交暂存变更(可stage_all/amend/自动生成消息)",
+  git_worktree: "管理git工作树(添加/删除/列出)",
+  web_fetch: "抓取URL纯文本(去标签,SSRF安全)",
+  web_search: "搜索公开网页(通过DuckDuckGo)",
+  todo_write: "更新任务清单(全量替换,最多一个进行中)",
+  complete_step: "完成计划步骤(附验证证据,空证据拒绝)",
+  ask: "向用户提供多选项问题",
+  task: "派发子代理执行聚焦子任务",
+  explore: "隔离子代理——只读代码库调查",
+  research: "隔离子代理——web搜索+代码阅读",
+  review: "隔离子代理——审查分支diff",
+  security_review: "隔离子代理——安全审查分支diff",
+  run_skill: "调用Skills索引中的playbook",
+  parallel_skills: "并行派发多个子代理技能",
+  install_skill: "编写并保存新技能",
+  remember: "保存持久事实到项目记忆",
+  forget: "通过名称删除已保存记忆",
+  memory_search: "按关键词搜索已保存记忆",
+};
+
+interface Section {
+  title: string;
+  items: string[];
+}
+
+const SECTIONS: Section[] = [
+  { title: "文件", items: ["read_file", "write_file", "edit_file", "edit_lines", "multi_edit", "delete_range", "delete_symbol", "glob", "grep", "ls", "notebook_edit"] },
+  { title: "命令", items: ["bash", "bash_output", "wait", "kill_shell"] },
+  { title: "版本", items: ["git_status", "git_diff", "git_log", "git_commit", "git_worktree"] },
+  { title: "网络", items: ["web_fetch", "web_search"] },
+  { title: "任务", items: ["todo_write", "complete_step", "ask"] },
+  { title: "子代理", items: ["task", "explore", "research", "review", "security_review"] },
+  { title: "技能", items: ["run_skill", "parallel_skills", "install_skill"] },
+  { title: "记忆", items: ["remember", "forget", "memory_search"] },
+];
+
+function ToolCard({ name, count }: { name: string; count: number }) {
+  const active = count > 0;
+  const desc = TOOL_DESC[name];
+  return (
+    <div
+      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-md border border-border-soft bg-bg cursor-default ${
+        active ? "border-accent-soft bg-sidebar-active" : ""
+      }`}
+      title={desc ?? name}
+    >
+      <span className={`w-1.5 h-1.5 mt-[5px] rounded-full shrink-0 ${active ? "bg-accent" : "bg-border-soft"}`} />
+      <span className="flex-1 min-w-0 flex flex-col gap-0.5 leading-[1.25]">
+        <span className={`font-mono text-[10.5px] truncate ${active ? "text-accent font-semibold" : "text-fg-dim"}`}>
+          {name}
+        </span>
+        {desc && <span className="text-[10px] text-fg-faint leading-[1.3] line-clamp-1">{desc}</span>}
+      </span>
+      <span className={`shrink-0 font-mono text-[11px] font-semibold mt-px ${active ? "text-accent" : "text-fg-faint"}`}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function ToolGroup({
+  title,
+  items,
+  counts,
+  defaultOpen,
+}: {
+  title: string;
+  items: string[];
+  counts: Counts;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const ref = useRef<HTMLDivElement>(null);
+  useGSAPCollapse(ref, open, { duration: 0.18 });
+
+  const activeCount = items.filter((n) => (counts[n] ?? 0) > 0).length;
+
+  return (
+    <div className="px-1.5 py-0.5">
+      <button
+        className="flex items-center gap-1 w-full px-1 py-1.5 bg-transparent border-0 text-left cursor-pointer hover:bg-bg-soft rounded transition-colors"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <ChevronDown
+          size={10}
+          className={`text-fg-faint transition-transform duration-150 ${open ? "rotate-0" : "-rotate-90"}`}
+        />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-fg-faint">{title}</span>
+        {activeCount > 0 && (
+          <span className="ml-auto text-[9px] font-mono text-accent">{activeCount}</span>
+        )}
+      </button>
+      <div ref={ref} style={{ overflow: "hidden" }}>
+        <div className="flex flex-col gap-0.5 pt-0.5 pb-1">
+          {items.map((name) => (
+            <ToolCard key={name} name={name} count={counts[name] ?? 0} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToolsTabContent({ toolCounts }: { toolCounts: Counts }) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const totalTools = SECTIONS.reduce((sum, s) => sum + s.items.length, 0);
+  const activeTotal = useMemo(
+    () => SECTIONS.reduce((sum, s) => sum + s.items.filter((n) => (toolCounts[n] ?? 0) > 0).length, 0),
+    [toolCounts],
+  );
+
+  const filteredSections = useMemo(() => {
+    if (!query.trim()) return SECTIONS;
+    const q = query.toLowerCase();
+    return SECTIONS
+      .map((sec) => ({
+        ...sec,
+        items: sec.items.filter(
+          (name) =>
+            name.toLowerCase().includes(q) ||
+            (TOOL_DESC[name] ?? "").toLowerCase().includes(q),
+        ),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  }, [query]);
+
+  const hasResults = filteredSections.length > 0;
+
+  return (
+    <div className="flex flex-col overflow-hidden h-full" style={{minHeight: 0}}>
+      <div className="flex items-center gap-1.5 px-2 py-2 text-fg-dim font-semibold text-[11px] shrink-0">
+        <Cpu size={12} />
+        <span>工具</span>
+        <span className="ml-auto text-[10px] font-mono text-fg-faint/50">
+          {activeTotal > 0 ? `${activeTotal}/${totalTools}` : totalTools}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 mx-2 my-1 px-2 h-7 border border-border rounded-md bg-bg text-fg-faint shrink-0">
+        <Search size={12} />
+        <input
+          ref={inputRef}
+          className="flex-1 min-w-0 border-0 outline-none bg-transparent text-fg text-[11.5px] placeholder:text-fg-faint"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="搜索工具…"
+        />
+        {query && (
+          <button
+            className="border-0 bg-transparent text-fg-faint cursor-pointer p-0 leading-none hover:text-fg"
+            onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto pb-2">
+        {!hasResults ? (
+          <div className="text-fg-faint text-xs text-center py-8">无匹配工具</div>
+        ) : (
+          filteredSections.map((sec) => (
+            <ToolGroup
+              key={sec.title}
+              title={sec.title}
+              items={sec.items}
+              counts={toolCounts}
+              defaultOpen={sec.title === "文件" || filteredSections.length <= 3}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SkillRow({
   skill,
+  count,
   expanded,
   onToggle,
 }: {
   skill: SkillView;
+  count: number;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -509,6 +724,9 @@ function SkillRow({
             {skill.runAs === "subagent" && <span className="badge badge--accent">{t("caps.subagent")}</span>}
           </span>
         </span>
+        {count > 0 && (
+          <span className="shrink-0 font-mono text-[11px] font-semibold text-accent">{count}</span>
+        )}
       </div>
       <div className={`text-fg-dim text-[12px] leading-snug ${expanded ? "" : "line-clamp-2"}`}>
         {expanded ? skill.description : summary}

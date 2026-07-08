@@ -141,7 +141,7 @@ func (b bash) Execute(ctx context.Context, args json.RawMessage) (string, error)
 	ctx, cancel := context.WithTimeout(ctx, bashTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd := exec.Command(argv[0], argv[1:]...)
 	hideBashWindow(cmd) // Windows: 防止弹出 cmd 黑框
 	cmd.Dir = b.workDir // "" lets exec use the process working directory
 
@@ -157,11 +157,20 @@ func (b bash) Execute(ctx context.Context, args json.RawMessage) (string, error)
 
 	err := cmd.Start()
 	if err == nil {
-		// V7.5: 监听 ctx 取消——不等 cmd.Wait()，卡死时立即强杀进程树。
-		// cmd.Wait() 可能永久阻塞（进程卡死不响应信号），此时 killProcessTree 永远执行不到。
+		// earlyReturnCh 信号量：当检测到长期运行进程且决定提前返回时关闭，
+		// 阻止 ctx 取消时 killProcessTree 误杀用户想保持运行的服务器进程。
+		earlyReturnCh := make(chan struct{})
+
 		go func() {
-			<-ctx.Done()
-			killProcessTree(cmd)
+			select {
+			case <-ctx.Done():
+				select {
+				case <-earlyReturnCh:
+					// 早期返回——进程继续在后台运行，不杀
+				default:
+					killProcessTree(cmd)
+				}
+			}
 		}()
 
 		// Try Windows Job Object for reliable process-tree cleanup.
@@ -171,9 +180,68 @@ func (b bash) Execute(ctx context.Context, args json.RawMessage) (string, error)
 		if jobErr == nil {
 			defer syscall.CloseHandle(job)
 		}
-		err = cmd.Wait()
+
+		// ── 双路径等待：先等 8 秒，再判断是否长期运行进程 ──
+		const earlyWait = 8 * time.Second
+		waitCh := make(chan error, 1)
+		go func() {
+			waitCh <- cmd.Wait()
+		}()
+
+		select {
+		case waitErr := <-waitCh:
+			// 进程正常退出
+			err = waitErr
+		case <-time.After(earlyWait):
+			// 8 秒后进程仍在运行 → 判断是否为长期运行进程
+			output := stdoutBuf.String()
+			if isLongRunningCommand(p.Command) || hasServerStartupOutput(output) {
+				close(earlyReturnCh)
+
+				// 收集已有输出，截断后返回
+				if p.OutputFormat == "json" {
+					stdoutStr := strings.TrimSpace(stdoutBuf.String())
+					stderrStr := strings.TrimSpace(stderrBuf.String())
+					const jsonStreamMaxBytes = 24 * 1024
+					stdoutStr, _ = truncateStream(stdoutStr, jsonStreamMaxBytes)
+					stderrStr, _ = truncateStream(stderrStr, jsonStreamMaxBytes)
+
+					var buf2 bytes.Buffer
+					enc := json.NewEncoder(&buf2)
+					enc.SetEscapeHTML(false)
+					result := map[string]any{
+						"ok":          true,
+						"running":     true,
+						"exit_code":   0,
+						"duration_ms": time.Since(start).Milliseconds(),
+						"stdout":      stdoutStr,
+						"stderr":      stderrStr,
+						"command":     p.Command,
+					}
+					_ = enc.Encode(result)
+					return strings.TrimSpace(buf2.String()), nil
+				}
+
+				// Plain mode
+				out := stdoutBuf.String()
+				const plainMaxBytes = 48 * 1024
+				out, _ = truncateStream(out, plainMaxBytes)
+				return out + "\n[进程仍在后台运行]", nil
+			}
+
+			// 不是长期运行进程——继续等待，直到进程退出或超时
+			select {
+			case waitErr := <-waitCh:
+				err = waitErr
+			case <-ctx.Done():
+				err = ctx.Err()
+			}
+		case <-ctx.Done():
+			err = ctx.Err()
+		}
+
+		// 进程已退出或 ctx 已取消——清理进程树
 		if jobErr != nil {
-			// Job Object failed (e.g. sandbox restriction); fall back to taskkill.
 			killProcessTree(cmd)
 		}
 	}
@@ -272,12 +340,101 @@ func commandPreview(cmd string) string {
 	return cmd
 }
 
+// isLongRunningCommand 检测命令是否为服务器/长期运行进程。
+// 匹配已知的 Dev 服务器、GUI 启动、文件监听等不自动退出的模式。
+func isLongRunningCommand(command string) bool {
+	cmd := strings.TrimSpace(command)
+	lower := strings.ToLower(cmd)
+
+	// 常见长期运行命令前缀
+	longRunningPatterns := []string{
+		"wails dev",
+		"wails serve",
+		"npm start",
+		"npm run dev",
+		"npm run serve",
+		"npx vite",
+		"npx next",
+		"npx tsx watch",
+		"pnpm dev",
+		"pnpm start",
+		"yarn dev",
+		"yarn start",
+		"go run",
+		"start-process",
+		"python -m http.server",
+		"python -m flask",
+		"python -m uvicorn",
+		"python -m fastapi",
+	}
+
+	for _, pattern := range longRunningPatterns {
+		if strings.HasPrefix(lower, pattern) {
+			return true
+		}
+	}
+
+	// Windows start 命令（启动新窗口运行程序）
+	if strings.HasPrefix(lower, "start ") {
+		return true
+	}
+
+	return false
+}
+
+// hasServerStartupOutput 检查输出中是否包含服务器启动特征。
+// 用于判断一个不确定的命令是否已成功启动了服务。
+func hasServerStartupOutput(output string) bool {
+	lower := strings.ToLower(output)
+
+	indicators := []string{
+		"listening on",
+		"serving at",
+		"localhost:",
+		"127.0.0.1:",
+		"0.0.0.0:",
+		"vite v",           // Vite 开发服务器
+		"compiled successfully",
+		"press ctrl+c",
+		"press ctrl-c",
+		"server started",
+		"server running",
+		"running on",
+		"started on port",
+	}
+
+	for _, ind := range indicators {
+		if strings.Contains(lower, ind) {
+			return true
+		}
+	}
+
+	// http:// 且带端口号（如 http://localhost:5173）
+	if strings.Contains(lower, "http://") {
+		// 粗略检查后面有端口号
+		idx := strings.Index(lower, "http://")
+		rest := lower[idx+7:]
+		colonIdx := strings.Index(rest, ":")
+		if colonIdx > 0 && colonIdx < 20 {
+			// 确认冒号后跟数字（端口）
+			afterColon := rest[colonIdx+1:]
+			if len(afterColon) > 0 && afterColon[0] >= '0' && afterColon[0] <= '9' {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // killProcessTree 在命令执行完毕后清理 shell 可能残留的子进程树。
 // Windows 上 shell 内部的 & 后台进程不会随 shell 退出而终止，
 // taskkill /T 递归终止整个进程树避免孤儿进程和 wait 死锁。
 func killProcessTree(cmd *exec.Cmd) {
 	if cmd == nil || cmd.Process == nil {
 		return
+	}
+	if runtime.GOOS != "windows" {
 	}
 	if runtime.GOOS != "windows" {
 		return

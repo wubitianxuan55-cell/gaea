@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="gaeaW">
+  <title>gaeaW</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#115E59"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#6EE7B7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角方形暗底（深青绿渐变） -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- 地表线（半透明青色，仅一根水平线） -->
+  <line x1="212" y1="512" x2="812" y2="512" stroke="#5EEAD4" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- 茎 — 从地表线中心向上生长 -->
+  <line x1="512" y1="512" x2="512" y2="280" stroke="url(#leaf)" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- 左侧叶片 — 弧形向上 -->
+  <path d="M512 418 Q420 340 364 296 Q430 318 512 418Z" fill="url(#leaf)" opacity="0.9"/>
+
+  <!-- 右侧叶片 — 弧形向上 -->
+  <path d="M512 378 Q604 300 660 256 Q594 278 512 378Z" fill="url(#leaf)" opacity="0.9"/>
+
+  <!-- 茎顶端小圆点 -->
+  <circle cx="512" cy="280" r="6" fill="#6EE7B7"/>
+</svg>

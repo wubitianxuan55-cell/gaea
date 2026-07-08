@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"strings"
 	"testing"
 
 	"gaeaW/internal/provider"
@@ -124,7 +125,7 @@ func TestOutputLengthNudgeConstant(t *testing.T) {
 	}
 	verbs := []string{"%s", "%d", "%v", "%q", "%f", "%t", "%x", "%T"}
 	for _, verb := range verbs {
-		if containsStr(outputLengthNudge, verb) {
+		if strings.Contains(outputLengthNudge, verb) {
 			t.Fatalf("outputLengthNudge contains format verb %q", verb)
 		}
 	}
@@ -137,7 +138,7 @@ func TestInvalidOutputNudgeConstant(t *testing.T) {
 	}
 	verbs := []string{"%s", "%d", "%v", "%q", "%f", "%t", "%x", "%T"}
 	for _, verb := range verbs {
-		if containsStr(invalidOutputNudge, verb) {
+		if strings.Contains(invalidOutputNudge, verb) {
 			t.Fatalf("invalidOutputNudge contains format verb %q", verb)
 		}
 	}

@@ -1,5 +1,66 @@
 # Changelog
 
+## v0.7.0 (2026-07-08)
+
+### 新增
+
+#### bash 工具：长期运行进程智能检测
+- **`isLongRunningCommand`** — 匹配 18 种 Dev 服务器/长期运行命令模式（`wails dev/serve`、`npm start/dev/serve`、`npx vite/next/tsx watch`、`pnpm dev/start`、`yarn dev/start`、`go run`、`Start-Process`、`start `、`python -m http.server/flask/uvicorn/fastapi`）
+- **`hasServerStartupOutput`** — 检测 12+ 种服务器启动输出特征（`listening on`、`serving at`、`localhost:`、`VITE v`、`compiled successfully`、`Press Ctrl+C`、含端口的 `http://` 链接等）
+- **双路径等待**：启动后先等 8 秒，仍在运行时判断是否长期进程→早期返回不杀进程
+- **`earlyReturnCh` 信号量**：防止 ctx 取消时误杀用户想保持运行的服务器进程
+- **JSON 输出模式同步支持**：返回 `{ok:true, running:true, stdout, stderr}`
+
+### 变更
+
+#### 右侧栏重构
+- **右侧栏"工具/技能"标签删除**：`App.tsx` 移除 `RuntimePanel` 和 `SkillsPanel` 的 import/渲染，`rightTab` 类型去掉 `runtime`/`skills`
+- **融入左侧 Capabilities 抽屉**：`CapabilitiesPanel` 新增"工具"tab，内联 `TOOL_DESC`/`SECTIONS`/`ToolCard`/`ToolGroup`/`ToolsTabContent`，技能列表显示使用次数计数
+- **右侧面板启动可见性修复**：顶栏工具栏新增 `PanelRightOpen`/`PanelRightClose` 开关按钮
+
+#### 简洁 Logo 重设计
+- **极简三要素设计**：深青绿圆角方底 + 水平地表线 + 翡翠绿双叶嫩芽
+- **全面替换**：SVG/PNG(512×512)/ICO(6分辨率)/托盘图标/文档副本/WebUI serve 资源
+
+### 构建
+
+- CLI: `release/v0.7.0/gaeaW.exe`
+- Desktop: `release/v0.7.0/gaeaW-desktop.exe`
+- CacheGuard: `release/v0.7.0/cacheguard.exe`
+- Plugin: `release/v0.7.0/gaeaW-plugin-example.exe`
+- SHA256: `release/v0.7.0/SHA256SUMS`
+
+---
+
+
+
+### 修复
+
+- **编译错误修复**：`internal/agent/output_continue_test.go` 和 `recall_reminder_test.go` 使用 `strings.Contains` 替代未定义的 `containsStr`；`internal/boot/boot.go` 删除重复的 `return ro` 语句
+- **go vet 全通过**：`go vet ./...` 无警告
+
+### 验证
+
+- **工具注册验证**：35 个内置工具全部正确通过 `init()` 注册，7 个辅助文件（compact/confine/encoding_helpers/hide_window/workspace/websearch_config）确认非工具不需注册
+- **Agent 端到端测试**：CLI 版本显示、DeepSeek API 连接、`gaeaW run` 任务执行均正常
+- **关键工具验证**：`pdf_create`、`pptx_create`、`docx_read/write`、`xlsx_write`、`survey_report`、`cost_estimate`、`spec_judge` 7 个工具接口完整
+- **规范库验证**：GB 36600-2018（16种污染物限值）、GB 15618-2018（8种农用地限值）、HJ 25.1~6 等 21 条规范条文完整
+- **桌面端构建**：Vite 前端构建（1960 模块）+ Wails build 通过，生成 `gaeaW-desktop.exe`
+- **前端组件完整性**：63 个组件齐全，FileTree/FilePreview/WorkspacePanel 就绪，Composer 支持拖拽上传和多模态输入
+
+### 构建
+
+- CLI: `release/v0.6.0/gaeaW.exe`（19MB）
+- Desktop: `release/v0.6.0/gaeaW-desktop.exe`（16MB）
+- CacheGuard: `release/v0.6.0/cacheguard.exe`
+- Plugin: `release/v0.6.0/gaeaW-plugin-example.exe`
+- SHA256: `release/v0.6.0/SHA256SUMS`
+
+---
+
+
+---
+
 ## v0.5.0 (2026-07-07)
 
 ### 新增
@@ -51,8 +112,6 @@
 - SHA256: `release/v0.5.0/SHA256SUMS`
 
 ---
-
-
 
 ## v0.4.0 (2026-07-07)
 
