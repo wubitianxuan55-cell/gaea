@@ -338,7 +338,7 @@ body {
 
 .layout {
   --sidebar-width: var(--sidebar-expanded-width, 264px);
-  --workspace-width: 280px;
+  --workspace-width: 340px;
   position: relative;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr) minmax(0, var(--workspace-width));
@@ -655,7 +655,7 @@ body {
 
 /* ── workspace side panel ────────────────────────────────────────────────── */
 .workspace-panel {
-  --workspace-tree-width: 280px;
+  --workspace-tree-width: 340px;
   --workspace-preview-min-width: 420px;
   position: relative;
   min-width: 0;
@@ -1998,6 +1998,120 @@ body::after {
   --hl-meta: #8C7F6F;
 }
 
+/* ── Noir: dark luxurious — 墨黑金点缀 ────────────────────────────── */
+[data-theme="noir"] {
+  --bg: #111113;
+  --bg-soft: #1A1A1D;
+  --bg-elev: #222225;
+  --bg-elev-2: #2C2C30;
+  --sidebar-bg: #0D0D0F;
+  --sidebar-hover: #1A1A1D;
+  --sidebar-active: rgba(212, 168, 83, 0.14);
+  --border: #3A3A40;
+  --border-soft: #2A2A2E;
+  --fg: #EDEDED;
+  --fg-dim: #B0B0B8;
+  --fg-faint: #6C6C78;
+  --accent: #D4A853;           /* 暗金 */
+  --accent-fg: #111113;
+  --accent-soft: rgba(212, 168, 83, 0.14);
+  --ok: #6A994E;
+  --warn: #D4A373;
+  --err: #E0696A;
+  --info: #D4A853;
+  --warning: #D4A373;
+  --error: #E0696A;
+  --danger: #E0696A;
+  --add-bg: rgba(106, 153, 78, 0.14);
+  --add-fg: #6A994E;
+  --del-bg: rgba(224, 105, 106, 0.14);
+  --del-fg: #E0696A;
+  --hl-keyword: #D4A853;
+  --hl-string: #6A994E;
+  --hl-number: #E8B86D;
+  --hl-comment: #5C5C66;
+  --hl-func: #7CA5B8;
+  --hl-type: #D4A853;
+  --hl-builtin: #7CA5B8;
+  --hl-meta: #6C6C78;
+}
+
+/* ── Sand: warm light — 暖沙底铜棕点缀 ──────────────────────────── */
+[data-theme="sand"] {
+  --bg: #FDF6EC;
+  --bg-soft: #F5EDE2;
+  --bg-elev: #FFFFFF;
+  --bg-elev-2: #FDF6EC;
+  --sidebar-bg: #F5EDE2;
+  --sidebar-hover: #EDE2D4;
+  --sidebar-active: rgba(184, 115, 51, 0.12);
+  --border: #D4C4B0;
+  --border-soft: #E8DDD0;
+  --fg: #2D2420;
+  --fg-dim: #6B5C4E;
+  --fg-faint: #A89888;
+  --accent: #B87333;           /* 铜棕 */
+  --accent-fg: #FFFFFF;
+  --accent-soft: rgba(184, 115, 51, 0.12);
+  --ok: #6A994E;
+  --warn: #D4A373;
+  --err: #BC4A3C;
+  --info: #B87333;
+  --warning: #D4A373;
+  --error: #BC4A3C;
+  --danger: #BC4A3C;
+  --add-bg: rgba(106, 153, 78, 0.12);
+  --add-fg: #5A8A3E;
+  --del-bg: rgba(188, 74, 60, 0.12);
+  --del-fg: #BC4A3C;
+  --hl-keyword: #7C3AED;
+  --hl-string: #5A8A3E;
+  --hl-number: #B87333;
+  --hl-comment: #A89888;
+  --hl-func: #2563EB;
+  --hl-type: #B87333;
+  --hl-builtin: #0D9488;
+  --hl-meta: #A89888;
+}
+
+/* ── Mist: cool light — 冷灰白青绿点缀 ──────────────────────────── */
+[data-theme="mist"] {
+  --bg: #F2F5F8;
+  --bg-soft: #E8EDF2;
+  --bg-elev: #FFFFFF;
+  --bg-elev-2: #F2F5F8;
+  --sidebar-bg: #E8EDF2;
+  --sidebar-hover: #DDE4EC;
+  --sidebar-active: rgba(14, 165, 169, 0.12);
+  --border: #C8D0DA;
+  --border-soft: #D8E0E8;
+  --fg: #1A202C;
+  --fg-dim: #4A5568;
+  --fg-faint: #8C96A8;
+  --accent: #0EA5A9;           /* 青绿 */
+  --accent-fg: #FFFFFF;
+  --accent-soft: rgba(14, 165, 169, 0.12);
+  --ok: #22C55E;
+  --warn: #F59E0B;
+  --err: #EF4444;
+  --info: #0EA5A9;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --danger: #EF4444;
+  --add-bg: rgba(34, 197, 94, 0.12);
+  --add-fg: #16A34A;
+  --del-bg: rgba(239, 68, 68, 0.12);
+  --del-fg: #EF4444;
+  --hl-keyword: #7C3AED;
+  --hl-string: #16A34A;
+  --hl-number: #0EA5A9;
+  --hl-comment: #8C96A8;
+  --hl-func: #2563EB;
+  --hl-type: #D97706;
+  --hl-builtin: #0D9488;
+  --hl-meta: #8C96A8;
+}
+
 /* ── logo breathe — 大地呼吸，splash + welcome 共用 ────────────────────── */
 @keyframes logo-breathe {
   0%, 100% { transform: scale(1);     opacity: 0.92; }
@@ -2017,4 +2131,81 @@ body::after {
 .welcome-stagger-1 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 0ms; }
 .welcome-stagger-2 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 80ms; }
 .welcome-stagger-3 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 160ms; }
-.welcome-stagger-4 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 240ms; }
+/* ── 移动端 PWA 响应式 ─────────────  @media (max-width: 768px) ─────────── */
+
+/* 隐藏侧边栏和右侧面板，全屏聊天 */
+@media (max-width: 768px) {
+  .app .layout > .sidebar,
+  .app .layout > .workspace-panel,
+  .app .layout--workspace-open > .workspace-panel {
+    display: none !important;
+  }
+
+  .app .layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app .layout > .main-wrap {
+    grid-column: 1 !important;
+  }
+
+  /* Composer 固定底部 */
+  .composer-wrap {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    background: var(--bg);
+    z-index: 20;
+  }
+
+  /* 消息区域减少内边距 */
+  .transcript-wrap {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* 触摸目标最小 44px */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 输入框全宽 */
+  .composer-input {
+    font-size: 16px !important; /* 防止 iOS 自动缩放 */
+  }
+
+  /* 隐藏状态栏中的非关键信息 */
+  .status-bar .desktop-only {
+    display: none;
+  }
+
+  /* 工具栏紧凑 */
+  .toolbar {
+    gap: 2px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  /* 头像缩小 */
+  .avatar {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ── 暗色 PWA 状态栏适配 ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  --sat-top: env(safe-area-inset-top, 0px);
+  --sat-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── PWA standalone 模式下隐藏标题栏 ───────────────────────────────── */
+@media (display-mode: standalone) {
+  .pwa-titlebar {
+    display: none;
+  }
+}

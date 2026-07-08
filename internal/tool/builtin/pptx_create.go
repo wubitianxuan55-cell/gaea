@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,7 +31,8 @@ func (pptxCreate) Schema() json.RawMessage {
   "slides":{"type":"array","items":{"type":"object","properties":{
     "title":{"type":"string","description":"幻灯片标题"},
     "content":{"type":"array","items":{"type":"string"},"description":"正文要点列表"},
-    "layout":{"type":"string","description":"布局：title（仅标题）/ content（标题+正文，默认）"}
+    "layout":{"type":"string","description":"布局：title（仅标题）/ content（标题+正文，默认）"},
+    "chart":{"type":"string","description":"图表图片路径（PNG）或 base64 数据（data:image/png;base64,...）"}
   }},"description":"幻灯片数组"}
 },
 "required":["path","slides"]
@@ -46,6 +48,7 @@ type pptxSlide struct {
 	Title   string   `json:"title"`
 	Content []string `json:"content,omitempty"`
 	Layout  string   `json:"layout,omitempty"` // "title" 或 "content"
+	Chart   string   `json:"chart,omitempty"`  // 图表路径或 data:image/png;base64,...
 }
 
 func (pptxCreate) Execute(ctx context.Context, args json.RawMessage) (string, error) {
@@ -63,7 +66,20 @@ func (pptxCreate) Execute(ctx context.Context, args json.RawMessage) (string, er
 		return "", fmt.Errorf("path 必须以 .pptx 结尾")
 	}
 
-	buf, err := buildPPTX(p.Slides)
+	// 加载图表图片
+	images := make(map[int][]byte) // slide索引 → 图片数据
+	for i, slide := range p.Slides {
+		if slide.Chart == "" {
+			continue
+		}
+		data, err := loadImageData(slide.Chart)
+		if err != nil {
+			return "", fmt.Errorf("幻灯片 %d 图表加载失败: %w", i+1, err)
+		}
+		images[i] = data
+	}
+
+	buf, err := buildPPTX(p.Slides, images)
 	if err != nil {
 		return "", fmt.Errorf("生成 PPTX 失败: %w", err)
 	}
@@ -73,14 +89,43 @@ func (pptxCreate) Execute(ctx context.Context, args json.RawMessage) (string, er
 	return tool.WrapText(fmt.Sprintf("已创建 PPTX 文件：%s（%d 张幻灯片）", p.Path, len(p.Slides))), nil
 }
 
+// --- 图表图片加载 ---
+
+// loadImageData 加载图表图片：支持文件路径和 base64 数据 URL
+func loadImageData(src string) ([]byte, error) {
+	if strings.HasPrefix(src, "data:image/") {
+		// data:image/png;base64,<data>
+		comma := strings.Index(src, ",")
+		if comma < 0 {
+			return nil, fmt.Errorf("无效的 data URL 格式")
+		}
+		encoded := src[comma+1:]
+		return decodeBase64(encoded)
+	}
+	// 文件路径
+	return os.ReadFile(src)
+}
+
+// decodeBase64 解码 base64 字符串（兼容 padding 缺失）
+func decodeBase64(s string) ([]byte, error) {
+	// 添加缺失的 padding
+	switch len(s) % 4 {
+	case 2:
+		s += "=="
+	case 3:
+		s += "="
+	}
+	return base64.StdEncoding.DecodeString(s)
+}
+
 // --- OOXML PPTX 构建 ---
 
-func buildPPTX(slides []pptxSlide) ([]byte, error) {
+func buildPPTX(slides []pptxSlide, images map[int][]byte) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 
 	// 固定内容
-	writeZipEntry(zw, "[Content_Types].xml", pptxContentTypes(len(slides)))
+	writeZipEntry(zw, "[Content_Types].xml", pptxContentTypes(len(slides), len(images)))
 	writeZipEntry(zw, "_rels/.rels", pptxRels)
 	writeZipEntry(zw, "ppt/presentation.xml", pptxPresentation(len(slides)))
 	writeZipEntry(zw, "ppt/_rels/presentation.xml.rels", pptxPresRels(len(slides)))
@@ -89,17 +134,39 @@ func buildPPTX(slides []pptxSlide) ([]byte, error) {
 	writeZipEntry(zw, "ppt/slideLayouts/slideLayout2.xml", pptxTitleLayout)
 	writeZipEntry(zw, "ppt/theme/theme1.xml", pptxTheme)
 
+	// 写入图片
+	imgIndex := 0
+	for i := range slides {
+		data, ok := images[i]
+		if !ok {
+			continue
+		}
+		imgIndex++
+		ext := "png"
+		writeZipEntry(zw, fmt.Sprintf("ppt/media/image%d.%s", imgIndex, ext), string(data))
+	}
+
 	// 写每张幻灯片
+	imgIndex = 0
 	for i, slide := range slides {
 		slideNum := i + 1
 		layoutID := 2 // slideLayout2 = 标题布局
 		if len(slide.Content) > 0 || slide.Layout == "content" {
 			layoutID = 1 // slideLayout1 = 内容布局
 		}
+
+		hasImage := false
+		imageRID := 0
+		if _, ok := images[i]; ok {
+			imgIndex++
+			hasImage = true
+			imageRID = imgIndex
+		}
+
 		writeZipEntry(zw, fmt.Sprintf("ppt/slides/slide%d.xml", slideNum),
-			pptxSlideXML(slide, layoutID))
+			pptxSlideXML(slide, layoutID, hasImage, imageRID))
 		writeZipEntry(zw, fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNum),
-			fmt.Sprintf(pptxSlideRels, layoutID))
+			pptxSlideRels(layoutID, hasImage, imageRID))
 	}
 
 	if err := zw.Close(); err != nil {
@@ -115,12 +182,13 @@ const pptxRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>`
 
-func pptxContentTypes(n int) string {
+func pptxContentTypes(n int, imgCount int) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
 <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
 <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
 <Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
@@ -199,12 +267,21 @@ const pptxTheme = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <a:fmtScheme name="Default"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"/></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"/></a:gs></a:gsLst></a:gradFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme>
 </a:themeElements></a:theme>`
 
-const pptxSlideRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+func pptxSlideRels(layoutID int, hasImage bool, imageRID int) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout%d.xml"/>
-</Relationships>`
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout`)
+	b.WriteString(fmt.Sprintf("%d", layoutID))
+	b.WriteString(`.xml"/>`)
+	if hasImage {
+		b.WriteString(fmt.Sprintf(`<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image%d.png"/>`, imageRID))
+	}
+	b.WriteString("\n</Relationships>")
+	return b.String()
+}
 
-func pptxSlideXML(slide pptxSlide, layoutID int) string {
+func pptxSlideXML(slide pptxSlide, layoutID int, hasImage bool, imageRID int) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -225,6 +302,16 @@ func pptxSlideXML(slide pptxSlide, layoutID int) string {
 			b.WriteString(`</a:t></a:r></a:p>`)
 		}
 		b.WriteString(`</p:txBody></p:sp>`)
+	}
+
+	// 图表图片
+	if hasImage {
+		b.WriteString(fmt.Sprintf(`<p:sp>
+<p:nvSpPr><p:cNvPr id="5" name="Chart"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+<p:spPr><a:xfrm><a:off x="685800" y="1700000"/><a:ext cx="7772400" cy="4800000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>
+<p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+<p:spPr><a:ln><a:noFill/></a:ln></p:spPr>
+</p:sp>`))
 	}
 
 	b.WriteString(`</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`)

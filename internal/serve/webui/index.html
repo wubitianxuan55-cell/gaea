@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="gaeaW - 土壤修复工程办公AI助手 / Soil Remediation Engineering AI Assistant" />
     <title>gaeaW</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script type="module" crossorigin src="./assets/index-e4T02eS2.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/vendor-ui-DC4KrE-Y.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-markdown-BwrlkowX.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-CUawUiei.css">
+    <div id="root"></div>
+    <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("/sw.js").catch(()=>{});});}</script>
   </head>
   <body>
     <div id="root"></div>

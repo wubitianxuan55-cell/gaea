@@ -38,6 +38,7 @@ type Config struct {
 	Search       SearchConfig      `toml:"search"`
 	Network      NetworkConfig     `toml:"network"`
 	Bot          BotConfig         `toml:"bot"`
+	Serve        ServeConfig       `toml:"serve"`
 }
 
 // SearchConfig configures web search engines. Resolution order: local SearXNG
@@ -139,12 +140,17 @@ type NetworkProxyConfig struct {
 // BotConfig configures external messaging platform integrations (bot).
 type BotConfig struct {
 	Enabled        bool   `toml:"enabled"`
+	// WeCom (企业微信) configuration
 	CorpID         string `toml:"corp_id"`
 	AgentID        string `toml:"agent_id"`
 	AppSecret      string `toml:"app_secret"`
 	Token          string `toml:"token"`
 	EncodingAESKey string `toml:"encoding_aes_key"`
 	ListenAddr     string `toml:"listen_addr"`
+	// Telegram configuration
+	TelegramToken  string   `toml:"telegram_token"`
+	AllowedUsers   []int64  `toml:"allowed_users"`
+	TelegramEnabled bool   `toml:"telegram_enabled"`
 }
 
 // NetworkProxySpec returns a netclient.ProxySpec suitable for configuring
@@ -170,6 +176,28 @@ func (c *Config) NetworkProxySpec() netclient.ProxySpec {
 // returns an install hint when it is missing, so the capability is dormant until
 // the user installs a server. Servers overrides or extends the built-in language
 // → server map, keyed by language id (e.g. "go", "rust", "python").
+
+
+// ServeConfig configures the HTTP server for mobile/browser access.
+type ServeConfig struct {
+	// Enabled enables the HTTP server. Default false.
+	Enabled bool `toml:"enabled"`
+	// ListenAddr is the bind address (e.g. "127.0.0.1:8787" or "0.0.0.0:8787").
+	// Default "127.0.0.1:8787" (localhost only).
+	ListenAddr string `toml:"listen_addr"`
+	// AuthToken is an optional Bearer token that all requests must provide
+	// via the Authorization header. Empty means no auth.
+	AuthToken string `toml:"auth_token"`
+}
+
+// ServeConfig returns the ServeConfig, applying defaults.
+func (c *Config) ServeConfig() ServeConfig {
+	cfg := c.Serve
+	if cfg.ListenAddr == "" {
+		cfg.ListenAddr = "127.0.0.1:8787"
+	}
+	return cfg
+}
 type LSPConfig struct {
 	Enabled bool                 `toml:"enabled"`
 	Servers map[string]LSPServer `toml:"servers"`
@@ -572,13 +600,13 @@ func Default() *Config {
 			"web_fetch", "web_search",
 			"todo_write", "complete_step",
 			"memory_search",
-			"git_status", "git_diff", "git_commit", "git_log", "git_worktree",
 		}},
 		Providers: []ProviderEntry{
 			{Name: "deepseek-flash", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-flash", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"}},
 			{Name: "deepseek-pro", Kind: "openai", BaseURL: "https://api.deepseek.com", Model: "deepseek-v4-pro", APIKeyEnv: "DEEPSEEK_API_KEY", BalanceURL: "https://api.deepseek.com/user/balance", ContextWindow: 1_000_000, Price: &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "¥"}},
 			{Name: "mimo-pro", Kind: "openai", BaseURL: "https://token-plan-cn.xiaomimimo.com/v1", Model: "mimo-v2.5-pro", APIKeyEnv: "MIMO_API_KEY", ContextWindow: 1_000_000, Price: &provider.Pricing{CacheHit: 0.025, Input: 3, Output: 6, Currency: "¥"}},
 			{Name: "mimo-flash", Kind: "openai", BaseURL: "https://token-plan-cn.xiaomimimo.com/v1", Model: "mimo-v2.5", APIKeyEnv: "MIMO_API_KEY", ContextWindow: 1_000_000, Price: &provider.Pricing{CacheHit: 0.02, Input: 1, Output: 2, Currency: "¥"}},
+			{Name: "xai-oauth", Kind: "xai", BaseURL: "https://api.x.ai/v1", Model: "grok-4.3", APIKeyEnv: "", ContextWindow: 1_000_000},
 		},
 	}
 }
@@ -846,6 +874,10 @@ func (c *Config) Validate(model string) error {
 	}
 	if e.BaseURL == "" {
 		return fmt.Errorf("provider %q: base_url is required", model)
+	}
+	// OAuth providers (kind=xai) manage their own credentials — no api_key_env needed.
+	if e.Kind == "xai" {
+		return nil
 	}
 	if e.APIKey() == "" {
 		return fmt.Errorf("provider %q: missing env %s", model, e.APIKeyEnv)

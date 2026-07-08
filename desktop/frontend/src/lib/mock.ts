@@ -119,8 +119,9 @@ export function makeMockApp(): AppBindings {
   const settings: SettingsView = {
     defaultModel: "deepseek-flash",
     providers: [
-      { name: "deepseek-flash", kind: "openai", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4-flash"], default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: !freshMock, balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000 },
-      { name: "mimo-pro", kind: "openai", baseUrl: "https://api.xiaomimimo.com/v1", models: ["mimo-v2.5-pro"], default: "mimo-v2.5-pro", apiKeyEnv: "MIMO_API_KEY", keySet: false, balanceUrl: "", contextWindow: 1_000_000 },
+      { name: "deepseek-flash", kind: "openai", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4-flash"], default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: !freshMock, balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000, oauthKind: "", oauthReady: false },
+      { name: "mimo-pro", kind: "openai", baseUrl: "https://api.xiaomimimo.com/v1", models: ["mimo-v2.5-pro"], default: "mimo-v2.5-pro", apiKeyEnv: "MIMO_API_KEY", keySet: false, balanceUrl: "", contextWindow: 1_000_000, oauthKind: "", oauthReady: false },
+      { name: "xai-oauth", kind: "xai", baseUrl: "https://api.x.ai/v1", models: ["grok-4.3"], default: "grok-4.3", apiKeyEnv: "", keySet: false, balanceUrl: "", contextWindow: 1_000_000, oauthKind: "xai", oauthReady: false },
     ],
     permissions: { mode: "ask", allow: ["ls", "read_file"], ask: [], deny: ["bash(rm *)"] },
     sandbox: { bash: "enforce", network: true, workspaceRoot: "", allowWrite: [] },
@@ -130,7 +131,7 @@ export function makeMockApp(): AppBindings {
     subagentModels: {},
     subagentSkills: ["explore", "research", "review", "security-review"],
     configPath: freshMock ? "~/.gaeaW/config.toml" : "~/projects/gaeaW/gaeaW.toml",
-    providerKinds: ["openai"],
+    providerKinds: ["openai", "xai"],
     bypass: false,
     permLevel: "ask",
   };
@@ -472,6 +473,14 @@ export function makeMockApp(): AppBindings {
       settings.providers.forEach((p) => {
         if (p.apiKeyEnv === apiKeyEnv) p.keySet = true;
       });
+    },
+    async LoginProvider(name: string) {
+      const p = settings.providers.find((x) => x.name === name);
+      if (p) p.oauthReady = true;
+    },
+    async LogoutProvider(name: string) {
+      const p = settings.providers.find((x) => x.name === name);
+      if (p) p.oauthReady = false;
     },
     async SetPermissionMode(mode: string) {
       settings.permissions.mode = mode;

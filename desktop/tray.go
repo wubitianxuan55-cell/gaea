@@ -12,10 +12,10 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// trayIconPNG is a 32x32 minimalist sprout icon in PNG format.
+// trayIconICO is a 16×16 / 32×32 dark-teal W icon in ICO format.
 //
-//go:embed tray_icon.png
-var trayIconPNG []byte
+//go:embed tray_icon.ico
+var trayIconICO []byte
 
 var (
 	quitting = false
@@ -28,9 +28,9 @@ func runTray(ctx context.Context) {
 	systray.Run(
 		func() {
 			// onReady — runs in a new goroutine after systray initializes.
-			systray.SetIcon(trayIconPNG)
+			systray.SetIcon(trayIconICO)
 			systray.SetTitle("gaeaW")
-			systray.SetTooltip("gaeaW — AI Coding Agent")
+			systray.SetTooltip("gaeaW — 大地工程AI助手")
 
 			showItem := systray.AddMenuItem("显示 gaeaW", "恢复主窗口")
 			systray.AddSeparator()

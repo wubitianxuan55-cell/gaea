@@ -11,8 +11,10 @@ import (
 	"gaeaW/internal/i18n"
 	"gaeaW/internal/memory"
 	"gaeaW/internal/provider"
+	"gaeaW/internal/provider/xai"
 )
 
+// ContextInfo is the prompt-vs-window gauge payload. Both zero means no data yet.
 // ContextInfo is the prompt-vs-window gauge payload. Both zero means no data yet.
 // PlannerUsed/PlannerWindow track the Hermes model independently.
 type ContextInfo struct {
@@ -304,7 +306,11 @@ func (a *App) Models() []ModelInfo {
 	out := []ModelInfo{}
 	for i := range cfg.Providers {
 		p := &cfg.Providers[i]
-		if !p.Configured() {
+		if p.Kind == "xai" {
+			if !xai.IsLoggedIn() {
+				continue
+			}
+		} else if !p.Configured() {
 			continue
 		}
 		for _, m := range p.ModelList() {

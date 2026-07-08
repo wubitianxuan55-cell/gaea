@@ -9,6 +9,7 @@ import (
 	"gaeaW/internal/boot"
 	"gaeaW/internal/config"
 	"gaeaW/internal/provider"
+	"gaeaW/internal/provider/xai"
 )
 
 // settings_app.go is the desktop Settings panel's command surface: it reads the
@@ -30,6 +31,9 @@ type ProviderView struct {
 	KeySet        bool     `json:"keySet"` // the env var currently resolves to a non-empty value
 	BalanceURL    string   `json:"balanceUrl"`
 	ContextWindow int      `json:"contextWindow"`
+	// OAuth 支持：非空时表示该 provider 支持 OAuth 登录（如 "xai"）
+	OAuthKind  string `json:"oauthKind"`
+	OAuthReady bool   `json:"oauthReady"`
 }
 
 type PermissionsView struct {
@@ -132,6 +136,11 @@ func (a *App) Settings() SettingsView {
 			BalanceURL:    p.BalanceURL,
 			ContextWindow: p.ContextWindow,
 		})
+		// XAI OAuth 支持
+		if p.Kind == "xai" {
+			v.Providers[len(v.Providers)-1].OAuthKind = "xai"
+			v.Providers[len(v.Providers)-1].OAuthReady = xai.IsLoggedIn()
+		}
 	}
 	return v
 }
@@ -301,6 +310,48 @@ func (a *App) SetProviderKey(apiKeyEnv, value string) error {
 		return err
 	}
 	return a.rebuild()
+}
+
+// LoginProvider 触发 OAuth 登录流程（目前仅支持 kind == "xai"）。
+func (a *App) LoginProvider(name string) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("无法加载配置: %w", err)
+	}
+	e, ok := cfg.Provider(name)
+	if !ok {
+		return fmt.Errorf("未找到 provider %q", name)
+	}
+	switch e.Kind {
+	case "xai":
+		if err := xai.Login(); err != nil {
+			return fmt.Errorf("XAI 登录失败: %w", err)
+		}
+		return a.rebuild()
+	default:
+		return fmt.Errorf("provider %q (kind=%s) 不支持 OAuth 登录", name, e.Kind)
+	}
+}
+
+// LogoutProvider 登出 OAuth provider（删除缓存的 token）。
+func (a *App) LogoutProvider(name string) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("无法加载配置: %w", err)
+	}
+	e, ok := cfg.Provider(name)
+	if !ok {
+		return fmt.Errorf("未找到 provider %q", name)
+	}
+	switch e.Kind {
+	case "xai":
+		if err := xai.Logout(); err != nil {
+			return fmt.Errorf("XAI 登出失败: %w", err)
+		}
+		return a.rebuild()
+	default:
+		return fmt.Errorf("provider %q (kind=%s) 不支持 OAuth 登出", name, e.Kind)
+	}
 }
 
 // SetPermissionMode sets the writer-fallback mode (ask|allow|deny).

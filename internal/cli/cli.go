@@ -6,6 +6,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"gaeaW/internal/i18n"
 	"gaeaW/internal/notify"
 	"gaeaW/internal/provider"
+	"gaeaW/internal/provider/xai"
 	"gaeaW/internal/serve"
 
 	tea "charm.land/bubbletea/v2"
@@ -68,6 +70,10 @@ func Run(args []string, version string) int {
 		return updateCommand(rest, version)
 	case "doctor":
 		return doctorCommand(rest)
+	case "login":
+		return loginCmd(rest)
+	case "logout":
+		return logoutCmd(rest)
 	case "version", "--version", "-v":
 		fmt.Println("gaeaW", version)
 		return 0
@@ -117,6 +123,7 @@ func runAgent(args []string) int {
 	maxSteps := fs.Int("max-steps", 0, "max tool-call rounds (0 = use config/default)")
 	showThinking := fs.Bool("show-thinking", false, "show thinking text instead of the collapsed thinking marker")
 	metricsPath := fs.String("metrics", "", "write a JSON token/cache/cost summary of the run to this path")
+	jsonlMode := fs.Bool("jsonl", false, "output each event as JSON Lines (one JSON object per line) for pipelines/CI")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -147,6 +154,15 @@ func runAgent(args []string) int {
 	textSink := agent.NewTextSink(os.Stdout, renderer, termW)
 	textSink.SetShowReasoning(*showThinking)
 	var sink event.Sink = textSink
+	if *jsonlMode {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetEscapeHTML(false)
+		sink = event.FuncSink(func(e event.Event) {
+			if err := enc.Encode(e); err != nil {
+				fmt.Fprintf(os.Stderr, "[jsonl] encode error: %v\n", err)
+			}
+		})
+	}
 	var metrics *metricsSink
 	if *metricsPath != "" {
 		metrics = &metricsSink{inner: textSink}
@@ -874,4 +890,47 @@ func welcome(version string) int {
 
 func usage() {
 	fmt.Print(i18n.M.UsageBody)
+}
+
+// loginCmd 处理 `gaeaW login <provider>` 命令。
+func loginCmd(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "用法: gaeaW login <provider>")
+		fmt.Fprintln(os.Stderr, "  支持的提供商: xai")
+		return 2
+	}
+	switch args[0] {
+	case "xai":
+		fmt.Println("正在打开浏览器进行 XAI 登录...")
+		if err := xai.Login(); err != nil {
+			fmt.Fprintf(os.Stderr, "XAI 登录失败: %v\n", err)
+			return 1
+		}
+		fmt.Println("✅ XAI 登录成功！现在可以在 gaeaW.toml 中启用 xai-oauth provider 并切换模型。")
+		return 0
+	default:
+		fmt.Fprintf(os.Stderr, "不支持的提供商: %s（目前仅支持 xai）\n", args[0])
+		return 2
+	}
+}
+
+// logoutCmd 处理 `gaeaW logout <provider>` 命令。
+func logoutCmd(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "用法: gaeaW logout <provider>")
+		fmt.Fprintln(os.Stderr, "  支持的提供商: xai")
+		return 2
+	}
+	switch args[0] {
+	case "xai":
+		if err := xai.Logout(); err != nil {
+			fmt.Fprintf(os.Stderr, "XAI 登出失败: %v\n", err)
+			return 1
+		}
+		fmt.Println("✅ XAI 已登出。")
+		return 0
+	default:
+		fmt.Fprintf(os.Stderr, "不支持的提供商: %s（目前仅支持 xai）\n", args[0])
+		return 2
+	}
 }

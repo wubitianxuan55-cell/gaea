@@ -3,36 +3,85 @@
   <defs>
     <linearGradient id="w-grad" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#0F766E"/>
-      <stop offset="100%" stop-color="#14B8A6"/>
+      <stop offset="50%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#2DD4BF"/>
     </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14B8A6" stop-opacity="0.75"/>
+      <stop offset="60%" stop-color="#14B8A6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bg-glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#CCFBF1" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#F8FAFC" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- 背景：白色圆角方形 + 浅灰细边框 -->
-  <rect width="1024" height="1024" rx="224" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="3"/>
+  <rect width="1024" height="1024" rx="224" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="3"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg-glow)"/>
 
-  <!-- 山形 W — 4 块平行四边形，teal 渐变 -->
-  <g fill="url(#w-grad)" stroke="url(#w-grad)" stroke-width="1.5" stroke-linejoin="round">
-    <!-- 块 1：左外侧 — 底部 → 左峰 -->
-    <polygon points="208,470 272,470 402,220 338,220" />
-    <!-- 块 2：左内侧 — 左峰 → 谷底 -->
-    <polygon points="370,240 434,240 540,470 476,470" />
-    <!-- 块 3：右内侧 — 谷底 → 右峰 -->
-    <polygon points="556,470 620,470 654,240 590,240" />
-    <!-- 块 4：右外侧 — 右峰 → 底部 -->
-    <polygon points="622,240 686,240 816,470 752,470" />
+  <g stroke="#CCFBF1" stroke-width="1" opacity="0.8">
+    <line x1="0" y1="576" x2="1024" y2="576"/>
+    <line x1="0" y1="704" x2="1024" y2="704"/>
+    <line x1="0" y1="832" x2="1024" y2="832"/>
+    <line x1="0" y1="960" x2="1024" y2="960"/>
+    <line x1="128" y1="540" x2="128" y2="1024"/>
+    <line x1="256" y1="540" x2="256" y2="1024"/>
+    <line x1="384" y1="540" x2="384" y2="1024"/>
+    <line x1="512" y1="540" x2="512" y2="1024"/>
+    <line x1="640" y1="540" x2="640" y2="1024"/>
+    <line x1="768" y1="540" x2="768" y2="1024"/>
+    <line x1="896" y1="540" x2="896" y2="1024"/>
   </g>
 
-  <!-- 地层线（两条水平 semi-transparent teal 线） -->
-  <g stroke="#0D9488" stroke-width="2" stroke-linecap="round" opacity="0.45">
+  <polygon points="512,180 940,520 84,520" fill="#CCFBF1" opacity="0.7"/>
+  <polygon points="512,260 856,520 168,520" fill="#99F6E4" opacity="0.6"/>
+  <polygon points="512,340 750,520 274,520" fill="#5EEAD4" opacity="0.5"/>
+  <polygon points="512,400 640,520 384,520" fill="#2DD4BF" opacity="0.35"/>
+
+  <g stroke="#0F766E" stroke-width="1" opacity="0.12">
+    <line x1="512" y1="180" x2="512" y2="520"/>
+  </g>
+
+  <g fill="url(#w-grad)" stroke="#0F766E" stroke-width="1.5" stroke-linejoin="round" opacity="0.95">
+    <polygon points="208,470 272,470 402,218 338,218" />
+    <polygon points="372,238 434,238 540,470 476,470" />
+    <polygon points="556,470 620,470 652,238 590,238" />
+    <polygon points="624,238 686,238 816,470 752,470" />
+  </g>
+
+  <g stroke="#0F766E" stroke-width="1.5" stroke-linecap="round" opacity="0.3">
+    <line x1="320" y1="280" x2="340" y2="248" />
+    <line x1="508" y1="470" x2="508" y2="440" />
+    <line x1="660" y1="280" x2="648" y2="248" />
+  </g>
+
+  <g stroke="#0D9488" stroke-width="2.5" stroke-linecap="round" opacity="0.4">
     <line x1="180" y1="528" x2="844" y2="528" />
-    <line x1="180" y1="548" x2="844" y2="548" />
+    <line x1="180" y1="550" x2="844" y2="550" />
   </g>
 
-  <!-- 峰顶菱形标记 -->
-  <g fill="#0D9488">
-    <!-- 左峰 -->
-    <polygon points="386,212 394,220 386,228 378,220" />
-    <!-- 右峰 -->
-    <polygon points="638,232 646,240 638,248 630,240" />
+  <circle cx="386" cy="218" r="20" fill="url(#glow)"/>
+  <circle cx="386" cy="218" r="6" fill="#0F766E"/>
+
+  <circle cx="638" cy="238" r="18" fill="url(#glow)"/>
+  <circle cx="638" cy="238" r="5.5" fill="#0F766E"/>
+
+  <circle cx="512" cy="470" r="14" fill="url(#glow)"/>
+  <circle cx="512" cy="470" r="4" fill="#0F766E"/>
+
+  <circle cx="200" cy="490" r="8" fill="url(#glow)" opacity="0.5"/>
+  <circle cx="200" cy="490" r="2.5" fill="#0F766E" opacity="0.6"/>
+  <circle cx="824" cy="490" r="8" fill="url(#glow)" opacity="0.5"/>
+  <circle cx="824" cy="490" r="2.5" fill="#0F766E" opacity="0.6"/>
+
+  <circle cx="300" cy="380" r="2" fill="#14B8A6" opacity="0.35"/>
+  <circle cx="724" cy="390" r="2" fill="#14B8A6" opacity="0.35"/>
+  <circle cx="450" cy="340" r="1.5" fill="#0F766E" opacity="0.25"/>
+  <circle cx="580" cy="350" r="1.5" fill="#0F766E" opacity="0.25"/>
+
+  <g fill="#0F766E">
+    <polygon points="386,204 396,218 386,232 376,218" />
+    <polygon points="638,224 648,238 638,252 628,238" />
   </g>
 </svg>

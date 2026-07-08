@@ -2,19 +2,21 @@ import { useState } from "react";
 import type { Theme } from "../lib/theme";
 
 const THEME_DOTS: Record<string, string> = {
-  dark: "#0b0f15",
-  light: "#f8f6f2",
-  warm: "#1e1814",
-  ice: "#0a111a",
-  forest: "#0d1510",
+  slate: "#0F172A",
+  earth: "#1A1512",
+  noir: "#111113",
+  paper: "#F8FAFC",
+  sand: "#FDF6EC",
+  mist: "#F2F5F8",
 };
 
 const THEME_NAMES: Record<string, string> = {
-  dark: "深色",
-  light: "浅色",
-  warm: "暖色",
-  ice: "冰蓝",
-  forest: "森林",
+  slate: "暗岩",
+  earth: "深壤",
+  noir: "墨金",
+  paper: "素纸",
+  sand: "砂岩",
+  mist: "晨雾",
   auto: "自动",
 };
 
@@ -28,7 +30,7 @@ export function ThemeSwitcher({
   onStore: (theme: Theme) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const themes: Theme[] = ["dark", "light", "warm", "ice", "forest", "auto"];
+  const themes: Theme[] = ["slate", "earth", "noir", "paper", "sand", "mist", "auto"];
   const current = theme === "auto" ? "auto" : theme;
 
   const handlePick = (th: Theme) => {
@@ -46,7 +48,7 @@ export function ThemeSwitcher({
       >
         <span
           className="inline-block w-3 h-3 rounded-full border border-border-soft shrink-0"
-          style={{ background: THEME_DOTS[current] ?? THEME_DOTS.dark }}
+          style={{ background: THEME_DOTS[current] ?? THEME_DOTS.slate }}
         />
         <span>{THEME_NAMES[current] ?? current}</span>
       </button>

@@ -20,7 +20,7 @@ function mixHex(a: string, b: string, t: number): string {
 
 export function AppearanceSection({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
   const { t, pref, setPref } = useI18n();
-  const themeOptions: Theme[] = ["dark", "light", "warm", "ice", "forest"];
+  const themeOptions: Theme[] = ["slate", "earth", "noir", "paper", "sand", "mist"];
 
   // 字体偏好（localStorage + DOM attribute）
   const [uiFont, setUiFont] = useState(() => {
@@ -42,15 +42,16 @@ export function AppearanceSection({ theme, onTheme }: { theme: Theme; onTheme: (
   };
 
   const themeColors: Record<Theme, { bg: string; accent: string; fg: string; label: string }> = {
-    auto:   { bg: "#0b0f15", accent: "#6ee7ff", fg: "#e6ebf2", label: t("settings.themeAuto") },
-    dark:   { bg: "#0b0f15", accent: "#6ee7ff", fg: "#e6ebf2", label: t("settings.themeDark") },
-    light:  { bg: "#f7f4ef", accent: "#3b82f6", fg: "#1f1d1a", label: t("settings.themeLight") },
-    warm:   { bg: "#fdf6e3", accent: "#a855f7", fg: "#3d2b1f", label: "暖色" },
-    ice:    { bg: "#0d1b2a", accent: "#6ee7ff", fg: "#e0e8f2", label: "冰蓝" },
-    forest: { bg: "#0f1a0f", accent: "#4ade80", fg: "#e0ecd8", label: "森林" },
+    auto:  { bg: "#0F172A", accent: "#6366F1", fg: "#F8FAFC", label: t("settings.themeAuto") },
+    slate: { bg: "#0F172A", accent: "#6366F1", fg: "#F8FAFC", label: "暗岩 · Slate" },
+    earth: { bg: "#1A1512", accent: "#A8825E", fg: "#EDE4D8", label: "深壤 · Earth" },
+    noir:  { bg: "#111113", accent: "#D4A853", fg: "#EDEDED", label: "墨金 · Noir" },
+    paper: { bg: "#F8FAFC", accent: "#3B82F6", fg: "#0F172A", label: "素纸 · Paper" },
+    sand:  { bg: "#FDF6EC", accent: "#B87333", fg: "#2D2420", label: "砂岩 · Sand" },
+    mist:  { bg: "#F2F5F8", accent: "#0EA5A9", fg: "#1A202C", label: "晨雾 · Mist" },
   };
 
-  const tc = themeColors[theme] ?? themeColors.dark;
+  const tc = themeColors[theme] ?? themeColors.slate;
 
   return (
     <section className="mb-3">
@@ -68,7 +69,7 @@ export function AppearanceSection({ theme, onTheme }: { theme: Theme; onTheme: (
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {themeOptions.map((opt) => {
             const c = themeColors[opt];
             const isActive = theme === opt;
@@ -76,7 +77,7 @@ export function AppearanceSection({ theme, onTheme }: { theme: Theme; onTheme: (
               <button
                 key={opt}
                 onClick={() => onTheme(opt)}
-                className={`text-left bg-bg-soft border rounded-lg p-2.5 cursor-pointer transition-all hover:-translate-y-px hover:shadow-lg ${
+                className={`text-left bg-bg-soft border rounded-lg p-2.5 cursor-pointer transition-all hover:-translate-y-p1 hover:shadow-lg ${
                   isActive ? "border-accent ring-1 ring-accent/50" : "border-border-soft hover:border-fg-faint/30"
                 }`}
               >

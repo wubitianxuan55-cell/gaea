@@ -1,21 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="gaeaW">
   <title>gaeaW</title>
-  <defs>
-    <linearGradient id="w-tray" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F766E"/>
-      <stop offset="100%" stop-color="#14B8A6"/>
-    </linearGradient>
-  </defs>
-
-  <!-- 托盘图标：透明底 + 简化山形 W（4 块粗平行四边形） -->
-  <g fill="url(#w-tray)" stroke="url(#w-tray)" stroke-width="0.5" stroke-linejoin="round">
-    <!-- 块 1：左外侧 -->
+  <!-- 暗色 teal 圆角方底 — 适配系统托盘 -->
+  <rect width="32" height="32" rx="7" fill="#0F766E"/>
+  <!-- 白色山形 W（4 块平行四边形） -->
+  <g fill="#FFFFFF">
     <polygon points="3,27 7,27 13,7 9,7" />
-    <!-- 块 2：左内侧 -->
     <polygon points="10,9 14,9 16,27 12,27" />
-    <!-- 块 3：右内侧 -->
     <polygon points="17,27 21,27 22,9 18,9" />
-    <!-- 块 4：右外侧 -->
     <polygon points="19,7 23,7 29,27 25,27" />
   </g>
+  <!-- 底部白色地层线 -->
+  <line x1="5" y1="28" x2="27" y2="28" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
 </svg>

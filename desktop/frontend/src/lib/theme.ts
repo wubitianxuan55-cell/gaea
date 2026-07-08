@@ -2,8 +2,10 @@
 // and follows the OS via prefers-color-scheme; this lets the user force a theme
 // by setting data-theme on <html>, or "auto" to remove it and follow the OS.
 // The choice persists in localStorage and is applied on load.
+//
+// 6 built-in themes: 3 dark (slate, earth, noir) + 3 light (paper, sand, mist)
 
-export type Theme = "auto" | "light" | "dark" | "warm" | "ice" | "forest";
+export type Theme = "auto" | "slate" | "earth" | "noir" | "paper" | "sand" | "mist";
 
 const KEY = "gaeaW-theme";
 
@@ -15,23 +17,32 @@ function normalizeTheme(value: unknown): Theme | null {
   switch (value) {
     case "auto":
       return "auto";
-    case "light":
-    case "focus":
-      return "light";
+    // New names
+    case "slate":
+      return "slate";
+    case "earth":
+      return "earth";
+    case "noir":
+      return "noir";
+    case "paper":
+      return "paper";
+    case "sand":
+      return "sand";
+    case "mist":
+      return "mist";
+    // Legacy name migration — map to closest new name
     case "dark":
     case "contrast":
-      return "dark";
-    case "warm":
-      return "warm";
-    case "ice":
-      return "ice";
-    case "forest":
-      return "forest";
-    // Migrate removed themes to their closest dark default
     case "midnight":
     case "neon":
     case "mono":
-      return "dark";
+    case "ice":       // 冰蓝 → slate（相近的暗冷色）
+    case "forest":    // 森林 → slate（暗色默认）
+      return "slate";
+    case "light":
+    case "focus":
+    case "warm":      // 暖色 → sand（相近的暖亮色）
+      return "sand";
     default:
       return null;
   }

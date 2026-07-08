@@ -5,7 +5,7 @@ import { applyTheme, getTheme, type Theme } from "../lib/theme";
 import type { SettingsView } from "../lib/types";
 import { DrawerHeader, DrawerTitle } from "./DrawerHeader";
 import { ResizableDrawer } from "./ResizableDrawer";
-import { Cpu, Shield, Box, Bot, Palette, CloudUpload, Plug } from "lucide-react";
+import { Cpu, Shield, Box, Bot, Palette, CloudUpload, Plug, Smartphone } from "lucide-react";
 import { ModelsSection } from "./SettingsModels";
 import { ProvidersSection } from "./SettingsProviders";
 import { PermissionsSection } from "./SettingsPermissions";
@@ -13,6 +13,7 @@ import { SandboxSection } from "./SettingsSandbox";
 import { AgentSection } from "./SettingsAgent";
 import { AppearanceSection } from "./SettingsAppearance";
 import { UpdatesSection } from "./SettingsUpdates";
+import { MobileSection } from "./SettingsMobile";
 import { SETTINGS_TABS, settingsTabLabel, settingsTabMeta, type SettingsTab } from "./SettingsShared";
 
 // SettingsPanel is the desktop settings surface, aligning with Claude Code's
@@ -27,8 +28,6 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
   const [theme, setThemeState] = useState<Theme>(getTheme());
   const [tab, setTab] = useState<SettingsTab>("models");
   const [query, setQuery] = useState("");
-
-  // V8.4.1: 图标映射 + 搜索过滤
   const TAB_ICONS: Record<SettingsTab, React.ReactNode> = {
     models: <Cpu size={14} />,
     providers: <Plug size={14} />,
@@ -37,6 +36,7 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
     agent: <Bot size={14} />,
     appearance: <Palette size={14} />,
     updates: <CloudUpload size={14} />,
+    mobile: <Smartphone size={14} />,
   };
   const filteredTabs = query.trim() && s
     ? SETTINGS_TABS.filter((id) => {
@@ -125,7 +125,8 @@ export function SettingsPanel({ onClose, onChanged }: { onClose: () => void; onC
                     }}
                   />
                 )}
-                {tab === "updates" && <UpdatesSection configPath={s.configPath} />}
+          {tab === "updates" && <UpdatesSection configPath={s.configPath} />}
+          {tab === "mobile" && <MobileSection />}
               </main>
             </div>
           </div>

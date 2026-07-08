@@ -1,5 +1,87 @@
-# Changelog
 
+## v0.10.0 (2026-07-08)
+
+### 新增
+
+- **xai-oauth 完整集成**：支持 OAuth PKCE 登录/登出，设置面板中提供「🔑 登录 XAI」按钮和 OAuth 状态徽章，模型切换器正常显示
+- **主题系统重设计**：暗岩/深壤/墨金/素纸/砂岩/晨雾 6 套主题（3 亮 + 3 暗）
+- **欢迎界面重设计**：技能模块入口布局，去掉输入框
+- **Logo 重设计**：亮色大地风，暖白背景 + teal 山形 W + 四层山脉
+- **右侧边栏优化**：精简布局、默认展开、宽度增加至 340px
+- **报告面板扩展**：支持 pdf/pptx/html/png/svg 全部格式
+- **托盘图标修复**：改用 .ico 格式，暗色 teal 底 + 白色 W，系统托盘正常显示
+- **pptx/xlsx 图表嵌入增强**
+- **版本管理**：VERSION 文件统一管理版本号
+
+### 修复
+
+- **设置面板 XAI 不可见**：`desktop/main.go` 添加 xai 空白导入
+- **模型列表 XAI 被过滤**：`app_meta.go` `Models()` 改用 `xai.IsLoggedIn()` 检查
+- **托盘图标空白**：PNG→ICO 格式转换，`//go:embed tray_icon.ico`
+- **默认配置缺失 xai**：`config.go` `Default()` 添加 `xai-oauth` 条目
+- **配置校验拦截**：`config.go` `Validate()` 对 `kind="xai"` 跳过 API Key 检查
+
+### 构建
+
+- 桌面端：`desktop/build/bin/gaeaW-desktop.exe`（17 MB）
+- 校验：`SHA256: a56179f7e73e6e3441bc21e04ffebb5d494c68df1b7cadc4f90aaa7bf8efe6bb`
+
+---
+
+## v0.9.1 (2026-07-08)
+
+### 修复
+
+- **右侧边栏宽度调整**：`--workspace-width` 从 280px 改为 340px，统计标签三列不再挤成两行
+- **右侧边栏默认展开**：`workspacePanelOpen` 默认值改为 `true`
+- **恢复功能面板**：CapabilitiesPanel（技能/工具/MCP 按钮）恢复显示
+- **恢复记忆按钮文字**：Sidebar 中记忆按钮的文本标签补回
+- **报告面板扩展**：.pdf / .pptx / .html / .txt / .png / .svg 文件现可在报告面板中显示，每种格式有独立图标和颜色
+
+### 构建
+
+- 桌面端：`desktop/build/bin/gaeaW-desktop.exe`（16.6 MB）
+
+---
+
+## v0.9.0 (2026-07-08)
+
+### 新增
+
+#### 欢迎界面重设计 — 技能模块化入口
+- **移除中央输入框**：不再直接输入，改为技能卡片网格引导工作流
+- **8 个工程技能模块**：场地环境调查、投标方案编制、修复方案设计、数据报告生成、污染风险评估、成本测算、图表生成、文档汇总
+- **每张卡片**：图标 + 名称 + 描述（2行截断）+ 类型徽章（🧬子代理/📄文档/📊图表）
+- **保留最近会话**列表和自由提问提示条
+
+#### 主题系统重设计 — 3 暗 + 3 亮
+- **3 暗色**：暗岩 Slate（`#0F172A`+靛蓝）、深壤 Earth（`#1A1512`+大地棕）、墨金 Noir（`#111113`+暗金）
+- **3 亮色**：素纸 Paper（`#F8FAFC`+天蓝）、砂岩 Sand（`#FDF6EC`+铜棕）、晨雾 Mist（`#F2F5F8`+青绿）
+- **自动迁移**：旧主题名（dark→slate、light→paper、warm→sand、ice→slate、forest→slate）无缝映射
+
+#### 文档图表增强
+- **PPT 图表嵌入**：`pptx_create` 支持 `chart` 参数（文件路径或 data:image/png;base64,...），嵌入幻灯片
+- **Excel 图表嵌入**：`xlsx_write` 支持 `chart` 字段（bar/column/line/pie 四种类型），生成完整 OOXML 图表
+
+### 精简
+
+- **删除"消息"标签**：右侧边栏去掉了消息过滤标签
+- **删除"功能"面板**：移除 CapabilitiesPanel 入口按钮和组件
+- **删除"追踪"面板**：TracePanel 与对话内实时显示完全重复（劣化副本），移除 TracePanel 和 traceStore
+- **删除 code-review skill**：编程专属 skill 归 tianxuan 管理
+- **清理 compact.go**：移除 10 个未实现的编程工具条目
+- **清理 config.go**：移除 5 个 git 工具默认启用
+
+### 构建
+
+- 桌面端：`desktop/build/bin/gaeaW-desktop.exe`（16.6 MB）
+- CLI：`cmd/gaeaW` → `gaeaW.exe`（25.9 MB）
+- 缓存守卫：`cmd/cacheguard` → `cacheguard.exe`（3.2 MB）
+- 插件示例：`cmd/gaeaW-plugin-example` → `gaeaW-plugin-example.exe`（3.1 MB）
+
+---
+
+## v0.8.0 (2026-07-08)
 ## v0.8.0 (2026-07-08)
 
 ### 新增

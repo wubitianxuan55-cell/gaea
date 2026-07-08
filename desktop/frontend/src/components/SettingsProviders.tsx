@@ -40,7 +40,24 @@ export function ProvidersSection({ s, busy, apply }: SectionProps) {
                 <span className={`badge ${p.keySet ? "badge--success" : "badge--warning"}`}>
                   {p.keySet ? t("settings.keySet") : t("settings.noKey")}
                 </span>
+                {p.oauthKind && (
+                  <span className={`badge ${p.oauthReady ? "badge--success" : "badge--warning"}`}>
+                    {p.oauthReady ? t("settings.oauthReady") : t("settings.oauthNotReady")}
+                  </span>
+                )}
                 <span className="flex-1" />
+                {p.oauthKind && !p.oauthReady && (
+                  <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-accent cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+                    disabled={busy} onClick={() => apply(() => app.LoginProvider(p.name))}>
+                    {t("settings.oauthLogin")}
+                  </button>
+                )}
+                {p.oauthKind && p.oauthReady && (
+                  <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+                    disabled={busy} onClick={() => apply(() => app.LogoutProvider(p.name))}>
+                    {t("settings.oauthLogout")}
+                  </button>
+                )}
                 <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors" onClick={() => setEditing(p.name)}>
                   {t("common.edit")}
                 </button>
@@ -63,7 +80,6 @@ export function ProvidersSection({ s, busy, apply }: SectionProps) {
           ),
         )}
       </div>
-
       {editing === "__new__" && (
         <ProviderEditor
           kinds={s.providerKinds}
@@ -119,6 +135,8 @@ function ProviderEditor({
       keySet: initial?.keySet ?? false,
       balanceUrl: balanceUrl.trim(),
       contextWindow: Number(ctx) || 0,
+      oauthKind: initial?.oauthKind ?? "",
+      oauthReady: initial?.oauthReady ?? false,
     });
   };
 

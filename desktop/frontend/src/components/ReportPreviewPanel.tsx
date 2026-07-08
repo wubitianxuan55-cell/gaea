@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { FileText, RefreshCw, ExternalLink, FileSpreadsheet } from "lucide-react";
+import { FileText, RefreshCw, ExternalLink, FileSpreadsheet, Image } from "lucide-react";
 import type { DirEntry } from "../lib/types";
 import { app } from "../lib/bridge";
 
-const REPORT_EXTS = [".md", ".docx", ".xlsx", ".csv"];
+const REPORT_EXTS = [".md", ".docx", ".xlsx", ".csv", ".pdf", ".pptx", ".html", ".txt", ".png", ".svg"];
 
 function getSourceTool(name: string): string {
   const n = name.toLowerCase();
@@ -11,8 +11,10 @@ function getSourceTool(name: string): string {
   if (n.includes("bid") || n.includes("投标") || n.includes("标书")) return "bid_proposal";
   if (n.includes("imple") || n.includes("实施") || n.includes("施工") || n.includes("方案")) return "imple_plan";
   if (n.includes("cost") || n.includes("成本") || n.includes("测算") || n.includes("费用")) return "cost_estimate";
-  if (n.includes("risk") || n.includes("风险") || n.includes("评估")) return "risk_assessment";
   if (n.includes("data") || n.includes("检测") || n.includes("数据") || n.includes("分析")) return "data_analysis";
+  if (n.includes("chart") || n.includes("图")) return "chart_builder";
+  if (n.includes("ppt") || n.includes("演示") || n.includes("汇报")) return "pptx_create";
+  if (n.includes("report") || n.includes("报告") || n.includes("汇总") || n.includes("总报告")) return "doc_assemble";
   return "other";
 }
 
@@ -24,6 +26,8 @@ function getSourceLabel(source: string): string {
     cost_estimate: "成本测算",
     risk_assessment: "风险评估",
     data_analysis: "数据分析",
+    chart_builder: "图表生成",
+    pptx_create: "PPT制作",
     other: "其他",
   };
   return map[source] ?? source;
@@ -33,6 +37,11 @@ function getExtIcon(ext: string) {
   if (ext === ".md") return <FileText size={14} className="text-accent" />;
   if (ext === ".docx") return <FileText size={14} className="text-blue-400" />;
   if (ext === ".xlsx" || ext === ".csv") return <FileSpreadsheet size={14} className="text-emerald-400" />;
+  if (ext === ".pdf") return <FileText size={14} className="text-red-400" />;
+  if (ext === ".pptx") return <FileText size={14} className="text-amber-400" />;
+  if (ext === ".html") return <FileText size={14} className="text-cyan-400" />;
+  if (ext === ".png" || ext === ".svg") return <Image size={14} className="text-purple-400" />;
+  if (ext === ".txt") return <FileText size={14} className="text-fg-faint" />;
   return <FileText size={14} className="text-fg-faint" />;
 }
 

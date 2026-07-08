@@ -159,7 +159,7 @@ export default function App() {
     resizeSidebarWithKeyboard,
   } = useSidebar();
 
-  const [workspacePanelOpen, setWorkspacePanel] = useState(false);
+  const [workspacePanelOpen, setWorkspacePanel] = useState(true);
   const [workspacePanelMaximized, setWorkspacePanelMaximized] = useState(false);
   const toggleWorkspacePanel = useCallback(() => setWorkspacePanel((o) => !o), []);
   const { alive: bridgeAlive, onReconnect } = useBridgeWatch();

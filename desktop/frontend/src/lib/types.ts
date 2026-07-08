@@ -274,6 +274,8 @@ export interface ProviderView {
   keySet: boolean; // the env var currently resolves to a value
   balanceUrl: string; // optional wallet-balance endpoint; "" disables the readout
   contextWindow: number;
+  oauthKind: string; // non-empty when OAuth login is available (e.g. "xai")
+  oauthReady: boolean; // whether OAuth token is currently valid
 }
 
 // BalanceInfo is the wallet-balance readout (desktop/app.go Balance). available
@@ -420,4 +422,17 @@ export interface TabMeta {
   ready: boolean;
   label?: string;
   activityStatus?: string;
+}
+
+/** TraceStep 记录一次推理过程中的关键步骤，用于实时推理可视化面板 */
+export interface TraceStep {
+  id: string;
+  turnTimestamp: number; // 所属回合开始时间戳
+  seq: number;           // 步骤序号（递增）
+  type: "phase" | "tool" | "thinking" | "decision" | "compaction";
+  timestamp: number;     // 事件发生时间戳（ms）
+  label: string;         // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
+  detail?: string;       // 详细内容（展开时显示）
+  status?: "pending" | "running" | "done" | "error";  // 当前状态
+  duration?: number;     // 耗时（ms，完成时设置）
 }

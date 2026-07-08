@@ -10,6 +10,7 @@ import (
 	// Blank imports wire compile-time built-ins into their registries.
 	_ "gaeaW/internal/provider/anthropic"
 	_ "gaeaW/internal/provider/openai"
+	_ "gaeaW/internal/provider/xai"
 	_ "gaeaW/internal/tool/builtin"
 )
 

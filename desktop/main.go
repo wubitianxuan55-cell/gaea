@@ -20,6 +20,7 @@ import (
 	// cmd/gaeaW does — boot.Build resolves providers/tools from these registries.
 	_ "gaeaW/internal/provider/anthropic"
 	_ "gaeaW/internal/provider/openai"
+	_ "gaeaW/internal/provider/xai"
 	_ "gaeaW/internal/tool/builtin"
 )
 

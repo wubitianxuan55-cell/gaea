@@ -35,11 +35,20 @@ type Server struct {
 	rebuildFn func() (*control.Controller, error)
 	model     string
 	maxSteps  int
+	authToken string // Bearer token for LAN access; empty = no auth
 }
 
 // New builds a Server. bc must be the controller's event sink.
 func New(ctrl *control.Controller, bc *Broadcaster) *Server {
 	return &Server{ctrl: ctrl, bc: bc}
+}
+
+// WithAuth attaches a Bearer token that all HTTP requests must carry via the
+// Authorization header. When empty, no auth is enforced. Use for LAN / mobile
+// access to prevent unauthorized access.
+func (s *Server) WithAuth(token string) *Server {
+	s.authToken = token
+	return s
 }
 
 // WithRebuild attaches a controller-rebuild function (e.g. boot.Build) so
@@ -59,11 +68,15 @@ func (s *Server) Handler() http.Handler {
 	return s.handler()
 }
 
-// HandlerWithCORS returns the same routes as Handler but adds permissive CORS
-// headers so a dev frontend on a different origin (e.g. Vite on :5173) can
-// reach the server. Do NOT use in production — the server has no auth.
+// HandlerWithCORS returns the same routes as Handler but adds CORS headers.
+// When origin is "*" it uses permissive CORS (any origin) for LAN/mobile access.
+// Otherwise it allows only the specific origin (for dev Vite on :5173).
 func (s *Server) HandlerWithCORS(origin string) http.Handler {
-	return corsMiddleware(s.handler(), origin)
+	h := s.handler()
+	if origin == "*" {
+		return corsMiddleware(h, "*")
+	}
+	return corsMiddleware(h, origin)
 }
 
 func (s *Server) handler() http.Handler {
@@ -117,7 +130,48 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /mcp/retry", s.retryMCPServer)
 	mux.HandleFunc("POST /mcp/enabled", s.setMCPServerEnabled)
 	mux.Handle("GET /assets/", http.FileServer(http.FS(webDist)))
-	return logMiddleware(csrfGuard(mux))
+	mux.HandleFunc("GET /manifest.json", s.serveManifest)
+	mux.HandleFunc("GET /sw.js", s.serveSW)
+	return logMiddleware(authMiddleware(csrfGuard(mux), s.authToken))
+}
+
+// serveManifest returns the PWA Web App Manifest.
+func (s *Server) serveManifest(w http.ResponseWriter, r *http.Request) {
+	manifest, err := webDist.ReadFile("webui/manifest.json")
+	if err != nil {
+		http.Error(w, "manifest not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/manifest+json")
+	w.Write(manifest)
+}
+
+// serveSW returns the Service Worker script.
+func (s *Server) serveSW(w http.ResponseWriter, r *http.Request) {
+	sw, err := webDist.ReadFile("webui/sw.js")
+	if err != nil {
+		http.Error(w, "sw.js not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Write(sw)
+}
+
+// authMiddleware validates a Bearer token when one is configured.
+// Requests without a valid token receive 401 Unauthorized.
+// When authToken is empty, the middleware passes all requests through.
+func authMiddleware(next http.Handler, authToken string) http.Handler {
+	if authToken == "" {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth == "" || !strings.EqualFold(auth, "Bearer "+authToken) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // csrfGuard rejects state-changing requests that don't carry a JSON content type.
@@ -355,17 +409,17 @@ func writeJSON(w http.ResponseWriter, v any) {
 	}
 }
 
-// corsMiddleware adds CORS headers for a specific allowed origin. Only use for
-// local development — the server has no auth, so broad CORS would let any site
-// drive the agent. origin is the exact origin to allow (e.g.
-// "http://localhost:5173"); empty origin skips CORS entirely.
 func corsMiddleware(next http.Handler, origin string) http.Handler {
 	if origin == "" {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if origin == "*" {
+			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -374,7 +428,6 @@ func corsMiddleware(next http.Handler, origin string) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 // logMiddleware logs each request's method, path, and status.
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -390,6 +443,7 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// responseWriter captures the status code for logging.
 // responseWriter captures the status code for logging.
 type responseWriter struct {
 	http.ResponseWriter

@@ -254,12 +254,10 @@ export function Sidebar({
           </section>
         )}
 
-        {/* Bottom nav */}
         <nav
           className={`flex flex-col gap-0.5 shrink-0 pt-2.5 pb-2 border-t border-border-soft ${
             collapsed ? "items-center w-full !pt-0 !pb-3" : ""
-          }`}
-        >
+          }`}>
           <button
             className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}
             onClick={() => void onOpenMemory()}

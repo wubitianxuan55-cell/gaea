@@ -1,9 +1,9 @@
 import type { SettingsView } from "../lib/types";
 import { useT } from "../lib/i18n";
 
-export type SettingsTab = "models" | "providers" | "permissions" | "sandbox" | "agent" | "appearance" | "updates";
+export type SettingsTab = "models" | "providers" | "permissions" | "sandbox" | "agent" | "appearance" | "updates" | "mobile";
 
-export const SETTINGS_TABS: SettingsTab[] = ["models", "providers", "permissions", "sandbox", "agent", "appearance", "updates"];
+export const SETTINGS_TABS: SettingsTab[] = ["models", "providers", "permissions", "sandbox", "agent", "appearance", "updates", "mobile"];
 
 export type SectionProps = {
   s: SettingsView;
@@ -26,7 +26,10 @@ export function settingsTabLabel(id: SettingsTab, t: ReturnType<typeof useT>): s
     case "appearance":
       return t("settings.tab.appearance");
     case "updates":
+    case "updates":
       return t("settings.tab.updates");
+    case "mobile":
+      return "移动端";
   }
 }
 
@@ -46,9 +49,12 @@ export function settingsTabMeta(id: SettingsTab, s: SettingsView, t: ReturnType<
       return t("settings.appearanceMeta");
     case "updates":
       return t("settings.updatesMeta");
+    case "mobile":
+      return "手机/PWA";
   }
 }
 
+// allRefs flattens providers into "provider/model" refs for the model selectors.
 // allRefs flattens providers into "provider/model" refs for the model selectors.
 export function allRefs(s: SettingsView): string[] {
   const out: string[] = [];

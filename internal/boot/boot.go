@@ -721,13 +721,17 @@ func newReadOnlyRegistry(full *tool.Registry) *tool.Registry {
 // StartBot creates and starts a messaging bot from config + controller.
 // Returns nil when bot is disabled or config is incomplete.
 func StartBot(cfg config.BotConfig, ctrl *control.Controller) *bot.Bot {
-	if !cfg.Enabled {
+	if !cfg.Enabled && !cfg.TelegramEnabled {
 		return nil
 	}
 	b := bot.New(cfg, ctrl)
-	if err := b.Start(); err != nil {
-		fmt.Printf("[boot] bot start: %v\n", err)
-		return nil
+	if cfg.Enabled {
+		if err := b.Start(); err != nil {
+			fmt.Printf("[boot] WeCom bot start: %v\n", err)
+		}
+	}
+	if cfg.TelegramEnabled && cfg.TelegramToken != "" {
+		b.StartTelegram(context.Background())
 	}
 	return b
 }

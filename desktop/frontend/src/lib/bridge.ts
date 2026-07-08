@@ -125,6 +125,8 @@ export interface AppBindings {
   SetDefaultModel(ref: string): Promise<void>;
   SaveProvider(p: ProviderView): Promise<void>;
   DeleteProvider(name: string): Promise<void>;
+  LoginProvider(name: string): Promise<void>;
+  LogoutProvider(name: string): Promise<void>;
   SetProviderKey(apiKeyEnv: string, value: string): Promise<void>;
   SetPermissionMode(mode: string): Promise<void>;
   AddPermissionRule(list: string, rule: string): Promise<void>;
