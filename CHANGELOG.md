@@ -1,4 +1,25 @@
 
+## v0.11.1 (2026-07-08)
+
+### 修复
+
+- **`newReadOnlyRegistry` 空 if 修复**：只读工具注册到空 `if` 块，工具未实际加入只读注册表，现已正确调用 `ro.Add(t)`（`internal/boot/boot.go`）
+- **`ensureWorkspace` 静默吞错修复**：工作目录确定失败时静默无输出，现在 `os.UserHomeDir()` 失败时通过 `fmt.Fprintf(os.Stderr, ...)` 输出中文诊断信息（`desktop/workspace.go`）
+
+### 新增
+
+- **扫描件 PDF OCR 回退**：`format_convert` PDF→Markdown 路径新增 OCR 回退——文本提取为空时自动调用 `pdftoppm`（PDF→PNG）+ `tesseract`（OCR）流水线，支持中文简体/繁体/英文混合文档（`internal/tool/builtin/format_convert.go`）
+
+### 文档
+
+- **配置注释补充**：`gaeaW.toml` 中 `mimo-pro` 的 base_url 添加注释说明自有配额域名、`[office]` 段注明尚未实现
+- **compact 描述更新**：`format_convert` 的简洁描述添加 "含 OCR 扫描件回退"（`internal/tool/builtin/compact.go`）
+
+### 构建
+
+- CLI：`release/v0.11.1/gaeaW.exe`
+- 桌面端：`release/v0.11.1/gaeaW-desktop.exe`
+
 ## v0.11.0 (2026-07-08)
 
 ### 新增
