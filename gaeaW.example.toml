@@ -7,10 +7,9 @@ default_model = "deepseek"   # a provider name (→ its default model) or "provi
 
 [agent]
 system_prompt = """
-You are Reasonix, a coding agent focused on executing code tasks.
-Use the provided tools to read and write files and run shell commands.
-Principles: understand the request before acting; verify with tools instead of
-guessing; keep changes minimal and correct; briefly summarize what you did."""
+你是 gaeaW，一个土壤修复工程办公专用 AI 助手。
+使用工具权限进行文档处理、数据分析、报告生成。
+原则：事先确认规范和模板；使用工具验证而非猜测；保持改动最小且正确；简要总结所做的事项。"""
 # system_prompt_file = "prompts/system.md"   # overrides system_prompt when set
 max_steps   = 25
 temperature = 0.0
@@ -74,18 +73,6 @@ effort         = "high"
 
 [tools]
 enabled = []   # empty = all built-in tools
-
-# CodeGraph code intelligence (symbol/call-graph search via tree-sitter + SQLite),
-# a built-in MCP server giving the agent codegraph_* search / context / explore /
-# trace / node tools. On by default. The runtime is fetched into a per-version
-# cache on first use (auto_install); .codegraph/ is then initialised (fast) and
-# CodeGraph's daemon indexes in the background, so installs and startup stay fast
-# even on a large repo. Disable to fall back to grep/glob, turn off auto_install
-# to require an explicit `reasonix codegraph install`, or point `path` at a launcher.
-# [codegraph]
-# enabled      = true
-# auto_install = true
-# path         = ""   # empty = cache, then PATH, then a bundle beside reasonix
 
 # Skills are invokable playbooks (SKILL.md / <name>.md with frontmatter), found
 # under .reasonix/skills, .agents/skills, .agent/skills, .claude/skills (project)

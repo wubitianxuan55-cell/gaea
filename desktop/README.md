@@ -123,31 +123,19 @@ minisign -Vm Tianxuan-darwin-arm64.zip \
 
 ## Editor seam (Monaco / CodeMirror)
 
-Code and diff rendering go through two components with stable prop contracts and a
-lazy boundary, so a heavy editor stays out of the initial bundle and dropping one
-in is a one-line change — no consumer touches:
+Report templates and rendering go through modular components with stable
+prop contracts, making it straightforward to swap or extend rendering:
 
-| Component | Props | Default impl | Upgrade |
-|---|---|---|---|
-| `components/CodeViewer.tsx` | `EditorProps` | `editors/PlainCode.tsx` (`<pre>`) | swap the lazy import for `editors/MonacoCode` or `editors/CodeMirrorCode` |
-| `components/DiffView.tsx` | `DiffProps` | `editors/PlainDiff.tsx` (LCS line diff) | swap for `editors/MonacoDiff` or `editors/CodeMirrorMerge` |
+| Component | Purpose | Notes |
+|---|---|---|
+| `components/Welcome.tsx` | Welcome screen with skill tiles | Reads skills list from bridge |
+| `components/Sidebar.tsx` | Chat history and workspace navigation | Multi-workspace support |
+| `components/SettingsPanel.tsx` | Provider, theme, and plugin settings | Includes MCP server management |
+| `components/ThemeSwitcher.tsx` | Quick theme toggle (6 themes) | Light/dark variants |
 
-```sh
-# Monaco
-pnpm add @monaco-editor/react monaco-editor
-# or CodeMirror 6
-pnpm add @uiw/react-codemirror @codemirror/lang-javascript @codemirror/merge
-```
-
-Then add `editors/MonacoCode.tsx` (default-export a component taking
-`EditorProps`) and point `CodeViewer.tsx`'s `lazy(() => import(...))` at it.
-`ToolCard` already routes `edit_file` calls' `old_string`/`new_string` through
-`DiffView`, and `Markdown` routes fenced code blocks through `CodeViewer`, so
-both seams light up everywhere at once.
-
-Markdown itself is currently minimal (fenced code + plain text). Upgrade path:
-`pnpm add react-markdown remark-gfm` and render in `components/Markdown.tsx`,
-keeping fenced code delegated to `CodeViewer`.
+Markdown rendering supports fenced code blocks and plain text. The rendering
+is deliberately minimal; future upgrades can add `react-markdown` with `remark-gfm`
+for richer formatting support.
 
 ## Multi-platform adaptation
 

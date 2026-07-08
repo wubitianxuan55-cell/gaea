@@ -1,4 +1,33 @@
 
+## v0.11.0 (2026-07-08)
+
+### 新增
+
+- **5 个 MCP 插件集成**：chrome（Puppeteer 浏览器）、github（仓库管理）、computer-use（Windows 桌面自动化）、documents（文件系统）、spreadsheets（Google 电子表格）
+- **桌面端配置自动发现**：从可执行文件向上搜索 gaeaW.toml，双击 exe 也能找到项目根目录配置
+- **插件工具描述压缩**：插件工具描述自动取首句、去冗余前缀、80 字符截断，与内置工具一致的紧凑表示
+
+### 变更
+
+- **规划者工具集优化**：删除 CodeGraph/GitNexus 硬编码例外，所有 MCP 只读工具自动进入规划者工具集
+- **工程办公方法论**：AGENTS.md / CLAUDE.md 替换为工程办公方法论，去掉全部编程内容
+
+### 清理
+
+- **编程残留全面清理**：agent 提示中 "coding agent" 改为 "engineering office assistant"、删除 LSP 工具过滤、删除 cli codegraph 命令、清理 config.go 废弃注释、删除 inline-diff CSS 样式等 16 项
+
+### 修复
+
+- **TOML 路径解析错误**：filesystem 插件路径反斜杠导致 \U 转义报错，改为正斜杠
+- **重复注释/测试用例**：删除 boot.go / tool_coherence_test.go 中的重复行
+- **lsp_* 残余引用**：删除提示和注释中对已删除 LSP 工具的引用
+
+### 构建
+
+- CLI：release/v0.11.0/gaeaW.exe
+- 桌面端：release/v0.11.0/gaeaW-desktop.exe
+
+
 ## v0.10.0 (2026-07-08)
 
 ### 新增

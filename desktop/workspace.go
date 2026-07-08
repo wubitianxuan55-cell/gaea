@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -117,7 +118,16 @@ func rememberWorkspace(dir string) {
 // remembered folder if it's still a directory, else the home directory when the
 // current cwd isn't writable (the Finder/`open` "/" case). A writable cwd with no
 // remembered folder (e.g. `wails dev` in the repo) is left untouched.
+// As the first step, search upward from cwd for gaeaW.toml — this ensures the
+// desktop exe finds its config when launched from a subdirectory (e.g. double-
+// clicking from desktop/build/bin/), without relying on a saved workspace.
 func ensureWorkspace() {
+	// Search upward from cwd for the project root (gaeaW.toml).
+	if dir, err := searchUpForConfig(); err == nil {
+		slog.Info("found project root via gaeaW.toml", "path", dir)
+		return
+	}
+
 	if ws := loadWorkspace(); ws != "" {
 		if info, err := os.Stat(ws); err == nil && info.IsDir() && os.Chdir(ws) == nil {
 			slog.Info("workspace restored", "path", ws)
@@ -140,6 +150,29 @@ func ensureWorkspace() {
 
 // cwdWritable reports whether the current directory accepts a file write — the
 // reliable test for the read-only "/" a GUI launch lands in.
+
+// searchUpForConfig walks up from cwd looking for gaeaW.toml. When the desktop
+// exe is double-clicked from a build subdirectory (e.g. desktop/build/bin/),
+// the cwd is that subdirectory and config.Load() finds nothing. Walking up to
+// the project root ensures plugins and providers are always discovered.
+func searchUpForConfig() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	dir := cwd
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "gaeaW.toml")); err == nil {
+			return dir, os.Chdir(dir)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break // reached filesystem root
+		}
+		dir = parent
+	}
+	return "", fmt.Errorf("gaeaW.toml not found from %s", cwd)
+}
 func cwdWritable() bool {
 	cwd, err := os.Getwd()
 	if err != nil {

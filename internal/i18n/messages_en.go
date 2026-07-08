@@ -3,7 +3,7 @@ package i18n
 // English is the baseline catalogue. The drift-guard test reflects over its
 // fields, so every other catalogue must populate the same set.
 var English = Messages{
-	Subtitle:        "config + plugin driven coding agent",
+	Subtitle:        "config + plugin driven engineering office assistant",
 	WelcomeTitleFmt: "Welcome to %s",
 	NoConfigYet:     "No configuration found yet — let's set it up.",
 	StartingChatFmt: "Starting %s…",
@@ -141,7 +141,7 @@ var English = Messages{
 	SelectOneHint:  "(↑/↓ · Enter · q to cancel)",
 	SelectManyHint: "(↑/↓ · Space · Enter · q)",
 
-	UsageBody: `gaeaW — a config- and plugin-driven coding agent (multi-model)
+	UsageBody: `gaeaW — a config- and plugin-driven engineering office assistant (multi-model)
 
 Usage:
   gaeaW chat [--model NAME] [-c|--continue] [--resume]   interactive session (multi-turn; -c resumes the latest, --resume picks one)

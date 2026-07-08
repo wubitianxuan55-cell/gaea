@@ -649,12 +649,56 @@ func (t *remoteTool) Schema() json.RawMessage {
 	return canonicalizeSchema(t.schema)
 }
 
-// CompactDescriptor — V10.46: MCP tools now participate in compact schema
-// mode. The tool-level description stays as-is; the JSON schema is
-// canonicalized (strips description fields, sorts keys).
-func (t *remoteTool) CompactDescription() string { return t.desc }
+// CompactDescriptor — V10.46+: MCP tools participate in compact schema mode.
+// The description is compressed by compactPluginDesc (first sentence, strip
+// redundant prefixes, truncate at 80 chars). The JSON schema is canonicalized
+func (t *remoteTool) CompactDescription() string { return compactPluginDesc(t.desc) }
 func (t *remoteTool) CompactSchema() json.RawMessage {
 	return t.Schema() // canonicalizeSchema already compresses
+}
+
+func compactPluginDesc(desc string) string {
+	d := strings.TrimSpace(desc)
+	if d == "" {
+		return ""
+	}
+
+	// Take first sentence (split by ". " or "。")
+	for _, sep := range []string{". ", "。"} {
+		if i := strings.Index(d, sep); i > 0 {
+			d = d[:i]
+			break
+		}
+	}
+
+	// Strip redundant English prefixes
+	prefixes := []string{
+		"This tool ", "this tool ",
+		"Tool to ", "tool to ",
+		"A tool for ", "a tool for ",
+		"A tool that ", "a tool that ",
+		"Used to ", "used to ",
+		"Allows you to ", "allows you to ",
+		"Use this to ",
+	}
+	for _, p := range prefixes {
+		if len(d) > len(p) && strings.EqualFold(d[:len(p)], p) {
+			d = d[len(p):]
+			break
+		}
+	}
+
+	d = strings.TrimSpace(d)
+	if d == "" {
+		return strings.TrimSpace(desc)
+	}
+
+	// Truncate at 80 chars
+	runes := []rune(d)
+	if len(runes) > 80 {
+		return string(runes[:77]) + "..."
+	}
+	return d
 }
 
 func (t *remoteTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {

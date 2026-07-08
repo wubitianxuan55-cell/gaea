@@ -81,17 +81,17 @@ export function makeMockApp(): AppBindings {
   // Mutable so MCP add/remove/retry are observable in browser dev.
   let capServers: ServerView[] = [
     {
-      name: "codegraph",
+      name: "documents",
       transport: "stdio",
       status: "connected",
       tools: 4,
       prompts: 0,
       resources: 1,
       toolList: [
-        { name: "search", description: "Search symbols, files, and text in the workspace." },
-        { name: "context", description: "Fetch surrounding source context for a symbol or file." },
-        { name: "trace", description: "Follow callers and callees across the code graph." },
-        { name: "node", description: "Inspect a specific graph node." },
+        { name: "read", description: "Read a file from the allowed directory." },
+        { name: "write", description: "Write content to a file." },
+        { name: "list", description: "List files and directories." },
+        { name: "search", description: "Search for files by name pattern." },
       ],
     },
     { name: "github", transport: "stdio", status: "connected", tools: 12, prompts: 2, resources: 0 },
@@ -99,9 +99,9 @@ export function makeMockApp(): AppBindings {
     { name: "figma", transport: "http", status: "failed", tools: 0, prompts: 0, resources: 0, error: "connect: 401 unauthorized" },
   ];
   const capSkills: SkillView[] = [
-    { name: "explore", description: "Investigate the codebase in an isolated subagent", scope: "builtin", runAs: "subagent" },
-    { name: "review", description: "Review the staged diff", scope: "project", runAs: "inline" },
-    { name: "init", description: "Scaffold a REASONIX.md for this repo", scope: "builtin", runAs: "inline" },
+    { name: "research", description: "Research a question with web search and analysis", scope: "builtin", runAs: "subagent" },
+    { name: "risk-assessment", description: "Create a risk assessment report", scope: "project", runAs: "inline" },
+    { name: "site-survey", description: "Generate a site survey report from field data", scope: "project", runAs: "inline" },
   ];
   const mockSwitchWorkspace = async (path: string) => {
     cwd = path || "~";
@@ -110,9 +110,9 @@ export function makeMockApp(): AppBindings {
   };
   // Mutable so delete/rename are observable in browser dev.
   const sessions: SessionMeta[] = freshMock ? [] : [
-    { path: "/mock/sessions/a.jsonl", preview: "fix the login bug in auth.go", turns: 12, modTime: t0 - 3_600_000, current: true },
-    { path: "/mock/sessions/b.jsonl", preview: "refactor the payment module", turns: 5, modTime: t0 - 6 * 3_600_000, current: false },
-    { path: "/mock/sessions/c.jsonl", preview: "write the README and badges", turns: 8, modTime: t0 - day - 3_600_000, current: false },
+    { path: "/mock/sessions/a.jsonl", preview: "generate soil remediation report", turns: 12, modTime: t0 - 3_600_000, current: true },
+    { path: "/mock/sessions/b.jsonl", preview: "create site survey document", turns: 5, modTime: t0 - 6 * 3_600_000, current: false },
+    { path: "/mock/sessions/c.jsonl", preview: "draft risk assessment matrix", turns: 8, modTime: t0 - day - 3_600_000, current: false },
     { path: "/mock/sessions/d.jsonl", preview: "explain the plugin host design", turns: 3, modTime: t0 - 4 * day, current: false },
   ];
   // Mutable settings so the Settings panel's edits are observable in browser dev.

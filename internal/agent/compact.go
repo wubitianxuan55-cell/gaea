@@ -53,7 +53,7 @@ const (
 const summaryTimeout = 90 * time.Second
 
 // summarySystemPrompt steers the summarizer to produce a structured briefing.
-const summarySystemPrompt = `You are compacting the earlier part of a coding agent's conversation to save context.
+const summarySystemPrompt = `You are compacting the earlier part of an engineering office assistant's conversation to save context.
 The agent keeps your summary alongside the user's own turns (kept verbatim) and the recent tail; your job is to fold the assistant/tool work into a briefing it can resume from.
 Write under these exact headings, omitting a heading only if it has no content:
 

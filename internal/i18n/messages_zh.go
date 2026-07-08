@@ -4,7 +4,7 @@ package i18n
 // as English unless a phrase genuinely demands re-ordering — call sites pass
 // arguments positionally and won't reshuffle.
 var Chinese = Messages{
-	Subtitle:        "配置与插件驱动的 coding agent",
+	Subtitle:        "配置与插件驱动的工程办公助手",
 	WelcomeTitleFmt: "欢迎使用 %s",
 	NoConfigYet:     "还没有配置 — 现在来设置一下吧。",
 	StartingChatFmt: "正在启动 %s…",
@@ -142,7 +142,7 @@ var Chinese = Messages{
 	SelectOneHint:  "(↑/↓ · Enter · q 取消)",
 	SelectManyHint: "(↑/↓ · Space · Enter · q)",
 
-	UsageBody: `gaeaW — 由配置和插件驱动的 coding agent（多模型）
+	UsageBody: `gaeaW — 由配置和插件驱动的工程办公助手（多模型）
 
 用法：
   gaeaW chat [--model NAME] [-c|--continue] [--resume]   交互式会话（多轮；-c 恢复最近一次，--resume 选择一个）

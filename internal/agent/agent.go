@@ -619,7 +619,6 @@ func (a *AgentRunner) filteredSchemas(input string) []provider.ToolSchema {
 	return a.tools.FilteredSchemas([]string{
 		"read_file", "ls", "glob", "grep",
 		"git_status", "git_diff", "git_log",
-		"lsp_definition", "lsp_references", "lsp_hover", "lsp_diagnostics",
 		"web_search", "web_fetch",
 		"todo_write", "complete_step",
 		"task", "ask",

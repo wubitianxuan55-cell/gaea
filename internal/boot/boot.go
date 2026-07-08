@@ -677,11 +677,9 @@ func applyCompactToolset(reg *tool.Registry) {
 
 // newReadOnlyRegistry builds a tool registry containing only the read-only tools
 // from the full registry. Used to give the planner AgentRunner powers to
-// investigate code (read_file, grep, glob, web_search, web_fetch, lsp_*, etc.)
+// investigate code (read_file, grep, glob, web_search, web_fetch, etc.)
 // without any write/destructive capability. MCP tools are included when their
-// ReadOnly() returns true, except for built-in codegraph tools which are always
-// included — CodeGraph is a code-intelligence engine whose graph tools are
-// inherently read-only and essential for efficient planning.
+// ReadOnly() returns true.
 // Subagent-spawning tools (task, explore, research, review, security_review,
 // run_skill, parallel_skills) are excluded regardless of ReadOnly — the planner
 // must not spawn sub-agents that create independent API calls and evict its
@@ -708,12 +706,7 @@ func newReadOnlyRegistry(full *tool.Registry) *tool.Registry {
 		if !ok {
 			continue
 		}
-		// CodeGraph and GitNexus MCP tools (mcp__codegraph__*, mcp__gitnexus__*)
-		// are always included — they are code-intelligence engines whose graph
-		// tools are inherently read-only, even when the MCP server omits the
-		// optional readOnlyHint annotation.
-		if t.ReadOnly() || strings.HasPrefix(name, "mcp__codegraph__") || strings.HasPrefix(name, "mcp__gitnexus__") {
-			ro.Add(t)
+		if t.ReadOnly() {
 		}
 	}
 	return ro

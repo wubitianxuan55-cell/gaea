@@ -1,43 +1,49 @@
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+# gaeaW — 工程办公助手
 
-This project is indexed by GitNexus as **DeepSeek-Reasonix** (11511 symbols, 31168 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
-
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+gaeaW 是一款面向工程办公场景的 AI 助手，专注于工程文档、数据处理、报告生成和办公自动化。
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+- **文档生成前必须确认模板和规范引用**。调用模板引擎前先检查技能目录中是否有对应格式模板，使用 `save_template` / `run_template` 工具，带 `--spec` 引用规范名称。
+- **数据处理前了解数据格式和编码**。使用 `csv_parse` / `xlsx_read` 前先确认文件编码、分隔符、列结构，必要时先用 `glob` / `ls` 查看文件列表。
+- **MCP 插件工具优先**。对于外部操作（浏览器/文档/表格），优先使用 MCP 插件工具：
+  - `chrome` — 网页浏览和内容提取
+  - `documents` — 文件系统读写（项目文件、模板文件）
+  - `spreadsheets` — 电子表格读写
+  - `computer-use` — Windows 桌面自动化（窗口操作、键鼠模拟）
+  - `github` — 代码仓库管理
+- **优先使用技能模块**。在展开复杂工程任务（现场调查、风险评估、方案设计）前，先查看 `.gaeaW/skills/` 下的技能文件，调用对应技能减少重复工作。
+- **报告生成使用统一模板**。PPTX/XLSX/DOCX 报告均从模板引擎加载，不手写格式；图表使用 `chart_gen` / `gantt_gen` 生成嵌入。
+- **单位制和精度**。工程计算使用 `calc_*` 工具，默认 SI 单位制，保留 3 位小数，引用 `[office]` 配置。
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+- **不要在没有规范依据的情况下给出工程结论**。必须引用具体规范或数据源，不要猜测。
+- **不要跳过规范查询直接生成报告**。即使任务看起来简单，也应先检查是否有可用模板或技能。
+- **不要假设数据格式**。对于 CSV/XLSX 等文件，先解析前几行确认结构再处理。
+- **不要在 MCP 插件可用时使用通用工具代替**。例如操作文件用 `documents` 插件而非 `write_file` 加路径拼接。
+- **不要忽略计算精度和单位**。所有工程计算必须注明单位，不混用 SI/Imperial。
 
 ## Resources
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/DeepSeek-Reasonix/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/DeepSeek-Reasonix/clusters` | All functional areas |
-| `gitnexus://repo/DeepSeek-Reasonix/processes` | All execution flows |
-| `gitnexus://repo/DeepSeek-Reasonix/process/{name}` | Step-by-step execution trace |
+### 技能模块
 
-## CLI
+| 技能 | 用途 |
+|------|------|
+| `site-survey` | 现场调查与勘测报告 |
+| `risk-assessment` | 风险评估矩阵与报告 |
+| `remed-design` | 治理修复方案设计 |
+| `bid-package` | 招标文件与投标包 |
+| `data-report` | 数据整理与报告生成 |
+| `research` | 信息调研与文献检索 |
+| `docx` / `pptx` / `pdf` / `xlsx` | 各格式文档生成 |
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+### MCP 插件
 
-<!-- gitnexus:end -->
+| 插件 | 启动命令 | 用途 |
+|------|----------|------|
+| `chrome` | npx @modelcontextprotocol/server-puppeteer | 网页浏览/内容抓取 |
+| `documents` | npx @modelcontextprotocol/server-filesystem | 文件系统操作 |
+| `spreadsheets` | npx mcp-google-sheets | 电子表格读写 |
+| `computer-use` | uvx windows-mcp serve | Windows 桌面自动化 |
+| `github` | npx @modelcontextprotocol/server-github | 代码仓库管理 |

@@ -11,7 +11,7 @@ import (
 // judgeSystemPrompt is the system prompt for the independent judge model.
 // It evaluates whether a session goal has been truly satisfied.
 // Compile-time constant — not part of the main conversation's prefix cache.
-const judgeSystemPrompt = `You are a stop-condition evaluator for an AI coding agent. 
+const judgeSystemPrompt = `You are a stop-condition evaluator for an AI engineering office assistant. 
 Read the conversation transcript carefully, then judge whether the user's stopping condition has been satisfied.
 
 Return a JSON object with exactly one of these shapes:

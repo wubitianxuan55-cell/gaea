@@ -590,9 +590,7 @@ func Default() *Config {
 		// as a built-in MCP server, and AutoInstall fetches it into the cache on
 		// first use. Set enabled = false to opt out, or auto_install = false to
 		// require an explicit `gaeaW codegraph install`.
-		// [office 配置适配] Codegraph/LSP 默认值已废弃
-		// Codegraph: CodegraphConfig{Enabled: true, AutoInstall: true},
-		// LSP: LSPConfig{Enabled: true},
+				// [office 配置适配] Codegraph/LSP 默认值已废弃
 		Notify: NotifyConfig{Enabled: true, MinDuration: 5},
 		Tools: ToolsConfig{Enabled: []string{
 			"read_file", "write_file", "edit_file", "edit_lines", "move_file",

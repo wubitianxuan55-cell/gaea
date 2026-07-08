@@ -81,7 +81,7 @@ func (a *AgentRunner) postBatchCoherenceCheck(calls []provider.ToolCall, results
 // isReadTool reports whether a tool name is a read-only file inspection tool.
 func isReadTool(name string) bool {
 	switch name {
-	case "read_file", "grep", "ls", "glob", "lsp_definition", "lsp_references", "lsp_hover":
+	case "read_file", "grep", "ls", "glob":
 		return true
 	}
 	return false
