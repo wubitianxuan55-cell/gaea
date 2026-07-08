@@ -69,13 +69,14 @@ func TestAppendEnvUpsertHandlesExportPrefix(t *testing.T) {
 }
 
 // TestGroupByFamily verifies the wizard groups the default preset into
-// "deepseek" (flash + pro) and "mimo" (pro + flash), preserving the order
-// each family first appears in.
+// "deepseek" (flash + pro), "mimo" (pro + flash), and "xai-oauth",
+// preserving the order each family first appears in.
 func TestGroupByFamily(t *testing.T) {
 	order, members, info := groupByFamily(config.Default().Providers)
 
-	if got := order; !reflect.DeepEqual(got, []string{"deepseek", "mimo"}) {
-		t.Fatalf("family order = %v, want [deepseek mimo]", got)
+	wantOrder := []string{"deepseek", "mimo", "xai-oauth"}
+	if got := order; !reflect.DeepEqual(got, wantOrder) {
+		t.Fatalf("family order = %v, want %v", got, wantOrder)
 	}
 	if got := members["deepseek"]; !reflect.DeepEqual(got, []int{0, 1}) {
 		t.Errorf("deepseek members = %v, want [0 1]", got)
@@ -83,7 +84,13 @@ func TestGroupByFamily(t *testing.T) {
 	if got := members["mimo"]; !reflect.DeepEqual(got, []int{2, 3}) {
 		t.Errorf("mimo members = %v, want [2 3]", got)
 	}
+	if got := members["xai-oauth"]; !reflect.DeepEqual(got, []int{4}) {
+		t.Errorf("xai-oauth members = %v, want [4]", got)
+	}
 	if info["deepseek"].name != "DeepSeek" || info["mimo"].name != "MiMo (Xiaomi)" {
 		t.Errorf("display names = %q / %q", info["deepseek"].name, info["mimo"].name)
+	}
+	if info["xai-oauth"].name != "xai-oauth" {
+		t.Errorf("xai-oauth display name = %q, want %q", info["xai-oauth"].name, "xai-oauth")
 	}
 }
