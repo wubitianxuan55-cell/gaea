@@ -817,23 +817,33 @@ body {
   animation: startup-splash-in 0.55s cubic-bezier(0.2, 0.7, 0.1, 1) both;
 }
 .startup-splash__mark {
-  width: 64px;
-  height: 64px;
+  position: relative;
+  width: 88px;
+  height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 14px 22px color-mix(in srgb, var(--accent) 34%, transparent));
-  margin-bottom: 22px;
+  margin-bottom: 24px;
+}
+/* 径向光晕 — 随呼吸同步缩放 */
+.startup-splash__mark::before {
+  content: "";
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 70%);
+  animation: logo-breathe 3.5s ease-in-out infinite;
 }
 .startup-splash__mark img {
-  width: 64px;
-  height: 64px;
+  width: 88px;
+  height: 88px;
   display: block;
+  animation: logo-breathe 3.5s ease-in-out infinite;
 }
 .startup-splash__name {
-  font-size: 27px;
-  font-weight: 650;
-  letter-spacing: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   color: var(--fg);
 }
@@ -843,23 +853,14 @@ body {
   letter-spacing: 0.05em;
   color: var(--fg-faint);
 }
-.startup-splash__dots {
-  display: flex;
-  gap: 8px;
-  margin-top: 31px;
-}
-.startup-splash__dots span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--fg-faint);
-  animation: startup-splash-pulse 1s ease-in-out infinite;
-}
-.startup-splash__dots span:nth-child(2) {
-  animation-delay: 0.16s;
-}
-.startup-splash__dots span:nth-child(3) {
-  animation-delay: 0.32s;
+/* 呼吸进度条 — 替代三个脉冲圆点 */
+.startup-splash__bar {
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin-top: 34px;
+  animation: splash-bar-breathe 3.5s ease-in-out infinite;
 }
 @keyframes startup-splash-in {
   from {
@@ -871,15 +872,9 @@ body {
     transform: translateY(0);
   }
 }
-@keyframes startup-splash-pulse {
-  0%, 100% {
-    opacity: 0.25;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes splash-bar-breathe {
+  0%, 100% { transform: scaleX(0.4); opacity: 0.5; }
+  50%      { transform: scaleX(1);   opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2002,3 +1997,24 @@ body::after {
   --hl-builtin: #7CA5B8;
   --hl-meta: #8C7F6F;
 }
+
+/* ── logo breathe — 大地呼吸，splash + welcome 共用 ────────────────────── */
+@keyframes logo-breathe {
+  0%, 100% { transform: scale(1);     opacity: 0.92; }
+  50%      { transform: scale(1.045); opacity: 1; }
+}
+
+/* ── welcome logo 呼吸 ──────────────────────────────────────────────────── */
+.welcome-logo {
+  animation: logo-breathe 3.5s ease-in-out infinite;
+}
+
+/* ── welcome stagger 入场 ───────────────────────────────────────────────── */
+@keyframes welcome-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.welcome-stagger-1 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 0ms; }
+.welcome-stagger-2 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 80ms; }
+.welcome-stagger-3 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 160ms; }
+.welcome-stagger-4 { animation: welcome-fade-in 0.5s var(--ease-out) both; animation-delay: 240ms; }

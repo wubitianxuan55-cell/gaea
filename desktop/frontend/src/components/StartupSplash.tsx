@@ -73,11 +73,7 @@ export function StartupSplash({ hold, onDone }: { hold: boolean; onDone: () => v
         </div>
         <div className="startup-splash__name">gaeaW</div>
         <div className="startup-splash__sub">{t("app.splashSubtitle") ?? "AI 办公助理"}</div>
-        <div className="startup-splash__dots" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <div className="startup-splash__bar" aria-hidden="true" />
       </div>
     </div>
   );

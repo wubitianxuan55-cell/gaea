@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.8.0 (2026-07-08)
+
+### 新增
+
+#### Logo 全面重设计 — 山形 W
+- **几何山形 W**：4 块 teal 平行四边形组成抽象 W/山峰，纯几何语言，小尺寸辨识度高
+- **全面替换**：主 SVG/PNG(512×512)/ICO(16/32/48/256)/托盘图标/appicon/favicon/docs
+- **白底+浅灰边框**：`#FFFFFF` + `#E2E8F0`，所有背景下均清晰可见
+
+#### 开机动画「大地呼吸」
+- **logo 呼吸动画**：3.5s 周期 `scale(1↔1.045)`，模拟大地缓慢呼吸
+- **径向光晕**：logo 背后 teal 色圆形渐变光晕随呼吸同步缩放
+- **teal 呼吸进度条**：32px × 3px 横条替代三圆点脉冲，`scaleX(0.4↔1)`
+
+#### 欢迎界面动画联动
+- **同一呼吸动画持续**：从开机到欢迎页 logo 呼吸不间断，形成无缝过渡
+- **Stagger 入场**：logo → tagline → 输入框 → 快捷命令各延迟 80ms 依次淡入
+- **间距调整**：logo 与 tagline 间距加大，布局更舒展
+
+#### 托盘图标重设计
+- 旧绿色嫩芽 → 透明底山形 W（32×32），与主 logo 视觉统一
+
+### 变更
+
+- **Favicon**：`index.html` 新增 `<link rel="icon" type="image/svg+xml">`
+- **清理残留**：删除 `internal/serve/webui/assets/logo-DUNCzphC.png` 旧 hash 文件
+
+### 构建
+
+- CLI: `release/v0.8.0/gaeaW.exe` (19MB)
+- Desktop: `release/v0.8.0/gaeaW-desktop.exe` (16MB)
+- CacheGuard: `release/v0.8.0/cacheguard.exe` (2.2MB)
+- Plugin: `release/v0.8.0/gaeaW-plugin-example.exe` (2.1MB)
+- SHA256: `release/v0.8.0/SHA256SUMS`
+
+---
+
 ## v0.7.0 (2026-07-08)
 
 ### 新增

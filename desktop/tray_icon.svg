@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="gaeaW">
   <title>gaeaW</title>
   <defs>
-    <linearGradient id="leaf-sm" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#6EE7B7"/>
+    <linearGradient id="w-tray" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
     </linearGradient>
   </defs>
 
-  <!-- 茎 -->
-  <line x1="16" y1="28" x2="16" y2="8" stroke="url(#leaf-sm)" stroke-width="2.5" stroke-linecap="round"/>
-
-  <!-- 左侧叶片 -->
-  <path d="M16 20 Q10 14 7 10 Q10.5 12 16 20Z" fill="url(#leaf-sm)" opacity="0.9"/>
-
-  <!-- 右侧叶片 -->
-  <path d="M16 16 Q22 10 25 6 Q21.5 8 16 16Z" fill="url(#leaf-sm)" opacity="0.9"/>
-
-  <!-- 茎顶端圆点 -->
-  <circle cx="16" cy="8" r="2.5" fill="#6EE7B7"/>
+  <!-- 托盘图标：透明底 + 简化山形 W（4 块粗平行四边形） -->
+  <g fill="url(#w-tray)" stroke="url(#w-tray)" stroke-width="0.5" stroke-linejoin="round">
+    <!-- 块 1：左外侧 -->
+    <polygon points="3,27 7,27 13,7 9,7" />
+    <!-- 块 2：左内侧 -->
+    <polygon points="10,9 14,9 16,27 12,27" />
+    <!-- 块 3：右内侧 -->
+    <polygon points="17,27 21,27 22,9 18,9" />
+    <!-- 块 4：右外侧 -->
+    <polygon points="19,7 23,7 29,27 25,27" />
+  </g>
 </svg>

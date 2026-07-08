@@ -86,10 +86,11 @@ export function Welcome({
         </div>
       )}
 
-      <img src={logo} className={`rounded-[10px] mb-3 ${compact ? "w-8 h-8" : "w-10 h-10"}`} alt="gaeaW" />
-      <div className={`text-fg-dim mb-7 ${compact ? "text-[13px]" : "text-[14px]"}`} style={{fontFamily: "var(--ds-font-display)", fontWeight: 500, letterSpacing: "-0.01em"}}>{t("welcome.tagline")}</div>
-
-      <div className="w-full border border-border-soft bg-bg-elev rounded-2xl shadow-[var(--ds-shadow-composer)] hover:border-fg-faint/30 focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_var(--accent-soft),var(--ds-shadow-composer)] transition-all duration-[var(--dur-base)]">
+      <div className="welcome-stagger-1">
+        <img src={logo} className={`rounded-[10px] mb-5 welcome-logo ${compact ? "w-8 h-8" : "w-10 h-10"}`} alt="gaeaW" />
+      </div>
+      <div className={`welcome-stagger-2 text-fg-dim mb-8 ${compact ? "text-[13px]" : "text-[14px]"}`} style={{fontFamily: "var(--ds-font-display)", fontWeight: 500, letterSpacing: "-0.01em"}}>{t("welcome.tagline")}</div>
+      <div className="welcome-stagger-3 w-full border border-border-soft bg-bg-elev rounded-2xl shadow-[var(--ds-shadow-composer)] hover:border-fg-faint/30 focus-within:border-accent/30 focus-within:shadow-[0_0_0_1px_var(--accent-soft),var(--ds-shadow-composer)] transition-all duration-[var(--dur-base)]">
         <textarea
           ref={taRef}
           className={`w-full resize-none border-0 bg-transparent text-fg leading-relaxed outline-none placeholder:text-fg-faint px-5 pt-5 pb-2 ${compact ? "text-[13px] min-h-[64px]" : "text-[14px] min-h-[80px]"} max-h-[160px]`}
@@ -139,7 +140,7 @@ export function Welcome({
         </div>
       )}
 
-      <div className={`grid grid-cols-3 gap-2 mt-4 w-full ${compact ? "[&_button]:p-2 [&_button]:text-[11px]" : ""}`}>
+      <div className={`welcome-stagger-4 grid grid-cols-3 gap-2 mt-4 w-full ${compact ? "[&_button]:p-2 [&_button]:text-[11px]" : ""}`}>
         {QUICK_COMMANDS.map((cmd) => (
           <button
             key={cmd.label}
