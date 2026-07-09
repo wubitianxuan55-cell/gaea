@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -22,7 +23,7 @@ type formatConvert struct{}
 func (formatConvert) Name() string { return "format_convert" }
 
 func (formatConvert) Description() string {
-	return "文档格式转换：将 docx/xlsx/pdf 文件转换为 Markdown。docx→md 保留标题层级和表格；xlsx→md 生成表格；pdf→md 提取文本。"
+	return "文档格式转换：将 docx/xlsx/pdf 文件转换为 Markdown。docx→md 保留标题层级和表格；xlsx→md 生成表格；pdf→md 提取文本（含 OCR 扫描件回退）。"
 }
 
 func (formatConvert) Schema() json.RawMessage {
@@ -503,7 +504,8 @@ func pdfToMarkdown(path string, pages string) (string, error) {
 		result = extractRawText(data)
 	}
 	if result == "" {
-		return "", fmt.Errorf("未能提取到文本内容（PDF 可能为扫描件）")
+		// 文本提取失败 → 回退 OCR（扫描件 PDF）
+		return ocrPDF(path, pages)
 	}
 	return result, nil
 }
@@ -533,4 +535,74 @@ func pageInRange(page int, spec string) bool {
 		}
 	}
 	return false
+}
+
+// ocrPDF 使用外部 OCR 引擎处理扫描件 PDF（pdftoppm → tesseract 流水线）
+func ocrPDF(path string, pages string) (string, error) {
+	// 检查外部工具是否可用
+	tesseractPath, errT := exec.LookPath("tesseract")
+	pdftoppmPath, errP := exec.LookPath("pdftoppm")
+	if errT != nil || errP != nil {
+		return "", fmt.Errorf("扫描件 PDF 需要 OCR 引擎，但未找到 tesseract 或 pdftoppm。"+
+			"请安装：\n  - tesseract: https://github.com/tesseract-ocr/tesseract\n"+
+			"  - poppler (pdftoppm): https://poppler.freedesktop.org\n\n"+
+			"或者使用文本 PDF（非扫描件）")
+	}
+
+	// 创建临时目录
+	tmpDir, err := os.MkdirTemp("", "gaeaW-ocr-*")
+	if err != nil {
+		return "", fmt.Errorf("创建临时目录失败: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// pdftoppm: PDF → PNG（逐页）
+	pngPrefix := filepath.Join(tmpDir, "page")
+	args := []string{"-png", "-r", "300", path, pngPrefix}
+	cmd := exec.Command(pdftoppmPath, args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("pdftoppm 执行失败: %w\n输出: %s", err, string(out))
+	}
+
+	// 收集生成的 PNG 文件并按页码排序
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("读取临时目录失败: %w", err)
+	}
+	var pngFiles []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".png") {
+			pngFiles = append(pngFiles, filepath.Join(tmpDir, e.Name()))
+		}
+	}
+	if len(pngFiles) == 0 {
+		return "", fmt.Errorf("pdftoppm 未生成页面图片")
+	}
+
+	// 逐页 OCR
+	var pageTexts []string
+	pageNum := 1
+	for _, pngPath := range pngFiles {
+		if pages != "" && !pageInRange(pageNum, pages) {
+			pageNum++
+			continue
+		}
+		// tesseract: PNG → 文本
+		cmd := exec.Command(tesseractPath, pngPath, "stdout", "-l", "chi_sim+eng", "--psm", "3")
+		out, err := cmd.Output()
+		if err != nil {
+			return "", fmt.Errorf("tesseract OCR 第 %d 页失败: %w", pageNum, err)
+		}
+		text := strings.TrimSpace(string(out))
+		if text != "" {
+			pageTexts = append(pageTexts, text)
+		}
+		pageNum++
+	}
+
+	if len(pageTexts) == 0 {
+		return "", fmt.Errorf("OCR 未能提取到任何文本")
+	}
+	result := strings.Join(pageTexts, "\n\n---\n\n")
+	return fmt.Sprintf("（以下内容由 OCR 识别，可能存在误差）\n\n%s", result), nil
 }

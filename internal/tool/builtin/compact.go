@@ -43,7 +43,7 @@ var compactDesc = map[string]string{
 	"pdf_extract":    "PDF文本提取(支持页码范围)",
 	"pdf_create":     "创建PDF文件(标题+段落→pdf)",
 	"pptx_create":    "创建PPT文件(标题+要点+图表→pptx)",
-	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown)",
+	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown，含OCR扫描件回退)",
 	"chart_gen":      "matplotlib图表生成(bar/line/pie/scatter)",
 	"doc_merge":      "多docx文档合并(逐元素追加)",
 	"archive":        "zip压缩/解压(支持目录递归)",

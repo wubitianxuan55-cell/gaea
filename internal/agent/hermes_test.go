@@ -101,6 +101,9 @@ func TestFormatHandoff_Normal(t *testing.T) {
 	if !strings.Contains(out, "Hermes output:\nrun wails build") {
 		t.Fatal("handoff missing Hermes output")
 	}
+	if !strings.Contains(out, "## Hephaestus 执行规范") {
+		t.Fatal("handoff missing Hephaestus 执行规范 section")
+	}
 	if strings.Contains(out, "📌 User note (written during plan confirmation)") {
 		t.Fatal("should not contain user note section when empty")
 	}
@@ -172,4 +175,118 @@ func TestPersistAnswer_NilHephaestus(t *testing.T) {
 	h := &Hermes{}
 	// should not panic
 	h.persistAnswer("query", "answer")
+	// should not panic
+	h.persistAnswer("query", "answer")
+}
+
+// ── HermesPrompt content checks ───────────────────────────
+
+func TestHermesPrompt_ContainsEngineeringStandards(t *testing.T) {
+	prompt := HermesPrompt
+	checks := []string{
+		"spec_judge",
+		"spec_query",
+		"GB 36600",
+		"GB 15618",
+		"HJ 25",
+		"standard number",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HermesPrompt should contain %q, but it doesn't", c)
+		}
+	}
+}
+
+func TestHermesPrompt_ContainsDataFormatGuidance(t *testing.T) {
+	prompt := HermesPrompt
+	checks := []string{
+		"CSV/XLSX",
+		"GB2312/GBK",
+		"encoding",
+		"Data validation",
+		"plausibility",
+		"format_convert",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HermesPrompt should contain data format guidance %q, but it doesn't", c)
+		}
+	}
+}
+
+func TestHermesPrompt_ContainsDesignPrinciples(t *testing.T) {
+	prompt := HermesPrompt
+	checks := []string{
+		"Evidence over assumptions",
+		"Push back when needed",
+		"Clarify, don't guess",
+		"Simpler is better",
+		"Never agree to a bad plan",
+		"single responsibility",
+		"verifiable success criterion",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HermesPrompt should contain design principle %q, but it doesn't", c)
+		}
+	}
+	}
+
+// ── HephaestusPrompt content checks ───────────────────────
+
+// ── HephaestusPrompt content checks ───────────────────────
+
+func TestHephaestusPrompt_ContainsAllSections(t *testing.T) {
+	prompt := HephaestusPrompt
+	checks := []string{
+		"角色与原则",
+		"执行-验证-签退",
+		"错误恢复模式",
+		"工程办公领域质量检查点",
+		"禁止事项",
+		"spec_judge",
+		"SI 单位制",
+		"complete_step",
+		"ask 工具",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HephaestusPrompt should contain %q, but it doesn't", c)
+		}
+	}
+	}
+
+// ── Mutual awareness checks ─────────────────────────────
+
+func TestHermesPrompt_KnowsHephaestus(t *testing.T) {
+	prompt := HermesPrompt
+	checks := []string{
+		"About Hephaestus",
+		"Execute → Verify → Sign-off",
+		"Evidence-driven sign-off",
+		"Error recovery",
+		"No re-planning",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HermesPrompt should describe Hephaestus with %q, but it doesn't", c)
+		}
+	}
+}
+
+func TestHephaestusPrompt_KnowsHermes(t *testing.T) {
+	prompt := HephaestusPrompt
+	checks := []string{
+		"About Hermes",
+		"read-only researcher",
+		"Feedback loop",
+		"[上一轮执行结果]",
+		"structural plans",
+	}
+	for _, c := range checks {
+		if !strings.Contains(prompt, c) {
+			t.Errorf("HephaestusPrompt should describe Hermes with %q, but it doesn't", c)
+		}
+	}
 }

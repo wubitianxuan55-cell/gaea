@@ -348,9 +348,9 @@ if cfg.Agent.Effort != "" { entry.Effort = cfg.Agent.Effort }
 			}
 			plannerSess := agent.NewSession(agent.HermesPrompt + "\n\n# Project context\n\n" + mem.Block())
 			// V10.32: build a read-only tool subset for the planner so it can
-			// investigate code before proposing a plan (read_file, grep, glob,
-			// web_search, web_fetch, lsp_*, code_index, memory_search,
-			// read_skill, git_status/git_diff/git_log, and MCP read-only tools).
+			// investigate before proposing a plan (read_file, ls, csv_parse,
+			// docx_read, pdf_extract, xlsx_read, format_convert, web_search,
+			// web_fetch, memory_search, read_skill, and MCP read-only tools).
 			readOnlyReg := newReadOnlyRegistry(reg)
 
 			// V10.42: 为规划者注入只读子代理工具（task/explore/research/
@@ -702,11 +702,18 @@ func newReadOnlyRegistry(full *tool.Registry) *tool.Registry {
 		if exclude[name] {
 			continue
 		}
+		// 排除代码分析工具（可能从外部 MCP 服务器注入）
+		if strings.HasPrefix(name, "mcp__codegraph__") ||
+			strings.HasPrefix(name, "mcp__gitnexus__") ||
+			strings.HasPrefix(name, "lsp_") {
+			continue
+		}
 		t, ok := full.Get(name)
 		if !ok {
 			continue
 		}
 		if t.ReadOnly() {
+			ro.Add(t)
 		}
 	}
 	return ro

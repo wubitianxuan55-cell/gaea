@@ -1,4 +1,40 @@
 
+## v0.12.0 (2026-07-10)
+
+### 新增
+
+- **规划者能力升级**：HermesPrompt 从 4 条设计原则扩展为 7 条专业判断原则（Evidence over assumptions / Push back / Clarify / Simpler / Never agree / Design quality / Verifiable criterion），新增结构化数据处理指导和工程规范引用机制（GB 36600-2018 / GB 15618-2018 / HJ 25.1~25.6）（`internal/agent/hermes.go`）
+- **执行者独立提示**：新增 `HephaestusPrompt` 常量，包含 5 个结构化段落（角色与原则 / 执行-验证-签退三阶段工作流 / 错误恢复模式 / 工程办公质量检查点 / 禁止事项），`formatHandoff` 改为引用该常量而非内联 bullet（`internal/agent/hermes.go`）
+- **双向互知增强**：HermesPrompt 新增 About Hephaestus 段落，HephaestusPrompt 新增 About Hermes 段落，统一术语闭环（success criterion ↔ complete_step evidence）（`internal/agent/hermes.go`）
+- **DefaultSystemPrompt 更新**：工作流段新增"已由系统自动编排"说明，原则段新增"执行后必验证"（`internal/config/config.go`）
+
+### 修复
+
+- **执行失败反馈缺失**：`execResult==nil` 且 `execErr!=nil` 时，用 `execErr.Error()` 构造 `[上一轮执行结果] errors` 注入 planner 会话（`internal/agent/hermes.go`）
+- **planStream 会话持久化**：planStream 末尾新增 `hermesSess.Add(user input + assistant response)`，与 planWithTools 行为一致（`internal/agent/hermes.go`）
+- **重规划输入累积**：引入 `originalTask` 变量，handoff 始终使用原始任务而非累积反馈（`internal/agent/hermes.go`）
+- **ResetSession 泄漏历史**：`ResetSession` 替换 `hermesSess` 后同步 `plannerAgent.SetSession`，避免引用旧 session（`internal/agent/hermes.go`）
+- **planWithTools session 污染**：plan 调用前捕获 `planPreLen`，失败时 `Truncate(planPreLen)` 回滚部分 tool-call 消息（`internal/agent/hermes.go`）
+
+### 变更
+
+- **AGENTS.md / CLAUDE.md 解耦**：移除规划者专属指令（"规划阶段用 ask 确认"）和过程性指令（"调用 spec_judge 前…"），重写数据格式条目为陈述式领域约定（"中文工程数据格式约定"），两份文档现为纯共享领域知识（`AGENTS.md`, `CLAUDE.md`）
+- **operational task 硬约束**：从软性"skip investigation"升级为"FIRST AND ONLY action = <!--plan-->"，禁止任何工具调用（`internal/agent/hermes.go`）
+- **重复段落消除**：HermesPrompt 合并 About Hephaestus 与 WHAT/HOW 段；HephaestusPrompt 删除重复标题、重复步骤 2、重复禁止项（`internal/agent/hermes.go`）
+- **术语统一**：HermesPrompt "coding agent" → "execution agent"（`internal/agent/hermes.go`）
+
+### 测试
+
+- **3 个 HermesPrompt 内容测试**：工程规范引用、数据格式指导、设计原则
+- **HephaestusPrompt 段落测试**：验证 5 个段落标题
+- **双向互知测试**：HermesPrompt_KnowsHephaestus、HephaestusPrompt_KnowsHermes
+- **formatHandoff 更新**：验证新的 `## Hephaestus 执行规范` 段落
+
+### 构建
+
+- CLI：`release/v0.12.0/gaeaW.exe`
+- 桌面端：`release/v0.12.0/gaeaW-desktop.exe`
+- SHA256：`release/v0.12.0/SHA256SUMS`
 ## v0.11.1 (2026-07-08)
 
 ### 修复

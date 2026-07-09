@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -114,37 +113,32 @@ func rememberWorkspace(dir string) {
 	}
 }
 
-// ensureWorkspace establishes a writable working directory at startup: the
-// remembered folder if it's still a directory, else the home directory when the
-// current cwd isn't writable (the Finder/`open` "/" case). A writable cwd with no
-// remembered folder (e.g. `wails dev` in the repo) is left untouched.
-// As the first step, search upward from cwd for gaeaW.toml — this ensures the
-// desktop exe finds its config when launched from a subdirectory (e.g. double-
-// clicking from desktop/build/bin/), without relying on a saved workspace.
+// ensureWorkspace establishes a writable working directory at startup:
+//  1. 优先恢复上次关闭时保存的工作空间
+//  2.  回退：向上搜索 gaeaW.toml（双击 exe 启动时找到项目根目录）
+//  3.  cwd 可写则用 cwd
+//  4.  最后回退到 home
 func ensureWorkspace() {
-	// Search upward from cwd for the project root (gaeaW.toml).
-	if dir, err := searchUpForConfig(); err == nil {
-		slog.Info("found project root via gaeaW.toml", "path", dir)
-		return
-	}
-
+	// 1. 优先恢复上次关闭时的工作空间
 	if ws := loadWorkspace(); ws != "" {
 		if info, err := os.Stat(ws); err == nil && info.IsDir() && os.Chdir(ws) == nil {
-			slog.Info("workspace restored", "path", ws)
 			return
 		}
-		slog.Warn("saved workspace unavailable, falling back", "path", ws)
 	}
-	cwd, _ := os.Getwd()
-	if cwdWritable() {
-		slog.Info("cwd is writable, using as workspace", "path", cwd)
+	// 2. 回退：向上搜索 gaeaW.toml（双击 exe 启动时能找到项目根目录）
+	if dir, err := searchUpForConfig(); err == nil {
+		_ = dir // searchUpForConfig 内部已 chdir
 		return
 	}
+	// 3. cwd 可写就用 cwd
+	if cwdWritable() {
+		return
+	}
+	// 4. 最后回退到 home
 	if home, err := os.UserHomeDir(); err == nil {
-		slog.Info("falling back to home directory", "path", home)
 		_ = os.Chdir(home)
 	} else {
-		slog.Error("no writable workspace available", "err", err)
+		fmt.Fprintf(os.Stderr, "gaeaW: 无法确定工作目录（cwd 不可写，%s），尝试以 / 运行\n", err)
 	}
 }
 
