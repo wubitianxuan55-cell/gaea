@@ -22,7 +22,7 @@ export function useBridgeWatch() {
       const result = await Promise.race([
         app.Meta(),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), PING_TIMEOUT_MS)
+          setTimeout(() => reject(new Error("timeout")), PING_TIMEOUT_MS),
         ),
       ]);
       // 响应成功 → 桥接存活

@@ -25,23 +25,26 @@ export function WorkspacePanel({
   }, []);
 
   // 拖拽调整文件树宽度
-  const onDividerMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setResizing(true);
-    const startX = e.clientX;
-    const startW = treeWidth;
-    const onMove = (ev: MouseEvent) => {
-      const newW = Math.max(120, Math.min(450, startW + ev.clientX - startX));
-      setTreeWidth(newW);
-    };
-    const onUp = () => {
-      setResizing(false);
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }, [treeWidth]);
+  const onDividerMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setResizing(true);
+      const startX = e.clientX;
+      const startW = treeWidth;
+      const onMove = (ev: MouseEvent) => {
+        const newW = Math.max(120, Math.min(450, startW + ev.clientX - startX));
+        setTreeWidth(newW);
+      };
+      const onUp = () => {
+        setResizing(false);
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [treeWidth],
+  );
 
   // 面包屑路径
   const pathParts = selectedFile ? selectedFile.split("/") : [];
@@ -58,19 +61,26 @@ export function WorkspacePanel({
         <div className="flex items-center gap-1">
           <button
             className="flex items-center gap-1 px-2 py-1 border-0 bg-transparent text-fg-faint cursor-pointer hover:text-fg hover:bg-bg-soft rounded text-[10px]"
-            onClick={() => { setSelectedFile(null); }}
+            onClick={() => {
+              setSelectedFile(null);
+            }}
             title="回到根目录"
           >
             <Home size={11} />
           </button>
           <button
             className="flex items-center gap-1 px-2 py-1 border-0 bg-transparent text-fg-faint cursor-pointer hover:text-fg hover:bg-bg-soft rounded text-[10px]"
-            onClick={() => { /* trigger refresh by re-render */ }}
+            onClick={() => {
+              /* trigger refresh by re-render */
+            }}
             title="刷新"
           >
             <RefreshCw size={11} />
           </button>
-          <button className="border-0 bg-transparent text-fg-faint cursor-pointer hover:text-fg p-1" onClick={onClose}>
+          <button
+            className="border-0 bg-transparent text-fg-faint cursor-pointer hover:text-fg p-1"
+            onClick={onClose}
+          >
             <X size={14} />
           </button>
         </div>
@@ -78,7 +88,10 @@ export function WorkspacePanel({
 
       {/* 当前路径 */}
       {cwd && (
-        <div className="px-3 py-1.5 text-fg-faint font-mono text-[10px] truncate border-b border-border-soft" title={cwd}>
+        <div
+          className="px-3 py-1.5 text-fg-faint font-mono text-[10px] truncate border-b border-border-soft"
+          title={cwd}
+        >
           {cwd}
         </div>
       )}

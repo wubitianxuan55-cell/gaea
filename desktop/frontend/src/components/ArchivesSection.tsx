@@ -11,9 +11,7 @@ type ArchivedItem = {
   archivedAt?: string;
 };
 
-export const ArchivesSection = memo(function ArchivesSection(p: {
-  archives: ArchivedItem[];
-}) {
+export const ArchivesSection = memo(function ArchivesSection(p: { archives: ArchivedItem[] }) {
   const st = useT();
   const [open, setOpen] = useState(false);
   return (

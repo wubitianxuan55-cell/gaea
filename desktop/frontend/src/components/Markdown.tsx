@@ -30,7 +30,11 @@ function hasMathContent(text: string): boolean {
 function CodeBlockHeader({ language, text }: { language?: string; text: string }) {
   const [copied, setCopied] = useState(false);
   const copy = useCallback(async () => {
-    try { await navigator.clipboard.writeText(text); } catch { /* noop */ }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* noop */
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [text]);
@@ -64,15 +68,27 @@ const components: Components = {
       return (
         <div className="my-3 rounded-md border border-border-soft overflow-hidden">
           <CodeBlockHeader language={lang} text={text} />
-          <pre className="px-3 py-2.5 font-mono text-[12.5px] leading-[1.55] overflow-auto whitespace-pre text-fg"><code>{text}</code></pre>
+          <pre className="px-3 py-2.5 font-mono text-[12.5px] leading-[1.55] overflow-auto whitespace-pre text-fg">
+            <code>{text}</code>
+          </pre>
         </div>
       );
     }
-    return <code className="px-1 py-0.5 rounded bg-bg-soft text-fg text-[0.9em] font-mono border border-border-soft/50">{children}</code>;
+    return (
+      <code className="px-1 py-0.5 rounded bg-bg-soft text-fg text-[0.9em] font-mono border border-border-soft/50">
+        {children}
+      </code>
+    );
   },
   a: ({ href, children }) => (
-    <a href={href} onClick={(e) => { e.preventDefault(); if (href) openExternal(href); }}
-      className="text-accent hover:underline">
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        if (href) openExternal(href);
+      }}
+      className="text-accent hover:underline"
+    >
       {children}
     </a>
   ),
@@ -124,7 +140,11 @@ export const Markdown = memo(function Markdown({ text }: { text: string }) {
   if (hasMathContent(text)) ensureKatexCss();
   return (
     <div className="md text-[14px] leading-relaxed">
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={components}
+      >
         {normalizeMath(text)}
       </ReactMarkdown>
     </div>

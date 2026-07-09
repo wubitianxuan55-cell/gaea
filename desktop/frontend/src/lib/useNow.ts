@@ -14,7 +14,7 @@ function subscribe(onChange: () => void) {
     }, 1000);
   }
   return () => {
-    listeners = listeners.filter(f => f !== onChange);
+    listeners = listeners.filter((f) => f !== onChange);
     if (listeners.length === 0 && timerId !== null) {
       clearInterval(timerId);
       timerId = null;

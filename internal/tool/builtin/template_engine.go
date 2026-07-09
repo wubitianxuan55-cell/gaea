@@ -9,8 +9,19 @@ import (
 	"strings"
 	"text/template"
 
+	"gaeaW/internal/config"
 	"gaeaW/internal/tool"
 )
+
+// officeCfg holds the runtime [office] configuration injected by boot.
+var officeCfg *config.OfficeConfig
+
+// SetOfficeConfig injects the office configuration from boot assembly.
+// Call once before any template tool execution.
+func SetOfficeConfig(cfg config.OfficeConfig) {
+	cp := cfg
+	officeCfg = &cp
+}
 
 func init() {
 	tool.RegisterBuiltin(saveTemplate{})
@@ -178,6 +189,10 @@ func (runTemplate) Execute(ctx context.Context, args json.RawMessage) (string, e
 }
 
 func getTemplateDir() (string, error) {
+	// 优先使用 [office] 配置中的 DefaultTemplateDir
+	if officeCfg != nil && officeCfg.DefaultTemplateDir != "" {
+		return officeCfg.DefaultTemplateDir, nil
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err

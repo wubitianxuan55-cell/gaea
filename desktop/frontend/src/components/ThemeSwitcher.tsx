@@ -41,11 +41,7 @@ export function ThemeSwitcher({
 
   return (
     <div className="relative inline-flex no-drag">
-      <button
-        className="toolbar-btn no-drag"
-        onClick={() => setOpen((v) => !v)}
-        title="切换主题"
-      >
+      <button className="toolbar-btn no-drag" onClick={() => setOpen((v) => !v)} title="切换主题">
         <span
           className="inline-block w-3 h-3 rounded-full border border-border-soft shrink-0"
           style={{ background: THEME_DOTS[current] ?? THEME_DOTS.slate }}
@@ -55,7 +51,10 @@ export function ThemeSwitcher({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full right-0 mt-1 z-50 min-w-[120px] py-1 max-h-[320px] overflow-y-auto bg-bg-elev-2 border border-border rounded-lg" style={{boxShadow: "var(--ds-shadow-dropdown)"}}>
+          <div
+            className="absolute top-full right-0 mt-1 z-50 min-w-[120px] py-1 max-h-[320px] overflow-y-auto bg-bg-elev-2 border border-border rounded-lg"
+            style={{ boxShadow: "var(--ds-shadow-dropdown)" }}
+          >
             {themes.map((th) => (
               <button
                 key={th}

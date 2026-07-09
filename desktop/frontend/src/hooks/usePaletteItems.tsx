@@ -100,21 +100,19 @@ export function usePaletteItems(
         },
       },
     ];
-    const sessionItems: PaletteItem[] = sidebarSessions
-      .slice(0, 10)
-      .map((s) => ({
-        id: `sess-${s.path}`,
-        group: t("palette.group.sessions") ?? "会话",
-        title: sessionTitle(s, t("history.emptySession") ?? "空会话"),
-        hint: s.path,
-        meta: sessionTime(s.modTime),
-        badge: s.current ? "当前" : undefined,
-        icon: <MessageSquare size={15} />,
-        keywords: ["session", "会话"],
-        run: () => {
-          if (!s.current) void actions.onResumeSession(s.path);
-        },
-      }));
+    const sessionItems: PaletteItem[] = sidebarSessions.slice(0, 10).map((s) => ({
+      id: `sess-${s.path}`,
+      group: t("palette.group.sessions") ?? "会话",
+      title: sessionTitle(s, t("history.emptySession") ?? "空会话"),
+      hint: s.path,
+      meta: sessionTime(s.modTime),
+      badge: s.current ? "当前" : undefined,
+      icon: <MessageSquare size={15} />,
+      keywords: ["session", "会话"],
+      run: () => {
+        if (!s.current) void actions.onResumeSession(s.path);
+      },
+    }));
     return [...cmds, ...sessionItems];
   }, [t, sidebarSessions, actions]);
 }

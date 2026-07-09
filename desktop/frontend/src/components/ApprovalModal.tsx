@@ -2,10 +2,21 @@ import { useEffect, useRef } from "react";
 import { useT } from "../lib/i18n";
 import type { WireApproval } from "../lib/types";
 
-const btnBase = "grid grid-cols-[28px_1fr] items-center gap-2.5 w-full min-h-[46px] rounded-lg text-fg p-1.5 px-2 text-left cursor-pointer transition-all duration-[var(--dur-fast)]";
+const btnBase =
+  "grid grid-cols-[28px_1fr] items-center gap-2.5 w-full min-h-[46px] rounded-lg text-fg p-1.5 px-2 text-left cursor-pointer transition-all duration-[var(--dur-fast)]";
 
-function PlanBtn({ num, active, title, hint, onClick }: {
-  num: number; active?: boolean; title: string; hint: string; onClick: () => void;
+function PlanBtn({
+  num,
+  active,
+  title,
+  hint,
+  onClick,
+}: {
+  num: number;
+  active?: boolean;
+  title: string;
+  hint: string;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -16,9 +27,11 @@ function PlanBtn({ num, active, title, hint, onClick }: {
       }`}
       onClick={onClick}
     >
-      <span className={`inline-flex items-center justify-center w-[26px] h-[26px] border rounded-lg font-mono text-xs font-bold ${
-        active ? "border-accent bg-accent text-accent-fg" : "border-border text-fg-dim bg-bg"
-      }`}>
+      <span
+        className={`inline-flex items-center justify-center w-[26px] h-[26px] border rounded-lg font-mono text-xs font-bold ${
+          active ? "border-accent bg-accent text-accent-fg" : "border-border text-fg-dim bg-bg"
+        }`}
+      >
         {num}
       </span>
       <span className="flex min-w-0 flex-col gap-px">
@@ -40,12 +53,19 @@ export function ApprovalModal({
   const t = useT();
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { cardRef.current?.focus(); }, [approval.id]);
+  useEffect(() => {
+    cardRef.current?.focus();
+  }, [approval.id]);
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      )
+        return;
       if (!["1", "2", "3", "Escape"].includes(event.key)) return;
       event.preventDefault();
       if (event.key === "1" || event.key === "Escape") onAnswer(false, false);
@@ -61,14 +81,23 @@ export function ApprovalModal({
       <div
         ref={cardRef}
         className="border border-border rounded-xl bg-bg-elev p-4 outline-none focus-visible:border-accent transition-shadow duration-200"
-        style={{boxShadow: "var(--ds-shadow-card)"}}
-        onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.boxShadow = "var(--ds-shadow-card-hover)"}
-        onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.boxShadow = "var(--ds-shadow-card)"}
-        role="dialog" aria-modal="false" tabIndex={-1}
+        style={{ boxShadow: "var(--ds-shadow-card)" }}
+        onMouseEnter={(e) =>
+          ((e.currentTarget as HTMLElement).style.boxShadow = "var(--ds-shadow-card-hover)")
+        }
+        onMouseLeave={(e) =>
+          ((e.currentTarget as HTMLElement).style.boxShadow = "var(--ds-shadow-card)")
+        }
+        role="dialog"
+        aria-modal="false"
+        tabIndex={-1}
         aria-labelledby="tool-approval-title"
       >
         <div className="mb-3">
-          <div id="tool-approval-title" className="text-fg font-semibold leading-[1.35] text-[14px]">
+          <div
+            id="tool-approval-title"
+            className="text-fg font-semibold leading-[1.35] text-[14px]"
+          >
             {t("approval.toolTitle")}
           </div>
           <div className="text-fg-dim text-[12.5px] leading-[1.45] mt-0.5">
@@ -77,7 +106,9 @@ export function ApprovalModal({
         </div>
 
         <div className="flex items-center gap-2 min-h-[34px] mb-3 border border-border-soft rounded-lg bg-bg-soft py-[5px] px-2">
-          <span className="shrink-0 text-fg-faint font-mono text-[11px] uppercase tracking-[0.04em]">{t("approval.toolLabel")}</span>
+          <span className="shrink-0 text-fg-faint font-mono text-[11px] uppercase tracking-[0.04em]">
+            {t("approval.toolLabel")}
+          </span>
           <span className="font-mono text-xs font-medium text-fg">{approval.tool}</span>
         </div>
 
@@ -88,9 +119,25 @@ export function ApprovalModal({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <PlanBtn num={1} title={t("approval.deny")} hint={t("approval.denyHint")} onClick={() => onAnswer(false, false)} />
-          <PlanBtn num={2} active title={t("approval.allowOnce")} hint={t("approval.allowOnceHint")} onClick={() => onAnswer(true, false)} />
-          <PlanBtn num={3} title={t("approval.allowSession")} hint={t("approval.allowSessionHint")} onClick={() => onAnswer(true, true)} />
+          <PlanBtn
+            num={1}
+            title={t("approval.deny")}
+            hint={t("approval.denyHint")}
+            onClick={() => onAnswer(false, false)}
+          />
+          <PlanBtn
+            num={2}
+            active
+            title={t("approval.allowOnce")}
+            hint={t("approval.allowOnceHint")}
+            onClick={() => onAnswer(true, false)}
+          />
+          <PlanBtn
+            num={3}
+            title={t("approval.allowSession")}
+            hint={t("approval.allowSessionHint")}
+            onClick={() => onAnswer(true, true)}
+          />
         </div>
       </div>
     </div>

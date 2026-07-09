@@ -3,13 +3,13 @@
 import type { DictKey } from "../locales/en";
 
 const TYPE_KEY_MAP: Record<string, string> = {
-  user:       "memory.typeUser",
-  project:    "memory.typeProject",
-  feedback:   "memory.typeFeedback",
-  semantic:   "memory.typeSemantic",
-  episodic:   "memory.typeEpisodic",
+  user: "memory.typeUser",
+  project: "memory.typeProject",
+  feedback: "memory.typeFeedback",
+  semantic: "memory.typeSemantic",
+  episodic: "memory.typeEpisodic",
   procedural: "memory.typeProcedural",
-  reference:  "memory.typeReference",
+  reference: "memory.typeReference",
 };
 
 export function factTypeLabel(

@@ -28,7 +28,7 @@ export function HistoryPanel({
     const q = query.trim().toLowerCase();
     if (!q) return sessions;
     return sessions.filter((s) => {
-      const text = [(s.title || s.preview || ""), s.path].join(" ").toLowerCase();
+      const text = [s.title || s.preview || "", s.path].join(" ").toLowerCase();
       return text.includes(q);
     });
   }, [sessions, query]);
@@ -114,7 +114,9 @@ export function HistoryPanel({
                 <div className="flex items-center gap-2 text-fg-faint text-[10px] font-semibold uppercase tracking-wider px-2 pb-1.5">
                   <span className="w-1 h-1 rounded-full bg-fg-faint/30" />
                   {g.label}
-                  <span className="text-fg-faint/40 font-mono font-normal normal-case tracking-normal">{g.items.length}</span>
+                  <span className="text-fg-faint/40 font-mono font-normal normal-case tracking-normal">
+                    {g.items.length}
+                  </span>
                 </div>
                 {g.items.map((s) => (
                   <div
@@ -135,7 +137,9 @@ export function HistoryPanel({
                           if (e.key === "Enter") commitRename(s.path);
                           if (e.key === "Escape") setEditing(null);
                         }}
-                        onBlur={() => { if (editing === s.path) commitRename(s.path); }}
+                        onBlur={() => {
+                          if (editing === s.path) commitRename(s.path);
+                        }}
                         placeholder={tr("history.namePlaceholder")}
                       />
                     ) : (
@@ -144,16 +148,22 @@ export function HistoryPanel({
                         onClick={() => onResume(s.path)}
                         title={s.path}
                       >
-                        <div className={`text-[13px] leading-snug font-medium truncate ${s.current ? "text-accent" : "text-fg-dim"}`}>
+                        <div
+                          className={`text-[13px] leading-snug font-medium truncate ${s.current ? "text-accent" : "text-fg-dim"}`}
+                        >
                           {s.title || s.preview || tr("history.emptySession")}
                         </div>
                         <div className="flex items-center gap-1.5 text-fg-faint text-[11px]">
                           {s.current && (
-                            <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-px rounded font-medium">{tr("history.current")}</span>
+                            <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-px rounded font-medium">
+                              {tr("history.current")}
+                            </span>
                           )}
                           <span className="flex items-center gap-1">
                             <MessageSquare size={11} className="opacity-50" />
-                            {tr(s.turns === 1 ? "history.turnOne" : "history.turnOther", { n: s.turns })}
+                            {tr(s.turns === 1 ? "history.turnOne" : "history.turnOther", {
+                              n: s.turns,
+                            })}
                           </span>
                           <span className="text-fg-faint/40">·</span>
                           <span className="flex items-center gap-1">
@@ -171,13 +181,20 @@ export function HistoryPanel({
                             <button
                               className="w-7 h-7 flex items-center justify-center border-0 rounded-md bg-transparent text-err cursor-pointer hover:bg-err/10 transition-colors"
                               title={tr("history.confirmDelete")}
-                              onClick={() => { onDelete(s.path); setConfirming(null); }}
-                            ><Check size={14} /></button>
+                              onClick={() => {
+                                onDelete(s.path);
+                                setConfirming(null);
+                              }}
+                            >
+                              <Check size={14} />
+                            </button>
                             <button
                               className="w-7 h-7 flex items-center justify-center border-0 rounded-md bg-transparent text-fg-faint cursor-pointer hover:bg-bg-elev hover:text-fg transition-colors"
                               title={tr("common.cancel")}
                               onClick={() => setConfirming(null)}
-                            ><X size={14} /></button>
+                            >
+                              <X size={14} />
+                            </button>
                           </>
                         ) : (
                           <>
@@ -185,13 +202,17 @@ export function HistoryPanel({
                               className="w-7 h-7 flex items-center justify-center border-0 rounded-md bg-transparent text-fg-faint cursor-pointer hover:bg-bg-elev hover:text-fg transition-colors"
                               title={tr("history.rename")}
                               onClick={() => startRename(s)}
-                            ><Pencil size={13} /></button>
+                            >
+                              <Pencil size={13} />
+                            </button>
                             {!s.current && (
                               <button
                                 className="w-7 h-7 flex items-center justify-center border-0 rounded-md bg-transparent text-fg-faint cursor-pointer hover:bg-bg-elev hover:text-err transition-colors"
                                 title={tr("common.delete")}
                                 onClick={() => setConfirming(s.path)}
-                              ><Trash2 size={13} /></button>
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             )}
                           </>
                         )}

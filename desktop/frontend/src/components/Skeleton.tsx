@@ -19,7 +19,11 @@ export const Skeleton = memo(function Skeleton() {
         {/* spinning ring 2 (faster, smaller) */}
         <span className="absolute inset-[-4px] rounded-xl border border-accent/35 animate-[spin_6s_linear_infinite_reverse]" />
         {/* icon with glow */}
-        <Zap size={36} className="text-accent relative z-10" style={{ filter: "drop-shadow(0 0 12px var(--accent))" }} />
+        <Zap
+          size={36}
+          className="text-accent relative z-10"
+          style={{ filter: "drop-shadow(0 0 12px var(--accent))" }}
+        />
       </div>
 
       <div className="text-center max-w-md">
@@ -29,10 +33,30 @@ export const Skeleton = memo(function Skeleton() {
 
       {/* Capability cards */}
       <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-        <Card icon={<Wrench size={16} />} color="var(--accent)"      title={t("skeleton.tools")}  desc={t("skeleton.toolsDesc")} />
-        <Card icon={<Brain size={16} />}   color="#a78bfa"            title={t("skeleton.skills")} desc={t("skeleton.skillsDesc")} />
-        <Card icon={<Blocks size={16} />}  color="#38bdf8"            title={t("skeleton.models")} desc={t("skeleton.modelsDesc")} />
-        <Card icon={<Cpu size={16} />}     color="#34d399"            title={t("skeleton.cache")}  desc={t("skeleton.cacheDesc")} />
+        <Card
+          icon={<Wrench size={16} />}
+          color="var(--accent)"
+          title={t("skeleton.tools")}
+          desc={t("skeleton.toolsDesc")}
+        />
+        <Card
+          icon={<Brain size={16} />}
+          color="#a78bfa"
+          title={t("skeleton.skills")}
+          desc={t("skeleton.skillsDesc")}
+        />
+        <Card
+          icon={<Blocks size={16} />}
+          color="#38bdf8"
+          title={t("skeleton.models")}
+          desc={t("skeleton.modelsDesc")}
+        />
+        <Card
+          icon={<Cpu size={16} />}
+          color="#34d399"
+          title={t("skeleton.cache")}
+          desc={t("skeleton.cacheDesc")}
+        />
       </div>
 
       {/* Animated dots */}
@@ -45,10 +69,22 @@ export const Skeleton = memo(function Skeleton() {
   );
 });
 
-function Card({ icon, title, desc, color }: { icon: React.ReactNode; title: string; desc: string; color: string }) {
+function Card({
+  icon,
+  title,
+  desc,
+  color,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  color: string;
+}) {
   return (
     <div className="flex items-center gap-2.5 px-3 py-2.5 bg-bg-elev border border-border-soft rounded-lg transition-[border-color,background] duration-[var(--dur-fast)] hover:border-fg-faint/40">
-      <span className="shrink-0" style={{ color }}>{icon}</span>
+      <span className="shrink-0" style={{ color }}>
+        {icon}
+      </span>
       <div className="flex flex-col min-w-0">
         <span className="text-[13px] font-medium text-fg truncate">{title}</span>
         <span className="text-[11px] text-fg-faint truncate">{desc}</span>

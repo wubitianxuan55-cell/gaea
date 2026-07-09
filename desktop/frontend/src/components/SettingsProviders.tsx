@@ -16,7 +16,11 @@ export function ProvidersSection({ s, busy, apply }: SectionProps) {
       <div className="flex items-center justify-between px-1 pb-1.5">
         <div className="text-fg text-sm font-semibold">{t("settings.tab.providers")}</div>
         {editing !== "__new__" && (
-          <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors" disabled={busy} onClick={() => setEditing("__new__")}>
+          <button
+            className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+            disabled={busy}
+            onClick={() => setEditing("__new__")}
+          >
             {t("settings.addProvider")}
           </button>
         )}
@@ -47,24 +51,37 @@ export function ProvidersSection({ s, busy, apply }: SectionProps) {
                 )}
                 <span className="flex-1" />
                 {p.oauthKind && !p.oauthReady && (
-                  <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-accent cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
-                    disabled={busy} onClick={() => apply(() => app.LoginProvider(p.name))}>
+                  <button
+                    className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-accent cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+                    disabled={busy}
+                    onClick={() => apply(() => app.LoginProvider(p.name))}
+                  >
                     {t("settings.oauthLogin")}
                   </button>
                 )}
                 {p.oauthKind && p.oauthReady && (
-                  <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
-                    disabled={busy} onClick={() => apply(() => app.LogoutProvider(p.name))}>
+                  <button
+                    className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+                    disabled={busy}
+                    onClick={() => apply(() => app.LogoutProvider(p.name))}
+                  >
                     {t("settings.oauthLogout")}
                   </button>
                 )}
-                <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors" onClick={() => setEditing(p.name)}>
+                <button
+                  className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+                  onClick={() => setEditing(p.name)}
+                >
                   {t("common.edit")}
                 </button>
                 <button
                   className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
                   disabled={busy || defaultProvider === p.name}
-                  title={defaultProvider === p.name ? t("settings.cantDeleteDefault") : t("settings.deleteProvider")}
+                  title={
+                    defaultProvider === p.name
+                      ? t("settings.cantDeleteDefault")
+                      : t("settings.deleteProvider")
+                  }
                   onClick={() => void apply(() => app.DeleteProvider(p.name))}
                 >
                   {t("common.delete")}
@@ -72,10 +89,18 @@ export function ProvidersSection({ s, busy, apply }: SectionProps) {
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-fg-faint text-[11px] mt-1">
                 <span className="font-mono text-[10px]">{p.kind}</span>
-                <span className="truncate max-w-[260px]" title={p.baseUrl}>{p.baseUrl}</span>
-                <span className="truncate max-w-[260px]" title={p.models.join(", ")}>{p.models.join(", ")}</span>
+                <span className="truncate max-w-[260px]" title={p.baseUrl}>
+                  {p.baseUrl}
+                </span>
+                <span className="truncate max-w-[260px]" title={p.models.join(", ")}>
+                  {p.models.join(", ")}
+                </span>
               </div>
-              <KeyField apiKeyEnv={p.apiKeyEnv} busy={busy} onSet={(v) => apply(() => app.SetProviderKey(p.apiKeyEnv, v))} />
+              <KeyField
+                apiKeyEnv={p.apiKeyEnv}
+                busy={busy}
+                onSet={(v) => apply(() => app.SetProviderKey(p.apiKeyEnv, v))}
+              />
             </div>
           ),
         )}
@@ -146,37 +171,87 @@ function ProviderEditor({
       <fieldset className="border border-border-soft rounded-md p-2.5">
         <legend className="text-fg-faint text-[10px] font-medium px-1">基本设置</legend>
         <div className="flex flex-col gap-2">
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.providerName")} value={name} onChange={(e) => setName(e.target.value)} disabled={!!initial} />
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.providerName")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={!!initial}
+          />
           <div className="flex items-center gap-3">
             <label className="text-fg-dim text-[13px] shrink-0">{t("settings.providerKind")}</label>
-            <select className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent" value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select
+              className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+            >
               {kindOptions.map((k) => (
-                <option key={k} value={k}>{k}</option>
+                <option key={k} value={k}>
+                  {k}
+                </option>
               ))}
             </select>
           </div>
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.providerBaseUrl")} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.providerModels")} value={models} onChange={(e) => setModels(e.target.value)} />
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.providerApiKeyEnv")} value={apiKeyEnv} onChange={(e) => setApiKeyEnv(e.target.value)} />
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.providerBaseUrl")}
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+          />
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.providerModels")}
+            value={models}
+            onChange={(e) => setModels(e.target.value)}
+          />
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.providerApiKeyEnv")}
+            value={apiKeyEnv}
+            onChange={(e) => setApiKeyEnv(e.target.value)}
+          />
         </div>
       </fieldset>
       {/* 高级设置 */}
       <fieldset className="border border-border-soft rounded-md p-2.5">
         <legend className="text-fg-faint text-[10px] font-medium px-1">高级设置</legend>
         <div className="flex flex-col gap-2">
-          <label className="text-fg-dim text-[13px] shrink-0">{t("settings.providerBalanceUrl")}</label>
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.balanceUrlPlaceholder")} value={balanceUrl} onChange={(e) => setBalanceUrl(e.target.value)} />
+          <label className="text-fg-dim text-[13px] shrink-0">
+            {t("settings.providerBalanceUrl")}
+          </label>
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.balanceUrlPlaceholder")}
+            value={balanceUrl}
+            onChange={(e) => setBalanceUrl(e.target.value)}
+          />
           <div className="text-fg-faint text-[10px]">{t("settings.balanceUrlHint")}</div>
-          <label className="text-fg-dim text-[13px] shrink-0">{t("settings.providerContextWindow")}</label>
-          <input className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent" placeholder={t("settings.contextWindowPlaceholder")} value={ctx} onChange={(e) => setCtx(e.target.value)} inputMode="numeric" />
+          <label className="text-fg-dim text-[13px] shrink-0">
+            {t("settings.providerContextWindow")}
+          </label>
+          <input
+            className="flex-1 bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none placeholder:text-fg-faint focus:border-accent"
+            placeholder={t("settings.contextWindowPlaceholder")}
+            value={ctx}
+            onChange={(e) => setCtx(e.target.value)}
+            inputMode="numeric"
+          />
           <div className="text-fg-faint text-[10px]">{t("settings.contextWindowHint")}</div>
         </div>
       </fieldset>
       <div className="flex gap-2 mt-2">
-        <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors" onClick={onCancel} disabled={busy}>
+        <button
+          className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
+          onClick={onCancel}
+          disabled={busy}
+        >
           {t("common.cancel")}
         </button>
-        <button className="btn--primary" onClick={save} disabled={busy || !name.trim() || !baseUrl.trim()}>
+        <button
+          className="btn--primary"
+          onClick={save}
+          disabled={busy || !name.trim() || !baseUrl.trim()}
+        >
           {t("common.save")}
         </button>
       </div>
@@ -184,7 +259,15 @@ function ProviderEditor({
   );
 }
 
-function KeyField({ apiKeyEnv, busy, onSet }: { apiKeyEnv: string; busy: boolean; onSet: (v: string) => Promise<void> }) {
+function KeyField({
+  apiKeyEnv,
+  busy,
+  onSet,
+}: {
+  apiKeyEnv: string;
+  busy: boolean;
+  onSet: (v: string) => Promise<void>;
+}) {
   const t = useT();
   const [val, setVal] = useState("");
   if (!apiKeyEnv) return null;

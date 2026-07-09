@@ -1,4 +1,15 @@
-import { FolderOpen, MessageSquare, Clock, ScrollText, BarChart3, FileSpreadsheet, FileImage, Puzzle, BookOpen, ClipboardList } from "lucide-react";
+import {
+  FolderOpen,
+  MessageSquare,
+  Clock,
+  ScrollText,
+  BarChart3,
+  FileSpreadsheet,
+  FileImage,
+  Puzzle,
+  BookOpen,
+  ClipboardList,
+} from "lucide-react";
 import logo from "../assets/logo.png";
 import { useT } from "../lib/i18n";
 import { useCompact } from "../hooks/useCompact";
@@ -20,7 +31,7 @@ interface SkillCard {
   icon: React.ReactNode;
   name: string;
   desc: string;
-  badge: string;   // 类型徽章
+  badge: string; // 类型徽章
   prompt: string;
 }
 
@@ -30,14 +41,16 @@ const SKILL_MODULES: SkillCard[] = [
     name: "场地环境调查",
     desc: "初调/详调报告框架，含场地基本信息、历史使用、周边敏感目标",
     badge: "🧬 子代理",
-    prompt: "启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。",
+    prompt:
+      "启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。",
   },
   {
     icon: <FileSpreadsheet size={18} />,
     name: "投标方案编制",
     desc: "10章技术标书：工程概况、施工组织、质量控制、安全文明",
     badge: "📄 文档",
-    prompt: "启动投标方案编制，生成土壤修复工程技术标投标方案，包括工程概况、施工组织设计、质量保证措施等。",
+    prompt:
+      "启动投标方案编制，生成土壤修复工程技术标投标方案，包括工程概况、施工组织设计、质量保证措施等。",
   },
   {
     icon: <Puzzle size={18} />,
@@ -58,14 +71,16 @@ const SKILL_MODULES: SkillCard[] = [
     name: "污染风险评估",
     desc: "对标 GB 36600 / GB 15618 进行超标判定与风险计算",
     badge: "🧬 子代理",
-    prompt: "根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。",
+    prompt:
+      "根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。",
   },
   {
     icon: <BookOpen size={18} />,
     name: "成本测算",
     desc: "七项汇总成本：钻孔/检测/药剂/土方/设备/人工/评估",
     badge: "📊 图表",
-    prompt: "生成土壤修复工程七项汇总成本测算表，涵盖场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。",
+    prompt:
+      "生成土壤修复工程七项汇总成本测算表，涵盖场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。",
   },
   {
     icon: <FileImage size={18} />,
@@ -100,12 +115,14 @@ export function Welcome({
 }) {
   const t = useT();
   const compact = useCompact();
-  const recentSessions = sessions?.filter(s => !s.current).slice(0, 3) ?? [];
+  const recentSessions = sessions?.filter((s) => !s.current).slice(0, 3) ?? [];
 
   return (
     <div className="h-full flex flex-col items-center max-w-2xl mx-auto px-6 overflow-y-auto pt-16">
       {cwdName && (
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full bg-accent-soft border border-accent/20 text-fg-dim ${compact ? "text-[11px]" : "text-[12px]"}`}>
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full bg-accent-soft border border-accent/20 text-fg-dim ${compact ? "text-[11px]" : "text-[12px]"}`}
+        >
           <FolderOpen size={compact ? 12 : 13} className="text-accent" />
           <span className="font-medium text-accent">{cwdName}</span>
           {meta?.label && <span className="text-fg-faint">· {meta.label}</span>}
@@ -113,15 +130,24 @@ export function Welcome({
       )}
 
       <div className="welcome-stagger-1">
-        <img src={logo} className={`rounded-[10px] mb-5 welcome-logo ${compact ? "w-8 h-8" : "w-10 h-10"}`} alt="gaeaW" />
+        <img
+          src={logo}
+          className={`rounded-[10px] mb-5 welcome-logo ${compact ? "w-8 h-8" : "w-10 h-10"}`}
+          alt="gaeaW"
+        />
       </div>
-      <div className={`welcome-stagger-2 text-fg-dim mb-8 text-center ${compact ? "text-[13px]" : "text-[14px]"}`} style={{fontFamily: "var(--ds-font-display)", fontWeight: 500, letterSpacing: "-0.01em"}}>
+      <div
+        className={`welcome-stagger-2 text-fg-dim mb-8 text-center ${compact ? "text-[13px]" : "text-[14px]"}`}
+        style={{ fontFamily: "var(--ds-font-display)", fontWeight: 500, letterSpacing: "-0.01em" }}
+      >
         {t("welcome.tagline")}
       </div>
 
       {/* ── 技能模块网格 ─────────────────────────────────────────────── */}
       <div className="welcome-stagger-3 w-full">
-        <div className={`font-semibold text-fg-faint uppercase tracking-wider mb-3 flex items-center gap-1.5 ${compact ? "text-[10px]" : "text-[11px]"}`}>
+        <div
+          className={`font-semibold text-fg-faint uppercase tracking-wider mb-3 flex items-center gap-1.5 ${compact ? "text-[10px]" : "text-[11px]"}`}
+        >
           <Puzzle size={12} />
           工程技能模块
         </div>
@@ -135,12 +161,20 @@ export function Welcome({
             >
               <div className="flex items-center gap-2 w-full mb-2">
                 <span className="text-accent shrink-0">{skill.icon}</span>
-                <span className={`font-semibold text-fg truncate ${compact ? "text-[12px]" : "text-[13px]"}`}>{skill.name}</span>
-                <span className={`ml-auto text-[10px] text-fg-faint whitespace-nowrap px-1.5 py-0.5 rounded-full bg-bg-soft border border-border-soft ${compact ? "hidden" : ""}`}>
+                <span
+                  className={`font-semibold text-fg truncate ${compact ? "text-[12px]" : "text-[13px]"}`}
+                >
+                  {skill.name}
+                </span>
+                <span
+                  className={`ml-auto text-[10px] text-fg-faint whitespace-nowrap px-1.5 py-0.5 rounded-full bg-bg-soft border border-border-soft ${compact ? "hidden" : ""}`}
+                >
                   {skill.badge}
                 </span>
               </div>
-              <p className={`text-fg-dim leading-relaxed line-clamp-2 ${compact ? "text-[11px]" : "text-[12px]"}`}>
+              <p
+                className={`text-fg-dim leading-relaxed line-clamp-2 ${compact ? "text-[11px]" : "text-[12px]"}`}
+              >
                 {skill.desc}
               </p>
             </button>
@@ -149,14 +183,18 @@ export function Welcome({
       </div>
 
       {/* ── 自由提问提示 ─────────────────────────────────────────────── */}
-      <div className={`welcome-stagger-3 w-full mt-5 px-3 py-2.5 rounded-lg bg-bg-soft border border-border-soft text-fg-faint text-center ${compact ? "text-[11px]" : "text-[12px]"}`}>
+      <div
+        className={`welcome-stagger-3 w-full mt-5 px-3 py-2.5 rounded-lg bg-bg-soft border border-border-soft text-fg-faint text-center ${compact ? "text-[11px]" : "text-[12px]"}`}
+      >
         或直接输入工程问题，开始对话
       </div>
 
       {/* ── 最近会话 ─────────────────────────────────────────────────── */}
       {recentSessions.length > 0 && onResumeSession && (
         <div className="w-full mt-5 pt-4 border-t border-border-soft mb-8">
-          <div className={`font-semibold text-fg-faint uppercase tracking-wider mb-2.5 flex items-center gap-1.5 ${compact ? "text-[10px]" : "text-[11px]"}`}>
+          <div
+            className={`font-semibold text-fg-faint uppercase tracking-wider mb-2.5 flex items-center gap-1.5 ${compact ? "text-[10px]" : "text-[11px]"}`}
+          >
             <Clock size={12} />
             最近会话
           </div>
@@ -169,7 +207,11 @@ export function Welcome({
               >
                 <MessageSquare size={compact ? 12 : 13} className="text-fg-faint shrink-0" />
                 <span className="flex-1 truncate font-medium">{sessionTitle(s, "未命名会话")}</span>
-                <span className={`text-fg-faint shrink-0 ${compact ? "text-[10px]" : "text-[11px]"}`}>{formatTimeAgo(s.modTime)}</span>
+                <span
+                  className={`text-fg-faint shrink-0 ${compact ? "text-[10px]" : "text-[11px]"}`}
+                >
+                  {formatTimeAgo(s.modTime)}
+                </span>
               </button>
             ))}
           </div>

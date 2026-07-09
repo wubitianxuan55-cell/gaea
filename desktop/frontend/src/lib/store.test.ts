@@ -31,8 +31,10 @@ function accBySource(prev: WireUsage | undefined, u: WireUsage): WireUsage {
     totalTokens: prev.totalTokens + u.totalTokens,
     cacheHitTokens: prev.cacheHitTokens + u.cacheHitTokens,
     cacheMissTokens: prev.cacheMissTokens + u.cacheMissTokens,
-    sessionCacheHitTokens: u.sessionCacheHitTokens > 0 ? u.sessionCacheHitTokens : prev.sessionCacheHitTokens,
-    sessionCacheMissTokens: u.sessionCacheMissTokens > 0 ? u.sessionCacheMissTokens : prev.sessionCacheMissTokens,
+    sessionCacheHitTokens:
+      u.sessionCacheHitTokens > 0 ? u.sessionCacheHitTokens : prev.sessionCacheHitTokens,
+    sessionCacheMissTokens:
+      u.sessionCacheMissTokens > 0 ? u.sessionCacheMissTokens : prev.sessionCacheMissTokens,
   };
 }
 
@@ -52,9 +54,13 @@ function emptyAcc(): UsageAcc {
 
 describe("store usage accumulation", () => {
   const mkUsage = (overrides: Partial<WireUsage> = {}): WireUsage => ({
-    promptTokens: 100, completionTokens: 50, totalTokens: 150,
-    cacheHitTokens: 80, cacheMissTokens: 20,
-    sessionCacheHitTokens: 0, sessionCacheMissTokens: 0,
+    promptTokens: 100,
+    completionTokens: 50,
+    totalTokens: 150,
+    cacheHitTokens: 80,
+    cacheMissTokens: 20,
+    sessionCacheHitTokens: 0,
+    sessionCacheMissTokens: 0,
     ...overrides,
   });
 
@@ -87,7 +93,7 @@ describe("store usage accumulation", () => {
       mkUsage({ promptTokens: 500, totalTokens: 600, source: "main" }),
       mkUsage({ promptTokens: 200, totalTokens: 300, source: "main" }),
       mkUsage({ promptTokens: 100, totalTokens: 150, source: "subagent" }),
-      mkUsage({ promptTokens: 50,  totalTokens: 80,  source: "subagent" }),
+      mkUsage({ promptTokens: 50, totalTokens: 80, source: "subagent" }),
     ];
     const acc = events.reduce(applyUsage, emptyAcc());
     expect(acc.combined?.promptTokens).toBe(850);

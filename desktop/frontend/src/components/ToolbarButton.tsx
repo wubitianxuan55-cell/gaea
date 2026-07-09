@@ -13,12 +13,7 @@ export const ToolbarButton = memo(function ToolbarButton({
   children: ReactNode;
 }) {
   return (
-    <button
-      className="toolbar-btn no-drag"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-    >
+    <button className="toolbar-btn no-drag" onClick={onClick} disabled={disabled} title={title}>
       {children}
     </button>
   );

@@ -17,9 +17,7 @@ export const TabButton = memo(function TabButton(p: {
       type="button"
     >
       {p.children}
-      {p.badge > 0 && (
-        <span className="ml-1.5 text-[10px] text-fg-faint">({p.badge})</span>
-      )}
+      {p.badge > 0 && <span className="ml-1.5 text-[10px] text-fg-faint">({p.badge})</span>}
     </button>
   );
 });

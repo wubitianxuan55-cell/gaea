@@ -17,22 +17,23 @@ import type {
   HistoryMessage,
   JobView,
   MCPServerInput,
-  MemoryView,
   MemorySuggestion,
   MemorySuggestionsView,
-  SkillSuggestion,
-  TabMeta,
+  MemoryView,
   Meta,
   ModelInfo,
   ProviderView,
   QuestionAnswer,
   SessionMeta,
   SettingsView,
+  SkillSuggestion,
   SlashArgsResult,
+  TabMeta,
   UpdateInfo,
   UpdateProgress,
   WireEvent,
   WorkspaceView,
+  SpecEntryView,
 } from "./types";
 
 // AppBindings mirrors desktop/app.go's exported method set. Keep in sync by hand
@@ -96,6 +97,9 @@ export interface AppBindings {
   ListDir(rel: string): Promise<DirEntry[]>;
   ReadFile(rel: string): Promise<FilePreview>;
   OpenWorkspacePath(rel: string): Promise<void>;
+  // SearchSpecs searches the built-in specification database and returns
+  // matching entries.
+  SearchSpecs(query: string): Promise<SpecEntryView[]>;
   // WorkspaceChanges returns files modified during this session by the agent.
   WorkspaceChanges(): Promise<WorkspaceChangeView[]>;
   RevealWorkspacePath(rel: string): Promise<void>;
@@ -131,7 +135,12 @@ export interface AppBindings {
   SetPermissionMode(mode: string): Promise<void>;
   AddPermissionRule(list: string, rule: string): Promise<void>;
   RemovePermissionRule(list: string, rule: string): Promise<void>;
-  SetSandbox(bash: string, network: boolean, workspaceRoot: string, allowWrite: string[]): Promise<void>;
+  SetSandbox(
+    bash: string,
+    network: boolean,
+    workspaceRoot: string,
+    allowWrite: string[],
+  ): Promise<void>;
   SetAgentParams(temperature: number, maxSteps: number, systemPrompt: string): Promise<void>;
   // SetPlannerTemperature sets the planner-specific temperature override.
   // 0 means "use the global temperature".
@@ -164,7 +173,13 @@ export interface AppBindings {
   ApplyUpdate(): Promise<void>;
   OpenDownloadPage(): Promise<void>;
   // Window state persistence.
-  SaveWindowState(state: {width:number;height:number;x:number;y:number;maximised:boolean}): Promise<void>;
+  SaveWindowState(state: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    maximised: boolean;
+  }): Promise<void>;
 }
 
 interface WailsRuntime {
@@ -249,11 +264,7 @@ export function openExternal(url: string): void {
   }
 }
 
-import {
-  makeMockApp,
-  mockSubscribe,
-  updaterListeners,
-} from "./mock";
+import { makeMockApp, mockSubscribe, updaterListeners } from "./mock";
 
 // ── compile-time drift check ──────────────────────────────────────────────
 // _CheckGenToApp errors when a generated Go method has no TS counterpart in
@@ -263,4 +274,9 @@ import {
 import type * as GeneratedApp from "../../wailsjs/go/main/App";
 
 type AssertNever<T extends never> = T;
-export type _CheckGenToApp = AssertNever<Exclude<keyof typeof GeneratedApp, keyof AppBindings | "QuitApp" | "ShowWindow" | "SetBypass" | "SetAgentMode" | "PermLevel">>;
+export type _CheckGenToApp = AssertNever<
+  Exclude<
+    keyof typeof GeneratedApp,
+    keyof AppBindings | "QuitApp" | "ShowWindow" | "SetBypass" | "SetAgentMode" | "PermLevel"
+  >
+>;

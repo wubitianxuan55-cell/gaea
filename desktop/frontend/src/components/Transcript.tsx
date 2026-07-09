@@ -10,7 +10,6 @@ import { ErrorCard } from "./ErrorCard";
 import { Welcome } from "./Welcome";
 import { useEntranceAnimation } from "../lib/useEntranceAnimation";
 
-
 // ── 滚动参数 ──────────────────────────────────────────────────────────
 const BOTTOM_THRESHOLD_PX = 80;
 const NOOP_SCROLL = () => {};
@@ -43,14 +42,25 @@ function mergeConsecutiveReasoning(items: Item[]): Item[] {
     let prevIdx = out.length - 1;
     while (prevIdx >= 0) {
       const pi = out[prevIdx];
-      if (pi.kind === "phase" || pi.kind === "notice") { prevIdx--; continue; }
-      if (pi.kind === "tool" && pi.name === "todo_write") { prevIdx--; continue; }
+      if (pi.kind === "phase" || pi.kind === "notice") {
+        prevIdx--;
+        continue;
+      }
+      if (pi.kind === "tool" && pi.name === "todo_write") {
+        prevIdx--;
+        continue;
+      }
       break;
     }
     const prev = prevIdx >= 0 ? out[prevIdx] : null;
     if (
-      prev && prev.kind === "assistant" && it.kind === "assistant" &&
-      !prev.text && !it.text && !prev.streaming && !it.streaming
+      prev &&
+      prev.kind === "assistant" &&
+      it.kind === "assistant" &&
+      !prev.text &&
+      !it.text &&
+      !prev.streaming &&
+      !it.streaming
     ) {
       out[prevIdx] = { ...prev, reasoning: prev.reasoning + "\n\n" + it.reasoning };
     } else {
@@ -61,8 +71,16 @@ function mergeConsecutiveReasoning(items: Item[]): Item[] {
 }
 
 export function Transcript({
-  onPrompt, onRewind, running, onThreadEl, onScrollToTurnReady,
-  cwd, cwdName, sessions, onResumeSession, meta,
+  onPrompt,
+  onRewind,
+  running,
+  onThreadEl,
+  onScrollToTurnReady,
+  cwd,
+  cwdName,
+  sessions,
+  onResumeSession,
+  meta,
 }: {
   onPrompt: (text: string) => void;
   onRewind?: (turn: number, scope: string) => void;
@@ -86,7 +104,9 @@ export function Transcript({
   }, [onThreadEl]);
 
   useEffect(() => {
-    return () => { if (rAF.current !== null) cancelAnimationFrame(rAF.current); };
+    return () => {
+      if (rAF.current !== null) cancelAnimationFrame(rAF.current);
+    };
   }, []);
 
   const [showScrollDown, setShowScrollDown] = useState(false);
@@ -227,7 +247,14 @@ export function Transcript({
     <div className="transcript" ref={scrollRef} onScroll={onScroll}>
       <div className="max-w-[--maxw] mx-auto px-8" ref={entranceRef}>
         {items.length === 0 && (
-          <Welcome onPrompt={onPrompt} cwd={cwd} cwdName={cwdName} sessions={sessions} onResumeSession={onResumeSession} meta={meta} />
+          <Welcome
+            onPrompt={onPrompt}
+            cwd={cwd}
+            cwdName={cwdName}
+            sessions={sessions}
+            onResumeSession={onResumeSession}
+            meta={meta}
+          />
         )}
         <StreamingIndicator running={running} items={items} />
         {grouped.map((g) => {
@@ -252,10 +279,14 @@ export function Transcript({
                   }}
                 >
                   <UserMessage
-                    text={it.text} turn={tn}
+                    text={it.text}
+                    turn={tn}
                     open={tn != null && openTurn === tn}
                     onToggle={() => setOpenTurn((cur) => (cur === tn ? null : (tn ?? null)))}
-                    onRewind={(turn, scope) => { onRewind?.(turn, scope); setOpenTurn(null); }}
+                    onRewind={(turn, scope) => {
+                      onRewind?.(turn, scope);
+                      setOpenTurn(null);
+                    }}
                   />
                 </div>
               );
@@ -275,22 +306,39 @@ export function Transcript({
                 </div>
               );
             case "phase":
-              return <div key={it.id} className="phase">{it.text}</div>;
+              return (
+                <div key={it.id} className="phase">
+                  {it.text}
+                </div>
+              );
             case "notice":
               if (it.level === "warn") {
                 if (dismissedErrors.has(it.id)) return null;
-                return <ErrorCard key={it.id} item={it as Extract<Item, { kind: "notice" }>} onDismiss={(id) => setDismissedErrors((p) => new Set(p).add(id))} />;
+                return (
+                  <ErrorCard
+                    key={it.id}
+                    item={it as Extract<Item, { kind: "notice" }>}
+                    onDismiss={(id) => setDismissedErrors((p) => new Set(p).add(id))}
+                  />
+                );
               }
               if (it.text.startsWith("diagnostics:")) {
                 const clean = it.text.includes("— clean");
                 return (
-                  <div key={it.id} className={`flex items-center gap-1.5 px-4 py-1 text-[11px] ${clean ? "text-ok" : "text-warning"}`}>
+                  <div
+                    key={it.id}
+                    className={`flex items-center gap-1.5 px-4 py-1 text-[11px] ${clean ? "text-ok" : "text-warning"}`}
+                  >
                     <span className="shrink-0">{clean ? "✔" : "⚠"}</span>
                     <span>{it.text}</span>
                   </div>
                 );
               }
-              return <div key={it.id} className="notice">{it.text}</div>;
+              return (
+                <div key={it.id} className="notice">
+                  {it.text}
+                </div>
+              );
             case "compaction":
               return <CompactionCard key={it.id} item={it} />;
             default:
@@ -313,9 +361,6 @@ export function Transcript({
   );
 }
 
-
-
-
 // ── CompactionCard ──────────────────────────────────────────────────
 type CompactionItem = Extract<Item, { kind: "compaction" }>;
 function CompactionCard({ item }: { item: CompactionItem }) {
@@ -329,13 +374,24 @@ function CompactionCard({ item }: { item: CompactionItem }) {
   }
   return (
     <div className="my-1 mx-2 border border-border-soft rounded-lg bg-bg-soft overflow-hidden">
-      <button className="flex items-center gap-2 w-full px-3 py-2 bg-transparent border-0 text-fg-dim text-[12.5px] cursor-pointer hover:bg-bg-elev" onClick={() => setOpen((v) => !v)}>
+      <button
+        className="flex items-center gap-2 w-full px-3 py-2 bg-transparent border-0 text-fg-dim text-[12.5px] cursor-pointer hover:bg-bg-elev"
+        onClick={() => setOpen((v) => !v)}
+      >
         <span className="text-accent text-xs shrink-0">◆</span>
         <span className="font-medium text-fg">Context compacted</span>
-        <span className="text-fg-faint text-[11px] ml-auto">{item.messages} messages · {item.trigger}</span>
-        <span className="text-fg-faint text-[10.5px] underline shrink-0">{open ? "hide summary" : "show summary"}</span>
+        <span className="text-fg-faint text-[11px] ml-auto">
+          {item.messages} messages · {item.trigger}
+        </span>
+        <span className="text-fg-faint text-[10.5px] underline shrink-0">
+          {open ? "hide summary" : "show summary"}
+        </span>
       </button>
-      {open && <pre className="m-0 p-3 bg-bg text-fg-dim text-[11.5px] leading-relaxed whitespace-pre-wrap border-t border-border-soft">{item.summary}</pre>}
+      {open && (
+        <pre className="m-0 p-3 bg-bg text-fg-dim text-[11.5px] leading-relaxed whitespace-pre-wrap border-t border-border-soft">
+          {item.summary}
+        </pre>
+      )}
     </div>
   );
 }

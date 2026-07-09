@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"gaeaW/internal/tool"
 )
+
 
 func init() { tool.RegisterBuiltin(surveyReport{}) }
 
@@ -34,13 +36,15 @@ func (surveyReport) Schema() json.RawMessage {
   "sampling_points":{"type":"integer","description":"采样点数","default":0},
   "client":{"type":"string","description":"委托单位"},
   "survey_company":{"type":"string","description":"调查单位"},
-  "include_toc":{"type":"boolean","description":"是否包含目录框架","default":true}
+  "include_toc":{"type":"boolean","description":"是否包含目录框架","default":true},
+  "output_path":{"type":"string","description":"输出文件路径（可选，指定后写入文件）"},
+  "output_format":{"type":"string","description":"输出格式：md（默认）或 docx"}
 },
 "required":["site_name"]
 }`)
 }
 
-func (surveyReport) ReadOnly() bool { return true }
+func (surveyReport) ReadOnly() bool { return false }
 
 func (surveyReport) CompactDescription() string { return compactDesc["survey_report"] }
 func (surveyReport) CompactSchema() json.RawMessage   { return compactSchema["survey_report"] }
@@ -57,6 +61,8 @@ type surveyInput struct {
 	Client              string   `json:"client,omitempty"`
 	SurveyCompany       string   `json:"survey_company,omitempty"`
 	IncludeTOC          bool     `json:"include_toc,omitempty"`
+	OutputPath         string   `json:"output_path,omitempty"`
+	OutputFormat       string   `json:"output_format,omitempty"`
 }
 
 func (surveyReport) Execute(ctx context.Context, args json.RawMessage) (string, error) {
@@ -224,7 +230,26 @@ func (surveyReport) Execute(ctx context.Context, args json.RawMessage) (string, 
 	}
 
 	fmt.Fprintf(&b, "\n---\n*报告由 gaeaW survey_report 生成，需经专业人员审核。*\n")
-	return tool.WrapText(b.String()), nil
+	body := b.String()
+
+	// 若指定了输出路径，写入文件
+	if p.OutputPath != "" {
+		cleanPath, err := safeOutputPath(p.OutputPath)
+		if err != nil {
+			return "", err
+		}
+		if p.OutputFormat == "docx" {
+			if err := writeDocxFile(cleanPath, "调查报告："+p.SiteName, body); err != nil {
+				return "", fmt.Errorf("写入 docx 文件失败: %w", err)
+			}
+		} else {
+			if err := os.WriteFile(cleanPath, []byte(body), 0644); err != nil {
+				return "", fmt.Errorf("写入文件失败: %w", err)
+			}
+		}
+	}
+
+	return tool.WrapText(body), nil
 }
 
 func orDefault(s, def string) string {

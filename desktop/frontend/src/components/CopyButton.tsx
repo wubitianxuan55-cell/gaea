@@ -42,10 +42,14 @@ async function writeClipboard(value: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(value);
     return;
-  } catch { /* try Wails runtime next */ }
+  } catch {
+    /* try Wails runtime next */
+  }
   try {
     if (typeof window !== "undefined" && (window as any).runtime?.ClipboardSetText?.(value)) return;
-  } catch { /* runtime unavailable */ }
+  } catch {
+    /* runtime unavailable */
+  }
   if (fallbackCopyText(value)) return;
   throw new Error("clipboard unavailable");
 }
@@ -79,7 +83,7 @@ export function CopyButton({
 
   const copy = async () => {
     try {
-      const value = getText ? await getText() : text ?? "";
+      const value = getText ? await getText() : (text ?? "");
       await writeClipboard(value);
       setCopied(true);
       if (timerRef.current != null) window.clearTimeout(timerRef.current);
@@ -104,9 +108,7 @@ export function CopyButton({
       type="button"
     >
       {copied ? <Check size={13} /> : <Copy size={13} />}
-      {showInlineLabel && (
-        <span className="leading-none">{stateLabel}</span>
-      )}
+      {showInlineLabel && <span className="leading-none">{stateLabel}</span>}
     </button>
   );
 }

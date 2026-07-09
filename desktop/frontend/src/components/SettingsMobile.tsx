@@ -30,7 +30,7 @@ export function MobileSection() {
 
   const handleGenerateToken = useCallback(() => {
     const t = Array.from({ length: 32 }, () =>
-      "abcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(Math.random() * 36))
+      "abcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(Math.random() * 36)),
     ).join("");
     setToken(t);
   }, []);
@@ -147,7 +147,8 @@ export function MobileSection() {
             )}
 
             <p className="text-[10px] text-fg-faint leading-relaxed">
-              设置 Token 后所有 HTTP 请求需携带 <code className="bg-bg px-1 rounded">Authorization: Bearer &lt;token&gt;</code> 头。
+              设置 Token 后所有 HTTP 请求需携带{" "}
+              <code className="bg-bg px-1 rounded">Authorization: Bearer &lt;token&gt;</code> 头。
               手机扫码后会自动带上 Token。
             </p>
           </div>
@@ -178,7 +179,12 @@ function getLocalIP(): string {
       pc.onicecandidate = (e) => {
         if (e.candidate) {
           const match = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(e.candidate.candidate);
-          if (match && !match[0].startsWith("127.") && !match[0].startsWith("192.168.") && !match[0].startsWith("10.")) {
+          if (
+            match &&
+            !match[0].startsWith("127.") &&
+            !match[0].startsWith("192.168.") &&
+            !match[0].startsWith("10.")
+          ) {
             // Prefer non-private IPs first, but LAN is fine
           }
           if (match) {

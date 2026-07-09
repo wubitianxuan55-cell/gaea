@@ -1,4 +1,25 @@
 
+## v0.13.0 (2026-07-18)
+
+### 新增
+
+- **工程办公工程工具测试**：为 spec_query、spec_judge、survey_report、cost_estimate 四个核心工具编写 16 个测试用例，覆盖正常路径、边界条件和错误输入（`internal/tool/builtin/{spec_query_test,spec_judge_test,survey_report_test,cost_estimate_test}.go`）
+- **规范数据外部化**：将 specIndex 中 16 条硬编码规范条文迁移到 specdata/ 目录的 3 个 JSON 文件（GB36600-2018 / GB15618-2018 / HJ25），使用 go:embed 嵌入二进制。新增 loadSpecs() 支持用户自定义 ~/.gaeaW/specs/ 目录覆盖（`internal/tool/builtin/{spec_query,load_specs}.go`, `internal/tool/builtin/specdata/`）
+- **报告生成打通文件输出**：survey_report、cost_estimate、bid_proposal 三个工具新增 output_path 和 output_format 参数，支持写入 .md 或 .docx 文件。创建 writeDocxFile 和 safeOutputPath 共享辅助函数（`internal/tool/builtin/{survey_report,cost_estimate,bid_proposal,docx_helper,safe_output}.go`）
+- **规范浏览器 SpecPanel**：后端导出 SearchSpecs 检索函数并添加 Wails 绑定，前端创建 SpecPanel 组件（搜索框+分类筛选+结果列表），App.tsx tab 系统新增"规范"标签（`desktop/app_meta.go`, `desktop/frontend/src/components/SpecPanel.tsx`, `desktop/frontend/src/App.tsx`）
+- **报告面板升级**：ReportPreviewPanel 重写，新增内联文件预览（app.ReadFile）、3 个快捷生成按钮（场地调查/成本测算/投标方案）、列表/预览模式切换（`desktop/frontend/src/components/ReportPreviewPanel.tsx`）
+- **风险筛查计算器 contam_check**：内建 GB 36600-2018 和 GB 15618-2018 标准数据库，输入检测数据输出超标判定报告（`internal/tool/builtin/contam_check.go`）
+- **健康风险评估计算器 risk_calc**：实现 HJ 25.3-2019 三个暴露途径公式（经口摄入/皮肤接触/吸入颗粒物），计算致癌风险 CR 和危害指数 HQ，内建 8 种污染物毒性参数（`internal/tool/builtin/risk_calc.go`）
+- **采样方案生成器 sampling_plan**：基于 HJ 25.1-2019 布点规则，输入场地参数输出结构化布点方案，含网格坐标和深度建议（`internal/tool/builtin/sampling_plan.go`）
+- **docx_write 测试覆盖**：为已有 docx_write 工具补充 word/_rels/document.xml.rels 并编写 3 个测试用例（`internal/tool/builtin/{docx_write_test,docx_read}.go`）
+- **[office] 死配置修复**：新增 OfficeConfig 结构体（DefaultTemplateDir/SpecLibraryDir/UnitSystem/CalcPrecision），template_engine.go 通过 SetOfficeConfig 注入读取配置值（`internal/config/config.go`, `internal/tool/builtin/template_engine.go`）
+- **前端工程化**：接入 ESLint（TypeScript + React Hooks flat config）+ Prettier，添加 lint/format 脚本。升级 vitest 配置支持 jsdom 环境组件测试（`desktop/frontend/{eslint.config.js,.prettierrc,vitest.config.ts}`）
+
+### 测试
+
+- Go 后端测试：32 个测试全部通过（含 16 个新工程工具测试 + 3 个 docx_write + 5 个文件输出 + 4 个 contam_check + 4 个 risk_calc + 4 个 sampling_plan）
+- 前端测试：39 个测试全部通过（含 3 个 ReportPreviewPanel + 2 个 SpecPanel）
+
 ## v0.12.0 (2026-07-10)
 
 ### 新增

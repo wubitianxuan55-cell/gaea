@@ -1,9 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
-  SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH,
-  clampSidebarWidth, loadSidebarCollapsed, saveSidebarCollapsed,
-  loadSidebarWidth, saveSidebarWidth,
+  SIDEBAR_COLLAPSED_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  clampSidebarWidth,
+  loadSidebarCollapsed,
+  saveSidebarCollapsed,
+  loadSidebarWidth,
+  saveSidebarWidth,
 } from "./useLayoutSizes";
 
 export function useSidebar() {
@@ -77,28 +82,38 @@ export function useSidebar() {
 
   // Preview mode: auto-collapse sidebar to make room, but allow manual re-expand.
   // On preview exit, restore to the remembered collapse state.
-  const handleWorkspacePreviewModeChange = useCallback((active: boolean) => {
-    if (active) {
-      if (sidebarBeforeRef.current === null) sidebarBeforeRef.current = sidebarCollapsed;
-      if (!sidebarCollapsed) {
-        setSidebarCollapsed(true);
-        saveSidebarCollapsed(true);
+  const handleWorkspacePreviewModeChange = useCallback(
+    (active: boolean) => {
+      if (active) {
+        if (sidebarBeforeRef.current === null) sidebarBeforeRef.current = sidebarCollapsed;
+        if (!sidebarCollapsed) {
+          setSidebarCollapsed(true);
+          saveSidebarCollapsed(true);
+        }
+      } else {
+        const restore = sidebarBeforeRef.current;
+        sidebarBeforeRef.current = null;
+        if (restore !== null && restore !== sidebarCollapsed) {
+          setSidebarCollapsed(restore);
+          saveSidebarCollapsed(restore);
+        }
       }
-    } else {
-      const restore = sidebarBeforeRef.current;
-      sidebarBeforeRef.current = null;
-      if (restore !== null && restore !== sidebarCollapsed) {
-        setSidebarCollapsed(restore);
-        saveSidebarCollapsed(restore);
-      }
-    }
-  }, [sidebarCollapsed]);
+    },
+    [sidebarCollapsed],
+  );
 
   return {
-    sidebarCollapsed, sidebarWidth, sidebarResizing, effectiveSidebarWidth,
+    sidebarCollapsed,
+    sidebarWidth,
+    sidebarResizing,
+    effectiveSidebarWidth,
     sidebarWidthRef,
-    toggleSidebar, setExpandedSidebarWidth, startSidebarResize,
-    resizeSidebarWithKeyboard, handleWorkspacePreviewModeChange,
-    setSidebarWidth, setSidebarCollapsed,
+    toggleSidebar,
+    setExpandedSidebarWidth,
+    startSidebarResize,
+    resizeSidebarWithKeyboard,
+    handleWorkspacePreviewModeChange,
+    setSidebarWidth,
+    setSidebarCollapsed,
   };
 }

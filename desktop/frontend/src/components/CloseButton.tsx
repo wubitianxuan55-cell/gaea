@@ -6,11 +6,7 @@ import { useT } from "../lib/i18n";
 export const CloseButton = memo(function CloseButton({ onClick }: { onClick: () => void }) {
   const t = useT();
   return (
-    <button
-      className="close-btn no-drag"
-      onClick={onClick}
-      title={t("common.close")}
-    >
+    <button className="close-btn no-drag" onClick={onClick} title={t("common.close")}>
       <X size={15} />
     </button>
   );

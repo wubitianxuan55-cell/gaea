@@ -79,7 +79,12 @@ export function diffsFor(name: string, args: string): ToolDiff[] {
     (a.edits as unknown[]).forEach((e, i) => {
       const step = e as Record<string, unknown>;
       if (typeof step?.old_string === "string" && typeof step?.new_string === "string") {
-        out.push({ original: step.old_string, modified: step.new_string, lang, label: `edit ${i + 1}` });
+        out.push({
+          original: step.old_string,
+          modified: step.new_string,
+          lang,
+          label: `edit ${i + 1}`,
+        });
       }
     });
     return out;
@@ -138,7 +143,11 @@ function countOf(n: number, one: DictKey, other: DictKey): string {
 // wraps around web_fetch/web_search results, returning the real output text.
 function extractOutputFromEnvelope(output: string): string {
   try {
-    const env = JSON.parse(output) as { ok?: boolean; data?: { result?: string }; message?: string };
+    const env = JSON.parse(output) as {
+      ok?: boolean;
+      data?: { result?: string };
+      message?: string;
+    };
     if (env.ok && env.data?.result) return env.data.result;
     if (env.ok && env.message) return env.message;
   } catch {}
@@ -157,7 +166,7 @@ export function summarize(name: string, args: string, output?: string, error?: s
     case "edit_lines": {
       const start = typeof a.start_line === "number" ? a.start_line : 0;
       const end = typeof a.end_line === "number" ? a.end_line : 0;
-      
+
       const newLineCount = typeof a.new_content === "string" ? lineCount(a.new_content) : 0;
       return `L${start}-${end} → ${countOf(newLineCount, "tool.lineOne", "tool.lineOther")}`;
     }
@@ -198,7 +207,7 @@ export function summarize(name: string, args: string, output?: string, error?: s
       return countOf(nonEmptyLines(output), "tool.entryOne", "tool.entryOther");
     case "web_fetch": {
       const text = extractOutputFromEnvelope(output);
-      const lines = text.split("\n").filter(l => !l.startsWith("status "));
+      const lines = text.split("\n").filter((l) => !l.startsWith("status "));
       const first = lines[0] || "";
       return first.slice(0, 80);
     }
@@ -208,7 +217,9 @@ export function summarize(name: string, args: string, output?: string, error?: s
       return count > 0 ? countOf(count, "tool.resultOne", "tool.resultOther") : "";
     }
     case "bash":
-      return output.trim() === "" ? t("tool.noOutput") : countOf(lineCount(output), "tool.lineOne", "tool.lineOther");
+      return output.trim() === ""
+        ? t("tool.noOutput")
+        : countOf(lineCount(output), "tool.lineOne", "tool.lineOther");
     default:
       return "";
   }

@@ -1,12 +1,5 @@
 import { memo, useMemo, useRef, useState } from "react";
-import {
-  Ban,
-  Check,
-  ChevronRight,
-  Loader2,
-  X,
-} from "lucide-react";
-
+import { Ban, Check, ChevronRight, Loader2, X } from "lucide-react";
 
 import { ICONS, mcpOr } from "./tool_icons";
 import { useT } from "../lib/i18n";
@@ -25,14 +18,27 @@ function pretty(json: string): string {
   }
 }
 
-function StatusGlyph({ status, recoverable }: { status: ToolItem["status"]; recoverable?: boolean }) {
+function StatusGlyph({
+  status,
+  recoverable,
+}: {
+  status: ToolItem["status"];
+  recoverable?: boolean;
+}) {
   if (status === "running") return <Loader2 className="animate-spin" size={12} />;
-  if (status === "error") return <X className={recoverable ? "text-fg-faint/60" : "text-err"} size={12} />;
+  if (status === "error")
+    return <X className={recoverable ? "text-fg-faint/60" : "text-err"} size={12} />;
   if (status === "stopped") return <Ban className="text-fg-faint" size={12} />;
   return <Check className="text-ok" size={12} />;
 }
 
-export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolItem; subcalls?: ToolItem[] }) {
+export const ToolCard = memo(function ToolCard({
+  item,
+  subcalls,
+}: {
+  item: ToolItem;
+  subcalls?: ToolItem[];
+}) {
   const t = useT();
   const compact = useCompact();
   const diffs = useMemo(() => diffsFor(item.name, item.args), [item.name, item.args]);
@@ -57,8 +63,7 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
   const bodyRef = useRef<HTMLDivElement>(null);
   useGSAPCollapse(bodyRef, open && expandable);
 
-  const quiet =
-    item.readOnly && !hasNested && item.status !== "error" && item.status !== "stopped";
+  const quiet = item.readOnly && !hasNested && item.status !== "error" && item.status !== "stopped";
 
   const outputLines = item.output ? item.output.split("\n").length : 0;
 
@@ -71,14 +76,35 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
   const innerPb = compact ? "pb-1" : "pb-1.5";
 
   return (
-    <div className={`my-px rounded-md overflow-hidden border transition-colors duration-300 ${
-      item.status === "error" && !item.recoverable ? "border-err/40" :
-      item.status === "error" && item.recoverable ? "border-fg-faint/30" :
-      item.status === "running" ? "border-accent/30 bg-accent/[0.02] shadow-[0_0_6px_var(--accent-soft)]" :
-      item.status === "stopped" ? "border-border-soft opacity-70" :
-      "border-border-soft"
-    } ${quiet ? "border-transparent bg-transparent" : ""}`}
-    style={item.status === "error" && !item.recoverable ? {background: "var(--ds-danger-soft)"} : undefined} data-tone={item.status === "error" && !item.recoverable ? "danger" : item.status === "running" ? "info" : item.status === "done" ? "success" : item.status === "stopped" ? "warning" : undefined}>
+    <div
+      className={`my-px rounded-md overflow-hidden border transition-colors duration-300 ${
+        item.status === "error" && !item.recoverable
+          ? "border-err/40"
+          : item.status === "error" && item.recoverable
+            ? "border-fg-faint/30"
+            : item.status === "running"
+              ? "border-accent/30 bg-accent/[0.02] shadow-[0_0_6px_var(--accent-soft)]"
+              : item.status === "stopped"
+                ? "border-border-soft opacity-70"
+                : "border-border-soft"
+      } ${quiet ? "border-transparent bg-transparent" : ""}`}
+      style={
+        item.status === "error" && !item.recoverable
+          ? { background: "var(--ds-danger-soft)" }
+          : undefined
+      }
+      data-tone={
+        item.status === "error" && !item.recoverable
+          ? "danger"
+          : item.status === "running"
+            ? "info"
+            : item.status === "done"
+              ? "success"
+              : item.status === "stopped"
+                ? "warning"
+                : undefined
+      }
+    >
       <div
         className={`flex items-center gap-1.5 ${rowPx} ${rowPy} text-fg-dim ${fontSize} select-none ${
           expandable ? "cursor-pointer hover:bg-bg-soft" : ""
@@ -97,15 +123,13 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
           className={`shrink-0 ${item.status === "error" && !item.recoverable ? "text-err" : item.status === "error" && item.recoverable ? "text-fg-faint/60" : item.status === "running" ? "text-accent" : "text-fg-faint"}`}
           size={chevronSize + 2}
         />
-        <span className={`font-mono font-medium truncate ${item.status === "error" && !item.recoverable ? "text-err" : item.status === "error" && item.recoverable ? "text-fg-dim/60 line-through" : "text-fg"} ${compact ? "text-[11px]" : "text-[12px]"}`}>
+        <span
+          className={`font-mono font-medium truncate ${item.status === "error" && !item.recoverable ? "text-err" : item.status === "error" && item.recoverable ? "text-fg-dim/60 line-through" : "text-fg"} ${compact ? "text-[11px]" : "text-[12px]"}`}
+        >
           {item.name}
         </span>
-        {subject && (
-          <span className={`text-fg-faint truncate ${summarySize}`}>{subject}</span>
-        )}
-        {summary && (
-          <span className={`text-fg-faint italic ml-0.5 ${summarySize}`}>{summary}</span>
-        )}
+        {subject && <span className={`text-fg-faint truncate ${summarySize}`}>{subject}</span>}
+        {summary && <span className={`text-fg-faint italic ml-0.5 ${summarySize}`}>{summary}</span>}
         <span className="ml-auto shrink-0">
           <StatusGlyph status={item.status} recoverable={item.recoverable} />
         </span>
@@ -115,8 +139,14 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
         <div>
           {diffs.map((d, i) => (
             <div className={`${innerPx} ${innerPb}`} key={i}>
-              {d.label && <div className="text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">{d.label}</div>}
-              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{d.original}</code></pre>
+              {d.label && (
+                <div className="text-[10px] text-fg-faint uppercase tracking-wider mb-0.5">
+                  {d.label}
+                </div>
+              )}
+              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim">
+                <code>{d.original}</code>
+              </pre>
             </div>
           ))}
 
@@ -130,13 +160,21 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
 
           {hasArgs && (
             <div className={`${innerPx} ${innerPb}`}>
-              {item.args && <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{pretty(item.args)}</code></pre>}
+              {item.args && (
+                <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim">
+                  <code>{pretty(item.args)}</code>
+                </pre>
+              )}
             </div>
           )}
           {hasOutput && (
             <div className={`${innerPx} ${innerPb}`}>
-              <div className="text-[9px] text-fg-faint/60 uppercase tracking-wider mb-0.5 select-none">输出 · {outputLines}L</div>
-              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim"><code>{item.output}</code></pre>
+              <div className="text-[9px] text-fg-faint/60 uppercase tracking-wider mb-0.5 select-none">
+                输出 · {outputLines}L
+              </div>
+              <pre className="px-3 py-2 font-mono text-[12px] leading-[1.5] overflow-auto whitespace-pre bg-bg-soft border border-border-soft rounded text-fg-dim">
+                <code>{item.output}</code>
+              </pre>
               {item.truncated && (
                 <div className="mt-1 px-2 py-0.5 border border-border-soft rounded bg-bg-soft text-fg-dim text-[11px]">
                   {t("tool.truncated")}
@@ -146,12 +184,16 @@ export const ToolCard = memo(function ToolCard({ item, subcalls }: { item: ToolI
           )}
 
           {item.error && !item.recoverable && (
-            <div className={`${innerPx} py-1 text-err text-[12px] leading-snug border-t border-err/20`}>
+            <div
+              className={`${innerPx} py-1 text-err text-[12px] leading-snug border-t border-err/20`}
+            >
               {item.error}
             </div>
           )}
           {item.error && item.recoverable && (
-            <div className={`${innerPx} py-1 text-fg-faint/60 text-[12px] leading-snug border-t border-fg-faint/15`}>
+            <div
+              className={`${innerPx} py-1 text-fg-faint/60 text-[12px] leading-snug border-t border-fg-faint/15`}
+            >
               {item.error}
             </div>
           )}

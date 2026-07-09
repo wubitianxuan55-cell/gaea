@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"gaeaW/internal/tool"
@@ -38,12 +39,14 @@ func (costEstimate) Schema() json.RawMessage {
   "overhead_rate":{"type":"number","description":"管理费比例(%)","default":10},
   "profit_rate":{"type":"number","description":"利润率(%)","default":8},
   "tax_rate":{"type":"number","description":"税率(%)","default":6}
+  "output_path":{"type":"string","description":"输出文件路径（可选，指定后写入文件）"},
+  "output_format":{"type":"string","description":"输出格式：md（默认）或 docx"}
 },
 "required":["project_name","soil_volume","tech_type"]
 }`)
 }
 
-func (costEstimate) ReadOnly() bool { return true }
+func (costEstimate) ReadOnly() bool { return false }
 
 func (costEstimate) CompactDescription() string { return compactDesc["cost_estimate"] }
 func (costEstimate) CompactSchema() json.RawMessage   { return compactSchema["cost_estimate"] }
@@ -64,6 +67,8 @@ type costInput struct {
 	OverheadRate     float64 `json:"overhead_rate,omitempty"`
 	ProfitRate       float64 `json:"profit_rate,omitempty"`
 	TaxRate          float64 `json:"tax_rate,omitempty"`
+	OutputPath       string  `json:"output_path,omitempty"`
+	OutputFormat     string  `json:"output_format,omitempty"`
 }
 
 type costItem struct {
@@ -140,7 +145,26 @@ func (costEstimate) Execute(ctx context.Context, args json.RawMessage) (string, 
 	fmt.Fprintf(&b, "| **总计** | **%.2f** | **100%%** |\n", total)
 	fmt.Fprintf(&b, "\n| 单位方量成本 | **%.2f 元/m3** |\n", total/p.SoilVolume)
 
-	return tool.WrapText(b.String()), nil
+	body := b.String()
+
+	// 若指定了输出路径，写入文件
+	if p.OutputPath != "" {
+		cleanPath, err := safeOutputPath(p.OutputPath)
+		if err != nil {
+			return "", err
+		}
+		if p.OutputFormat == "docx" {
+			if err := writeDocxFile(cleanPath, "成本测算："+p.ProjectName, body); err != nil {
+				return "", fmt.Errorf("写入 docx 文件失败: %w", err)
+			}
+		} else {
+			if err := os.WriteFile(cleanPath, []byte(body), 0644); err != nil {
+				return "", fmt.Errorf("写入文件失败: %w", err)
+			}
+		}
+	}
+
+	return tool.WrapText(body), nil
 }
 
 func estimateCosts(tech string, p costInput) []costItem {

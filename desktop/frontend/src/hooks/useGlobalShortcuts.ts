@@ -29,10 +29,7 @@ export function useGlobalShortcuts(deps: ShortcutDeps) {
       const ke = e as globalThis.KeyboardEvent;
       const mod = ke.ctrlKey || ke.metaKey,
         t = ke.target as HTMLElement;
-      const inInput =
-        t.tagName === "INPUT" ||
-        t.tagName === "TEXTAREA" ||
-        t.isContentEditable;
+      const inInput = t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable;
       if (ke.key === "Escape" && !inInput && !deps.running) {
         if (deps.capsOpen) {
           ke.preventDefault();

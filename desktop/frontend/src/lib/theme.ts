@@ -36,12 +36,12 @@ function normalizeTheme(value: unknown): Theme | null {
     case "midnight":
     case "neon":
     case "mono":
-    case "ice":       // 冰蓝 → slate（相近的暗冷色）
-    case "forest":    // 森林 → slate（暗色默认）
+    case "ice": // 冰蓝 → slate（相近的暗冷色）
+    case "forest": // 森林 → slate（暗色默认）
       return "slate";
     case "light":
     case "focus":
-    case "warm":      // 暖色 → sand（相近的暖亮色）
+    case "warm": // 暖色 → sand（相近的暖亮色）
       return "sand";
     default:
       return null;

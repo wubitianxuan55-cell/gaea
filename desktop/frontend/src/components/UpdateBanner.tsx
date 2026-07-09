@@ -27,7 +27,9 @@ export function UpdateBanner() {
       return (
         <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">
           <span className="font-medium">{t("updater.available", { v: info.latest })}</span>
-          {!info.canSelfUpdate && <span className="text-fg-dim text-[11.5px]">{t("updater.macHint")}</span>}
+          {!info.canSelfUpdate && (
+            <span className="text-fg-dim text-[11.5px]">{t("updater.macHint")}</span>
+          )}
           <span className="flex-1" />
           <button className="px-2.5 py-1 text-xs" onClick={() => apply(info)}>
             {info.canSelfUpdate ? t("updater.installNow") : t("updater.goToDownload")}
@@ -46,16 +48,32 @@ export function UpdateBanner() {
             {t("updater.downloading", { done: mb(status.received), total: mb(status.total), pct })}
           </span>
           <span className="flex-1" />
-          <progress className="w-[180px] h-2 accent-accent" value={status.received} max={status.total || undefined} />
+          <progress
+            className="w-[180px] h-2 accent-accent"
+            value={status.received}
+            max={status.total || undefined}
+          />
         </div>
       );
     }
     case "verifying":
-      return <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">{t("updater.verifying")}</div>;
+      return (
+        <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">
+          {t("updater.verifying")}
+        </div>
+      );
     case "applying":
-      return <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">{t("updater.applying")}</div>;
+      return (
+        <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">
+          {t("updater.applying")}
+        </div>
+      );
     case "done":
-      return <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">{t("updater.done")}</div>;
+      return (
+        <div className="shrink-0 px-4 py-2 text-[12.5px] flex items-center gap-2.5 bg-accent-soft text-fg border-b border-border-soft">
+          {t("updater.done")}
+        </div>
+      );
     case "error":
       // 自动更新检查失败时静默（网络波动不打扰用户），手动检查在 Settings 面板中显示错误。
       return null;

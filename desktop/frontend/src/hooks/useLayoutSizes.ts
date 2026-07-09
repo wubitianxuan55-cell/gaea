@@ -77,7 +77,11 @@ export function saveSidebarWidth(width: number): void {
 }
 
 export function loadWorkspacePanelWidth(): number {
-  return loadLayoutSize("workspacePanelWidth", WORKSPACE_PANEL_DEFAULT_WIDTH, clampWorkspacePanelWidth);
+  return loadLayoutSize(
+    "workspacePanelWidth",
+    WORKSPACE_PANEL_DEFAULT_WIDTH,
+    clampWorkspacePanelWidth,
+  );
 }
 
 export function saveWorkspacePanelWidth(width: number): void {

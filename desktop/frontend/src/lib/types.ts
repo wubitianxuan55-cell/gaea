@@ -428,11 +428,21 @@ export interface TabMeta {
 export interface TraceStep {
   id: string;
   turnTimestamp: number; // 所属回合开始时间戳
-  seq: number;           // 步骤序号（递增）
+  seq: number; // 步骤序号（递增）
   type: "phase" | "tool" | "thinking" | "decision" | "compaction";
-  timestamp: number;     // 事件发生时间戳（ms）
-  label: string;         // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
-  detail?: string;       // 详细内容（展开时显示）
-  status?: "pending" | "running" | "done" | "error";  // 当前状态
-  duration?: number;     // 耗时（ms，完成时设置）
+  timestamp: number; // 事件发生时间戳（ms）
+  label: string; // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
+  detail?: string; // 详细内容（展开时显示）
+  status?: "pending" | "running" | "done" | "error"; // 当前状态
+  duration?: number; // 耗时（ms，完成时设置）
+}
+
+// SpecEntryView is the frontend representation of a specification entry.
+export interface SpecEntryView {
+  code: string;
+  clause: string;
+  title: string;
+  category: string;
+  content: string;
+  explanation: string;
 }

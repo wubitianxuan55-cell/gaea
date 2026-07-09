@@ -100,10 +100,20 @@ export function PlanCard({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
-      if (e.key === "1") { e.preventDefault(); handleSubmit(); }
-      if (e.key === "2") { e.preventDefault(); submit("取消"); }
-      if (e.key === "3") { e.preventDefault(); setChatOnly(v => !v); }
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable)
+        return;
+      if (e.key === "1") {
+        e.preventDefault();
+        handleSubmit();
+      }
+      if (e.key === "2") {
+        e.preventDefault();
+        submit("取消");
+      }
+      if (e.key === "3") {
+        e.preventDefault();
+        setChatOnly((v) => !v);
+      }
       if (e.key === "Enter" && !e.shiftKey && note.trim()) {
         e.preventDefault();
         handleSubmit();
@@ -140,9 +150,7 @@ export function PlanCard({
         className="relative flex flex-col gap-0 w-full max-w-xl max-h-[88vh] bg-bg-elev border border-border rounded-xl animate-[scaleIn_.2s_ease-out] pointer-events-auto"
         style={{
           boxShadow: "var(--ds-shadow-panel)",
-          ...(pos
-            ? { position: "absolute", left: pos.x, top: pos.y }
-            : { visibility: "hidden" })
+          ...(pos ? { position: "absolute", left: pos.x, top: pos.y } : { visibility: "hidden" }),
         }}
       >
         {/* 拖拽手柄 */}

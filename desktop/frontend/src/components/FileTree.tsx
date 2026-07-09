@@ -9,7 +9,26 @@ function fileIcon(name: string, isDir: boolean) {
   const ext = name.split(".").pop()?.toLowerCase();
   if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext ?? ""))
     return <Image size={14} className="text-fg-dim shrink-0" />;
-  if (["md", "txt", "json", "toml", "yaml", "yml", "csv", "xml", "html", "css", "js", "ts", "tsx", "jsx", "go", "py"].includes(ext ?? ""))
+  if (
+    [
+      "md",
+      "txt",
+      "json",
+      "toml",
+      "yaml",
+      "yml",
+      "csv",
+      "xml",
+      "html",
+      "css",
+      "js",
+      "ts",
+      "tsx",
+      "jsx",
+      "go",
+      "py",
+    ].includes(ext ?? "")
+  )
     return <FileText size={14} className="text-fg-dim shrink-0" />;
   return <File size={14} className="text-fg-faint shrink-0" />;
 }
@@ -25,7 +44,9 @@ export function FileTree({
 }) {
   return (
     <div className="flex flex-col h-full text-[12px]">
-      <div className="px-2 py-1.5 text-fg-faint text-[10px] font-semibold uppercase tracking-wider">文件</div>
+      <div className="px-2 py-1.5 text-fg-faint text-[10px] font-semibold uppercase tracking-wider">
+        文件
+      </div>
       <div className="flex-1 overflow-y-auto">
         <DirNode
           relPath=""
@@ -67,8 +88,11 @@ function DirNode({
     try {
       const es = await app.ListDir(relPath);
       setEntries(es ?? []);
-    } catch { setEntries([]); }
-    finally { setLoading(false); }
+    } catch {
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
   }, [relPath]);
 
   useEffect(() => {
@@ -89,9 +113,12 @@ function DirNode({
         style={{ paddingLeft: `${8 + depth * 14}px` }}
         onClick={toggle}
       >
-        {!isRoot && (
-          open ? <ChevronDown size={10} className="shrink-0 text-fg-faint" /> : <ChevronRight size={10} className="shrink-0 text-fg-faint" />
-        )}
+        {!isRoot &&
+          (open ? (
+            <ChevronDown size={10} className="shrink-0 text-fg-faint" />
+          ) : (
+            <ChevronRight size={10} className="shrink-0 text-fg-faint" />
+          ))}
         {fileIcon(name, true)}
         <span className="truncate flex-1">{name}</span>
         {loading && <span className="text-fg-faint text-[9px]">⋯</span>}
@@ -130,7 +157,10 @@ function DirNode({
               );
             })}
           {entries.length === 0 && (
-            <div className="text-fg-faint/40 text-[10px] text-center py-2" style={{ paddingLeft: `${22 + (depth + 1) * 14}px` }}>
+            <div
+              className="text-fg-faint/40 text-[10px] text-center py-2"
+              style={{ paddingLeft: `${22 + (depth + 1) * 14}px` }}
+            >
               空目录
             </div>
           )}

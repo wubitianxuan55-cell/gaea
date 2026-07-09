@@ -9,20 +9,37 @@ export function SandboxSection({ s, busy, apply }: SectionProps) {
   const sb = s.sandbox;
   const [root, setRoot] = useState(sb.workspaceRoot);
   const set = (next: Partial<typeof sb>) =>
-    apply(() => app.SetSandbox(next.bash ?? sb.bash, next.network ?? sb.network, next.workspaceRoot ?? sb.workspaceRoot, next.allowWrite ?? sb.allowWrite));
+    apply(() =>
+      app.SetSandbox(
+        next.bash ?? sb.bash,
+        next.network ?? sb.network,
+        next.workspaceRoot ?? sb.workspaceRoot,
+        next.allowWrite ?? sb.allowWrite,
+      ),
+    );
 
   return (
     <section className="mb-3">
       <div className="text-fg text-sm font-semibold">{t("settings.sandboxTitle")}</div>
       <div className="flex items-center gap-3 mb-2.5">
         <label className="text-fg-dim text-[13px] shrink-0">{t("settings.bashSandbox")}</label>
-        <select className="bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent flex-1 min-w-0" value={sb.bash} disabled={busy} onChange={(e) => void set({ bash: e.target.value })}>
+        <select
+          className="bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent flex-1 min-w-0"
+          value={sb.bash}
+          disabled={busy}
+          onChange={(e) => void set({ bash: e.target.value })}
+        >
           <option value="enforce">{t("settings.bashEnforce")}</option>
           <option value="off">{t("settings.bashOff")}</option>
         </select>
       </div>
       <label className="flex items-center gap-2 text-fg-dim text-[13px] cursor-pointer">
-        <input type="checkbox" checked={sb.network} disabled={busy} onChange={(e) => void set({ network: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={sb.network}
+          disabled={busy}
+          onChange={(e) => void set({ network: e.target.checked })}
+        />
         {t("settings.allowNetwork")}
       </label>
       <div className="flex items-center gap-3 mb-2.5">

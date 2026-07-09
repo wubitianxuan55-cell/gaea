@@ -8,7 +8,11 @@ interface Props {
   scrollToTurn?: (turn: number) => void;
 }
 
-interface TurnEntry { turn: number; text: string; id: string; }
+interface TurnEntry {
+  turn: number;
+  text: string;
+  id: string;
+}
 
 /**
  * MessageNavigator — 右侧面板「消息」标签页。
@@ -45,25 +49,33 @@ export function MessageNavigator({ items, scrollToTurn }: Props) {
   }, [active]);
 
   // ── 跳转到指定轮次 ──
-  const scrollTo = useCallback((turn: number) => {
-    setActive(turn);
-    scrollToTurn?.(turn);
-  }, [scrollToTurn]);
+  const scrollTo = useCallback(
+    (turn: number) => {
+      setActive(turn);
+      scrollToTurn?.(turn);
+    },
+    [scrollToTurn],
+  );
 
   // ── 键盘导航 ──
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (turns.length <= 1) return;
-    const idx = active !== null ? turns.findIndex(t => t.turn === active) : -1;
-    let next: number | null = null;
-    if (e.key === "ArrowDown")      next = Math.min(turns.length - 1, idx + 1);
-    else if (e.key === "ArrowUp")   next = Math.max(0, idx - 1);
-    else if (e.key === "Home")      next = 0;
-    else if (e.key === "End")       next = turns.length - 1;
-    else if (e.key === "Enter")     { if (active !== null) scrollTo(active); return; }
-    else return;
-    e.preventDefault();
-    if (next !== null) scrollTo(turns[next].turn);
-  }, [active, turns, scrollTo]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (turns.length <= 1) return;
+      const idx = active !== null ? turns.findIndex((t) => t.turn === active) : -1;
+      let next: number | null = null;
+      if (e.key === "ArrowDown") next = Math.min(turns.length - 1, idx + 1);
+      else if (e.key === "ArrowUp") next = Math.max(0, idx - 1);
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = turns.length - 1;
+      else if (e.key === "Enter") {
+        if (active !== null) scrollTo(active);
+        return;
+      } else return;
+      e.preventDefault();
+      if (next !== null) scrollTo(turns[next].turn);
+    },
+    [active, turns, scrollTo],
+  );
 
   // ── 截取首行文字作为预览 ──
   const preview = (text: string, maxLen = 72): string => {
@@ -102,19 +114,33 @@ export function MessageNavigator({ items, scrollToTurn }: Props) {
               role="button"
               tabIndex={-1}
               onClick={() => scrollTo(item.turn)}
-              onKeyDown={(e) => { if (e.key === "Enter") scrollTo(item.turn); }}
-              className={"flex items-start gap-2.5 px-3 py-1.5 cursor-pointer transition-[background,border-color] border-l-[3px] " +
-                (isActive ? "border-l-accent bg-accent-soft/60" : "border-l-transparent hover:bg-bg-soft")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") scrollTo(item.turn);
+              }}
+              className={
+                "flex items-start gap-2.5 px-3 py-1.5 cursor-pointer transition-[background,border-color] border-l-[3px] " +
+                (isActive
+                  ? "border-l-accent bg-accent-soft/60"
+                  : "border-l-transparent hover:bg-bg-soft")
+              }
               title={item.text.slice(0, 200)}
             >
               {/* 轮次编号 */}
-              <span className={"shrink-0 w-7 text-right font-mono text-[10px] tabular-nums leading-[1.5] " +
-                (isActive ? "text-accent font-semibold" : "text-fg-faint")}>
+              <span
+                className={
+                  "shrink-0 w-7 text-right font-mono text-[10px] tabular-nums leading-[1.5] " +
+                  (isActive ? "text-accent font-semibold" : "text-fg-faint")
+                }
+              >
                 #{item.turn}
               </span>
               {/* 消息预览 */}
-              <span className={"flex-1 min-w-0 text-[12px] leading-[1.5] whitespace-pre-wrap break-words " +
-                (isActive ? "text-fg" : "text-fg-dim")}>
+              <span
+                className={
+                  "flex-1 min-w-0 text-[12px] leading-[1.5] whitespace-pre-wrap break-words " +
+                  (isActive ? "text-fg" : "text-fg-dim")
+                }
+              >
                 {preview(item.text)}
               </span>
             </div>

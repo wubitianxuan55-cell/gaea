@@ -29,15 +29,12 @@ type Config struct {
 	Sandbox      SandboxConfig     `toml:"sandbox"`
 	Plugins      []PluginEntry     `toml:"plugins"`
 	Skills       SkillsConfig      `toml:"skills"`
-	// [office 配置适配] Codegraph 配置段已废弃
-	// Codegraph    CodegraphConfig   `toml:"codegraph"`
 	Statusline   StatuslineConfig  `toml:"statusline"`
 	Notify       NotifyConfig      `toml:"notifications"`
-	// [office 配置适配] LSP 配置段已废弃
-	// LSP          LSPConfig         `toml:"lsp"`
 	Search       SearchConfig      `toml:"search"`
 	Network      NetworkConfig     `toml:"network"`
 	Bot          BotConfig         `toml:"bot"`
+	Office       OfficeConfig      `toml:"office"`
 	Serve        ServeConfig       `toml:"serve"`
 }
 
@@ -190,6 +187,15 @@ type ServeConfig struct {
 	AuthToken string `toml:"auth_token"`
 }
 
+// OfficeConfig 配置办公辅助工具的默认参数
+type OfficeConfig struct {
+	DefaultTemplateDir string `toml:"default_template_dir"` // 默认模板目录路径
+	SpecLibraryDir     string `toml:"spec_library_dir"`     // 规范库路径
+	UnitSystem         string `toml:"unit_system"`          // 单位制：metric/imperial
+	CalcPrecision      int    `toml:"calc_precision"`       // 计算精度（小数位数）
+}
+
+// ServeConfig returns the ServeConfig, applying defaults.
 // ServeConfig returns the ServeConfig, applying defaults.
 func (c *Config) ServeConfig() ServeConfig {
 	cfg := c.Serve

@@ -8,6 +8,7 @@ import (
 	"gaeaW/internal/boot"
 	"gaeaW/internal/config"
 	"gaeaW/internal/control"
+	gaeaWbuiltin "gaeaW/internal/tool/builtin"
 	"gaeaW/internal/i18n"
 	"gaeaW/internal/memory"
 	"gaeaW/internal/provider"
@@ -488,4 +489,32 @@ func parseScope(s string) memory.Scope {
 	default:
 		return memory.ScopeProject
 	}
+}
+
+// SpecEntryView 是规范条目的前端视图
+type SpecEntryView struct {
+	Code        string `json:"code"`
+	Clause      string `json:"clause"`
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Content     string `json:"content"`
+	Explanation string `json:"explanation"`
+}
+
+// SearchSpecs searches the built-in specification index for matching entries.
+// This is a Wails-bound method (no receiver state needed).
+func (a *App) SearchSpecs(query string) []SpecEntryView {
+	entries := gaeaWbuiltin.SearchSpecs(query)
+	result := make([]SpecEntryView, len(entries))
+	for i, e := range entries {
+		result[i] = SpecEntryView{
+			Code:        e.Code,
+			Clause:      e.Clause,
+			Title:       e.Title,
+			Category:    e.Category,
+			Content:     e.Content,
+			Explanation: e.Explanation,
+		}
+	}
+	return result
 }
