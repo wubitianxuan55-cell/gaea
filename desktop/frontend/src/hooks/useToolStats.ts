@@ -16,9 +16,7 @@ export function useToolStats(items: Item[]) {
             const args = JSON.parse((it as any).args as string);
             const sn = args?.name ?? args?.skill;
             if (sn) skillCounts[sn] = (skillCounts[sn] || 0) + 1;
-          } catch {
-            /* ignore parse errors */
-          }
+          } catch { /* ignore parse errors */ }
         }
       }
     }

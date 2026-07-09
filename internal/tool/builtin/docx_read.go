@@ -298,11 +298,6 @@ func (docxWrite) Execute(ctx context.Context, args json.RawMessage) (string, err
 </Relationships>`)
 
 	writeZipEntry(zw, "word/document.xml", docXML.String())
-	writeZipEntry(zw, "word/_rels/document.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
-</Relationships>`)
 	writeZipEntry(zw, "word/styles.xml", docxStyles)
 	writeZipEntry(zw, "word/numbering.xml", docxNumbering)
 

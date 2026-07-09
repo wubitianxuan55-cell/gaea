@@ -59,7 +59,7 @@ export function useSessionManager(
         return;
       }
       // 乐观更新缓存，避免删除后列表闪烁
-      allSessionsRef.current = allSessionsRef.current.filter((s) => s.path !== path);
+      allSessionsRef.current = allSessionsRef.current.filter(s => s.path !== path);
       const visible = allSessionsRef.current.slice(0, sidebarSessions.length);
       setHasMore(visible.length < allSessionsRef.current.length);
       setSidebarSessions(visible);
@@ -76,16 +76,9 @@ export function useSessionManager(
   );
 
   return {
-    sidebarSessions,
-    sidebarQuery,
-    setSidebarQuery,
-    newSessionDone,
-    refreshSessions,
-    startNewSession,
-    loadMore,
+    sidebarSessions, sidebarQuery, setSidebarQuery,
+    newSessionDone, refreshSessions, startNewSession, loadMore,
     hasMore,
-    handleResumeSession,
-    handleDeleteSession,
-    handleRenameSession,
+    handleResumeSession, handleDeleteSession, handleRenameSession,
   };
 }

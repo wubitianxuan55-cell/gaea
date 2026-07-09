@@ -11,38 +11,23 @@ function darkenHex(hex: string, amount: number): string {
 }
 
 function mixHex(a: string, b: string, t: number): string {
-  const na = parseInt(a.slice(1), 16),
-    nb = parseInt(b.slice(1), 16);
+  const na = parseInt(a.slice(1), 16), nb = parseInt(b.slice(1), 16);
   const r = Math.round(((na >> 16) & 0xff) * (1 - t) + ((nb >> 16) & 0xff) * t);
   const g = Math.round(((na >> 8) & 0xff) * (1 - t) + ((nb >> 8) & 0xff) * t);
   const bl = Math.round((na & 0xff) * (1 - t) + (nb & 0xff) * t);
   return ((r << 16) | (g << 8) | bl).toString(16).padStart(6, "0");
 }
 
-export function AppearanceSection({
-  theme,
-  onTheme,
-}: {
-  theme: Theme;
-  onTheme: (t: Theme) => void;
-}) {
+export function AppearanceSection({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
   const { t, pref, setPref } = useI18n();
   const themeOptions: Theme[] = ["slate", "earth", "noir", "paper", "sand", "mist"];
 
   // 字体偏好（localStorage + DOM attribute）
   const [uiFont, setUiFont] = useState(() => {
-    try {
-      return localStorage.getItem("gaeaW.uiFont") || "";
-    } catch {
-      return "";
-    }
+    try { return localStorage.getItem("gaeaW.uiFont") || ""; } catch { return ""; }
   });
   const [monoFont, setMonoFont] = useState(() => {
-    try {
-      return localStorage.getItem("gaeaW.monoFont") || "";
-    } catch {
-      return "";
-    }
+    try { return localStorage.getItem("gaeaW.monoFont") || ""; } catch { return ""; }
   });
   const applyFont = (kind: "ui" | "mono", value: string) => {
     const attr = kind === "ui" ? "data-font-family" : "data-mono-font-family";
@@ -53,18 +38,17 @@ export function AppearanceSection({
       document.documentElement.removeAttribute(attr);
       localStorage.removeItem(`gaeaW.${kind === "ui" ? "uiFont" : "monoFont"}`);
     }
-    if (kind === "ui") setUiFont(value);
-    else setMonoFont(value);
+    if (kind === "ui") setUiFont(value); else setMonoFont(value);
   };
 
   const themeColors: Record<Theme, { bg: string; accent: string; fg: string; label: string }> = {
-    auto: { bg: "#0F172A", accent: "#6366F1", fg: "#F8FAFC", label: t("settings.themeAuto") },
+    auto:  { bg: "#0F172A", accent: "#6366F1", fg: "#F8FAFC", label: t("settings.themeAuto") },
     slate: { bg: "#0F172A", accent: "#6366F1", fg: "#F8FAFC", label: "暗岩 · Slate" },
     earth: { bg: "#1A1512", accent: "#A8825E", fg: "#EDE4D8", label: "深壤 · Earth" },
-    noir: { bg: "#111113", accent: "#D4A853", fg: "#EDEDED", label: "墨金 · Noir" },
+    noir:  { bg: "#111113", accent: "#D4A853", fg: "#EDEDED", label: "墨金 · Noir" },
     paper: { bg: "#F8FAFC", accent: "#3B82F6", fg: "#0F172A", label: "素纸 · Paper" },
-    sand: { bg: "#FDF6EC", accent: "#B87333", fg: "#2D2420", label: "砂岩 · Sand" },
-    mist: { bg: "#F2F5F8", accent: "#0EA5A9", fg: "#1A202C", label: "晨雾 · Mist" },
+    sand:  { bg: "#FDF6EC", accent: "#B87333", fg: "#2D2420", label: "砂岩 · Sand" },
+    mist:  { bg: "#F2F5F8", accent: "#0EA5A9", fg: "#1A202C", label: "晨雾 · Mist" },
   };
 
   const tc = themeColors[theme] ?? themeColors.slate;
@@ -74,18 +58,13 @@ export function AppearanceSection({
       <div className="text-fg text-sm font-semibold mb-3">{t("settings.appearance")}</div>
 
       <div className="mb-4">
-        <label className="text-fg-dim text-[13px] font-medium mb-2 block">
-          {t("settings.theme")}
-        </label>
+        <label className="text-fg-dim text-[13px] font-medium mb-2 block">{t("settings.theme")}</label>
         <div className="flex items-center gap-2 mb-3">
           <button
             className={`flex items-center gap-2 px-3 py-1.5 bg-transparent border border-border-soft rounded-md text-fg-dim text-xs cursor-pointer transition-all hover:text-fg hover:bg-bg-soft ${theme === "auto" ? "border-accent bg-accent-soft text-accent" : ""}`}
             onClick={() => onTheme("auto")}
           >
-            <span
-              className="w-3 h-3 rounded-full border border-fg-faint/30"
-              style={{ background: "conic-gradient(#f4f5f7 0deg 180deg, #090a0c 180deg 360deg)" }}
-            />
+            <span className="w-3 h-3 rounded-full border border-fg-faint/30" style={{ background: "conic-gradient(#f4f5f7 0deg 180deg, #090a0c 180deg 360deg)" }} />
             {t("settings.themeAuto")}
           </button>
         </div>
@@ -99,29 +78,15 @@ export function AppearanceSection({
                 key={opt}
                 onClick={() => onTheme(opt)}
                 className={`text-left bg-bg-soft border rounded-lg p-2.5 cursor-pointer transition-all hover:-translate-y-p1 hover:shadow-lg ${
-                  isActive
-                    ? "border-accent ring-1 ring-accent/50"
-                    : "border-border-soft hover:border-fg-faint/30"
+                  isActive ? "border-accent ring-1 ring-accent/50" : "border-border-soft hover:border-fg-faint/30"
                 }`}
               >
-                <div
-                  className="flex gap-1 mb-2 rounded-md overflow-hidden h-6"
-                  style={{ background: c.bg }}
-                >
+                <div className="flex gap-1 mb-2 rounded-md overflow-hidden h-6" style={{ background: c.bg }}>
                   <div className="flex-1" style={{ background: c.bg }} />
                   <div className="w-3" style={{ background: c.accent }} />
-                  <div
-                    className="w-6 flex items-center justify-center text-[7px] font-mono"
-                    style={{ background: c.fg, color: c.bg }}
-                  >
-                    Aa
-                  </div>
+                  <div className="w-6 flex items-center justify-center text-[7px] font-mono" style={{ background: c.fg, color: c.bg }}>Aa</div>
                 </div>
-                <span
-                  className={`text-[11px] font-medium ${isActive ? "text-accent" : "text-fg-dim"}`}
-                >
-                  {c.label}
-                </span>
+                <span className={`text-[11px] font-medium ${isActive ? "text-accent" : "text-fg-dim"}`}>{c.label}</span>
                 {isActive && <span className="ml-1.5 text-[10px] text-accent">✓</span>}
               </button>
             );
@@ -130,9 +95,7 @@ export function AppearanceSection({
       </div>
 
       <div className="mb-4 p-3 bg-bg-soft border border-border-soft rounded-lg">
-        <div className="text-[10px] font-semibold text-fg-faint uppercase tracking-wider mb-2">
-          色板预览
-        </div>
+        <div className="text-[10px] font-semibold text-fg-faint uppercase tracking-wider mb-2">色板预览</div>
         <div className="flex flex-wrap gap-1.5">
           {[
             { label: "bg", color: tc.bg },
@@ -147,10 +110,7 @@ export function AppearanceSection({
             { label: "err", color: "#e0696a" },
           ].map(({ label, color }) => (
             <div key={label} className="flex flex-col items-center gap-0.5">
-              <div
-                className="w-7 h-7 rounded-md border border-border-soft"
-                style={{ background: color }}
-              />
+              <div className="w-7 h-7 rounded-md border border-border-soft" style={{ background: color }} />
               <span className="text-[9px] text-fg-faint font-mono">{label}</span>
             </div>
           ))}
@@ -159,11 +119,7 @@ export function AppearanceSection({
 
       <div className="mb-4">
         <label className="text-fg-dim text-[13px] font-medium mb-2 block">界面字体</label>
-        <select
-          className="w-full bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent"
-          value={uiFont}
-          onChange={(e) => applyFont("ui", e.target.value)}
-        >
+        <select className="w-full bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent" value={uiFont} onChange={e => applyFont("ui", e.target.value)}>
           <option value="">系统默认</option>
           <option value="pingfang">苹方 (PingFang SC)</option>
           <option value="yahei">微软雅黑</option>
@@ -173,11 +129,7 @@ export function AppearanceSection({
 
       <div className="mb-4">
         <label className="text-fg-dim text-[13px] font-medium mb-2 block">等宽字体</label>
-        <select
-          className="w-full bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent"
-          value={monoFont}
-          onChange={(e) => applyFont("mono", e.target.value)}
-        >
+        <select className="w-full bg-bg-soft border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent" value={monoFont} onChange={e => applyFont("mono", e.target.value)}>
           <option value="">系统默认</option>
           <option value="cascadia">Cascadia Code</option>
           <option value="jetbrains">JetBrains Mono</option>
@@ -186,9 +138,7 @@ export function AppearanceSection({
       </div>
 
       <div>
-        <label className="text-fg-dim text-[13px] font-medium mb-2 block">
-          {t("settings.language")}
-        </label>
+        <label className="text-fg-dim text-[13px] font-medium mb-2 block">{t("settings.language")}</label>
         <div className="inline-flex border border-border-soft rounded-md overflow-hidden">
           {[
             { value: "", label: t("settings.langAuto") },

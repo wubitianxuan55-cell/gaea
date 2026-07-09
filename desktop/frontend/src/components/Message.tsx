@@ -20,46 +20,22 @@ function InlineAttachment({ path }: { path: string }) {
     let live = true;
     if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(path)) {
       setIsImage(true);
-      app
-        .AttachmentDataURL(path)
-        .then((url) => {
-          if (live) setDataUrl(url);
-        })
-        .catch(() => {});
+      app.AttachmentDataURL(path).then((url) => { if (live) setDataUrl(url); }).catch(() => {});
     } else {
       setIsImage(false);
     }
-    return () => {
-      live = false;
-    };
+    return () => { live = false; };
   }, [path]);
   const fileName = path.split("/").pop() ?? path;
   if (isImage && dataUrl) {
-    return (
-      <img
-        src={dataUrl}
-        alt={fileName}
-        className="max-w-[240px] max-h-[180px] rounded-lg border border-border-soft my-1 object-cover"
-        loading="lazy"
-      />
-    );
+    return <img src={dataUrl} alt={fileName} className="max-w-[240px] max-h-[180px] rounded-lg border border-border-soft my-1 object-cover" loading="lazy" />;
   }
   if (isImage) {
     return <span className="text-accent/60 text-[12px] italic">[{fileName}]</span>;
   }
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg-soft border border-border-soft text-fg-dim text-[11px] font-mono mx-0.5">
-      <svg
-        width="11"
-        height="11"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-accent shrink-0"
-      >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent shrink-0">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
       </svg>
@@ -70,21 +46,13 @@ function InlineAttachment({ path }: { path: string }) {
 
 function UserAvatar({ size = 14 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 22c0-4.4 3.6-8 8-8s8 3.6 8 8" />
     </svg>
   );
 }
+
 
 // ── 推理区 ────────────────────────────────────────────────────────────
 
@@ -122,19 +90,12 @@ export const UserMessage = memo(function UserMessage({
     return parts;
   }, [text]);
   return (
-    <div
-      className="flex justify-end my-2 group"
-      data-entrance={turn != null ? `u${turn}` : undefined}
-    >
-      <div
-        className={`flex items-start gap-2 max-w-[85%] ${compact ? "min-w-[120px]" : "min-w-[160px]"}`}
-      >
+    <div className="flex justify-end my-2 group" data-entrance={turn != null ? `u${turn}` : undefined}>
+      <div className={`flex items-start gap-2 max-w-[85%] ${compact ? "min-w-[120px]" : "min-w-[160px]"}`}>
         <div className="flex-1">
-          <div
-            className={`rounded-2xl rounded-br-md px-3.5 py-2 bg-accent/10 border border-accent/15 ${
-              compact ? "text-[13px]" : "text-[14px]"
-            } text-fg leading-relaxed`}
-          >
+          <div className={`rounded-2xl rounded-br-md px-3.5 py-2 bg-accent/10 border border-accent/15 ${
+            compact ? "text-[13px]" : "text-[14px]"
+          } text-fg leading-relaxed`}>
             {textParts.map((part, i) => {
               if (part.type === "text") return <span key={i}>{part.value}</span>;
               return <InlineAttachment key={i} path={part.value} />;
@@ -150,27 +111,13 @@ export const UserMessage = memo(function UserMessage({
                 ⟲ 回退
               </button>
               {open && (
-                <div
-                  className="absolute bottom-full right-0 mb-1 z-30 min-w-[140px] py-1 bg-bg-elev-2 border border-border rounded-lg"
-                  style={{ boxShadow: "var(--ds-shadow-dropdown)" }}
-                >
-                  {(
-                    ["both", "conversation", "code", "fork", "summ-from", "summ-upto"] as const
-                  ).map((scope) => {
-                    const key =
-                      scope === "summ-from"
-                        ? ("rewind.summFrom" as const)
-                        : scope === "summ-upto"
-                          ? ("rewind.summUpto" as const)
-                          : (`rewind.${scope}` as const);
+                <div className="absolute bottom-full right-0 mb-1 z-30 min-w-[140px] py-1 bg-bg-elev-2 border border-border rounded-lg" style={{boxShadow: "var(--ds-shadow-dropdown)"}}>
+                  {(["both","conversation","code","fork","summ-from","summ-upto"] as const).map(scope => {
+                    const key = scope === "summ-from" ? "rewind.summFrom" as const : scope === "summ-upto" ? "rewind.summUpto" as const : `rewind.${scope}` as const;
                     return (
-                      <button
-                        key={scope}
-                        className="w-full text-left px-3 py-1.5 border-0 bg-transparent text-fg-dim text-[12px] cursor-pointer hover:bg-bg-soft hover:text-fg"
-                        onClick={() => rewind(scope)}
-                      >
-                        {t(key)}
-                      </button>
+                    <button key={scope} className="w-full text-left px-3 py-1.5 border-0 bg-transparent text-fg-dim text-[12px] cursor-pointer hover:bg-bg-soft hover:text-fg" onClick={() => rewind(scope)}>
+                      {t(key)}
+                    </button>
                     );
                   })}
                 </div>
@@ -188,12 +135,7 @@ export const UserMessage = memo(function UserMessage({
 
 // ── AssistantMessage ──────────────────────────────────────────────────────
 
-export const AssistantMessage = memo(function AssistantMessage({
-  item,
-}: {
-  item: AssistantItem;
-  onCollapse?: () => void;
-}) {
+export const AssistantMessage = memo(function AssistantMessage({ item }: { item: AssistantItem; onCollapse?: () => void }) {
   const t = useT();
   const compact = useCompact();
   const now = useNow();
@@ -214,9 +156,7 @@ export const AssistantMessage = memo(function AssistantMessage({
     streaming: item.streaming ?? false,
     truncateStreaming: true,
   });
-  const reasoningLines = item.reasoning
-    ? item.reasoning.split("\n").filter((l) => l.trim()).length
-    : 0;
+  const reasoningLines = item.reasoning ? item.reasoning.split("\n").filter(l => l.trim()).length : 0;
 
   const elapsed = turnStartAt > 0 ? Math.max(0, now - Math.floor(turnStartAt / 1000)) : 0;
   const elapsedStr = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m${elapsed % 60}s`;
@@ -226,50 +166,46 @@ export const AssistantMessage = memo(function AssistantMessage({
   return (
     <div className="flex justify-start my-2" data-entrance={item.id}>
       <div className="flex-1 min-w-0">
-        {/* 推理区 */}
-        {item.reasoning && (
-          <div className="mb-1.5">
-            <button
-              type="button"
-              className={`flex items-center gap-1.5 w-full px-2.5 py-1 rounded-lg border transition-colors ${
-                reasoningOpen
-                  ? "border-accent/20 bg-accent/5"
-                  : "border-transparent hover:bg-bg-soft"
-              } text-fg-faint text-[11px] cursor-pointer`}
-              onClick={toggleReasoning}
-              aria-expanded={reasoningOpen}
-            >
-              <Brain size={13} className="flex-shrink-0" />
-              <span className="font-medium">
-                {reasoningRunning ? t("msg.thinkingRunning") : t("msg.thinking")}
-              </span>
-              <span className="text-fg-faint/50 text-[10px] ml-auto tabular-nums">
-                {reasoningRunning ? elapsedStr : `${reasoningLines} 行 · ${elapsedStr}`}
-              </span>
-              <ChevronRight
-                className={`transition-transform duration-200 ${reasoningOpen ? "rotate-90" : ""}`}
-                size={11}
-              />
-            </button>
-            <div ref={reasoningBodyRef} style={{ overflow: "hidden" }}>
-              <div
-                className={`mt-1 px-2.5 py-1.5 border-l-2 border-accent/20 ml-1 text-fg-dim/80 text-[11px] leading-relaxed whitespace-pre-wrap ${
-                  compact ? "max-h-[160px] overflow-y-auto" : ""
-                }`}
+          {/* 推理区 */}
+          {item.reasoning && (
+            <div className="mb-1.5">
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 w-full px-2.5 py-1 rounded-lg border transition-colors ${
+                  reasoningOpen ? "border-accent/20 bg-accent/5" : "border-transparent hover:bg-bg-soft"
+                } text-fg-faint text-[11px] cursor-pointer`}
+                onClick={toggleReasoning}
+                aria-expanded={reasoningOpen}
               >
-                {reasoningDisplay}
+                <Brain size={13} className="flex-shrink-0" />
+                <span className="font-medium">{reasoningRunning ? t("msg.thinkingRunning") : t("msg.thinking")}</span>
+                <span className="text-fg-faint/50 text-[10px] ml-auto tabular-nums">
+                  {reasoningRunning
+                    ? elapsedStr
+                    : `${reasoningLines} 行 · ${elapsedStr}`}
+                </span>
+                <ChevronRight
+                  className={`transition-transform duration-200 ${reasoningOpen ? "rotate-90" : ""}`}
+                  size={11}
+                />
+              </button>
+              <div ref={reasoningBodyRef} style={{ overflow: "hidden" }}>
+                <div className={`mt-1 px-2.5 py-1.5 border-l-2 border-accent/20 ml-1 text-fg-dim/80 text-[11px] leading-relaxed whitespace-pre-wrap ${
+                  compact ? "max-h-[160px] overflow-y-auto" : ""
+                }`}>
+                  {reasoningDisplay}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 正文区 */}
-        {item.text && (
-          <div className="min-w-0">
-            <MemoMarkdown text={item.text} streaming={streaming} />
-          </div>
-        )}
-      </div>
+          {/* 正文区 */}
+          {item.text && (
+            <div className="min-w-0">
+              <MemoMarkdown text={item.text} streaming={streaming} />
+            </div>
+          )}
+        </div>
     </div>
   );
 });

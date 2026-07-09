@@ -13,7 +13,7 @@ export function MenuContainer({
   return (
     <div
       className="absolute bottom-[calc(100%+6px)] left-0 right-0 max-h-[280px] overflow-y-auto bg-bg-elev border border-border rounded-[10px] p-1 z-20 anim-menu-in"
-      style={{ boxShadow: "var(--ds-shadow-dropdown)" }}
+      style={{boxShadow: "var(--ds-shadow-dropdown)"}}
       role="listbox"
     >
       {children}

@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={`px-4 py-1.5 rounded-lg text-xs bg-bg-elev-2 text-fg-dim border border-border animate-[toast-in_0.2s_ease-out] ${
               t.kind === "info" ? "border-l-[3px] border-l-info" : "border-l-[3px] border-l-warning"
             }`}
-            style={{ boxShadow: "var(--ds-shadow-dropdown)" }}
+            style={{boxShadow: "var(--ds-shadow-dropdown)"}}
           >
             {t.text}
           </div>

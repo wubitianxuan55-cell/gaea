@@ -45,12 +45,11 @@ var compactDesc = map[string]string{
 	"pptx_create":    "创建PPT文件(标题+要点+图表→pptx)",
 	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown，含OCR扫描件回退)",
 	"chart_gen":      "matplotlib图表生成(bar/line/pie/scatter)",
-	"doc_merge":      "多docx文档合并(逐元素追加)",
-	"archive":        "zip压缩/解压(支持目录递归)",
-	"save_template":  "保存多步骤工具链模板(JSON)",
 	"run_template":   "加载运行工具链模板(参数替换)",
+	"cost_query":     "工程成本数据查询(造价/人工/材料/机械)",
+	"knowledge_search": "搜索工程知识库(关键词+分类+标签过滤)",
+	"knowledge_add":    "向知识库添加条目(标题+分类+正文)",
 }
-
 var compactSchema = map[string]json.RawMessage{
 	"read_file": json.RawMessage(
 		`{"type":"object","properties":{"path":{"type":"string"},"offset":{"type":"integer"},"limit":{"type":"integer"},"line_numbers":{"type":"boolean"}},"required":["path"]}`),
@@ -137,7 +136,13 @@ var compactSchema = map[string]json.RawMessage{
 	"archive": json.RawMessage(
 		`{"type":"object","properties":{"action":{"type":"string"},"source":{"type":"string"},"target":{"type":"string"},"files":{"type":"array","items":{"type":"string"}}},"required":["action","source"]}`),
 	"save_template": json.RawMessage(
-		`{"type":"object","properties":{"name":{"type":"string"},"description":{"type":"string"},"steps":{"type":"array","items":{"type":"object","properties":{"tool":{"type":"string"},"args":{"type":"object"}},"required":["tool"]}}},"required":["name","steps"]}`),
+		`{"type":"object","properties":{"name":{"type":"string"},"description":{"type":"string"},"steps":{"type":"array","items":{"type":"object","properties":{"tool":{"type":"string"},"args":{"type":"object"}},"required":["tool"]}}},"required":["name","steps"]}}`),
 	"run_template": json.RawMessage(
 		`{"type":"object","properties":{"name":{"type":"string"},"params":{"type":"object"}},"required":["name"]}`),
+	"cost_query": json.RawMessage(
+		`{"type":"object","properties":{"keyword":{"type":"string"},"category":{"type":"string"},"region":{"type":"string"},"kind":{"type":"string","enum":["cost","labor","material","machine"]}}}}`),
+	"knowledge_search": json.RawMessage(
+		`{"type":"object","properties":{"query":{"type":"string"},"category":{"type":"string"},"tag":{"type":"string"}}}}`),
+	"knowledge_add": json.RawMessage(
+		`{"type":"object","properties":{"title":{"type":"string"},"category":{"type":"string"},"body":{"type":"string"},"tags":{"type":"string"},"phase":{"type":"string"},"discipline":{"type":"string"},"source":{"type":"string"}},"required":["title","category","body"]}`),
 }

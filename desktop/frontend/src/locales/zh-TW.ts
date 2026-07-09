@@ -27,6 +27,15 @@ export const zhTW: Record<DictKey, string> = {
   "topbar.customize": "自訂",
   "topbar.newSession": "新工作階段",
   "topbar.startupError": "啟動錯誤：{msg}",
+  "topbar.knowledge": "知識庫",
+
+  // 知識庫面板
+  "knowledge.title": "知識庫",
+  "knowledge.search": "搜尋條目…",
+  "knowledge.empty": "知識庫為空",
+  "knowledge.noMatch": "無匹配條目",
+  "knowledge.category": "分類",
+  "knowledge.all": "全部",
 
   // sidebar
   "sidebar.recent": "最近",
@@ -120,16 +129,13 @@ export const zhTW: Record<DictKey, string> = {
   "welcome.hintSend": "傳送",
   "welcome.card1.title": "場地環境調查",
   "welcome.card1.desc": "啟動初調/詳調報告框架，梳理場地基本資訊",
-  "welcome.card1.prompt":
-    "請幫我啟動場地環境調查初調報告框架，梳理場地基本資訊、歷史使用情況、週邊敏感目標等關鍵內容。",
+  "welcome.card1.prompt": "請幫我啟動場地環境調查初調報告框架，梳理場地基本資訊、歷史使用情況、週邊敏感目標等關鍵內容。",
   "welcome.card2.title": "污染風險評估",
   "welcome.card2.desc": "對標 GB 36600/GB 15618 進行超標判定與風險計算",
-  "welcome.card2.prompt":
-    "請根據提供的檢測數據，對標 GB 36600 和 GB 15618 進行超標判定，計算污染風險並給出評估結論。",
+  "welcome.card2.prompt": "請根據提供的檢測數據，對標 GB 36600 和 GB 15618 進行超標判定，計算污染風險並給出評估結論。",
   "welcome.card3.title": "費用估算",
   "welcome.card3.desc": "生成七項彙總成本測算表，涵蓋調查/修復全流程",
-  "welcome.card3.prompt":
-    "請生成土壤修復工程七項彙總成本測算表，包括場地調查、風險評估、方案設計、施工實施、監測驗收等各階段費用。",
+  "welcome.card3.prompt": "請生成土壤修復工程七項彙總成本測算表，包括場地調查、風險評估、方案設計、施工實施、監測驗收等各階段費用。",
   "welcome.ex1": "土壤污染風險管控標準有哪些",
   "welcome.ex2": "污染場地修復技術怎麼選",
   "welcome.ex3": "場地環境調查報告怎麼寫",
@@ -313,8 +319,7 @@ export const zhTW: Record<DictKey, string> = {
   "settings.balanceUrlHint": "選填。設定後，錢包餘額將顯示在狀態列中。",
   "settings.providerContextWindow": "上下文視窗",
   "settings.contextWindowPlaceholder": "token 數（0 = 使用提供者預設）",
-  "settings.contextWindowHint":
-    "此提供者在上下文中保留的最大 token 數。設為 0 以使用提供者的預設值。",
+  "settings.contextWindowHint": "此提供者在上下文中保留的最大 token 數。設為 0 以使用提供者的預設值。",
   "settings.setKey": "設定 {env}（→ .env）",
   "settings.saveKey": "儲存金鑰",
   "settings.permissions": "權限",
@@ -324,8 +329,7 @@ export const zhTW: Record<DictKey, string> = {
   "settings.modeDeny": "拒絕（封鎖寫入）",
   "settings.ruleForm": "規則格式：ToolName 或 ToolName(glob)。優先級：拒絕 > 詢問 > 允許。",
   "settings.yolo": "YOLO — 跳過所有核准（此工作階段）",
-  "settings.yoloHint":
-    "自動執行所有工具呼叫（寫入、bash），不詢問。拒絕規則仍然有效。僅執行階段有效——重新啟動後重置。",
+  "settings.yoloHint": "自動執行所有工具呼叫（寫入、bash），不詢問。拒絕規則仍然有效。僅執行階段有效——重新啟動後重置。",
   "settings.addRule": "新增 {list} 規則…",
   "settings.sandboxTitle": "沙箱與工作區",
   "settings.bashSandbox": "Bash 沙箱",

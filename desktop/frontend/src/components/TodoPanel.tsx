@@ -59,7 +59,9 @@ export function TodoPanel({ todos, onDismiss }: { todos: Todo[]; onDismiss: () =
           <PromptHeaderAction onClick={() => setOpen((v) => !v)}>
             {open ? t("common.collapse") : t("common.expand")}
           </PromptHeaderAction>
-          <PromptHeaderAction onClick={onDismiss}>✕</PromptHeaderAction>
+          <PromptHeaderAction onClick={onDismiss}>
+            ✕
+          </PromptHeaderAction>
         </>
       }
     >
@@ -67,7 +69,9 @@ export function TodoPanel({ todos, onDismiss }: { todos: Todo[]; onDismiss: () =
       <div className="h-[5px] bg-border-soft relative">
         <div
           className={`h-full transition-[width] duration-700 ease-out rounded-r-sm ${
-            pct >= 100 ? "bg-ok" : "bg-gradient-to-r from-accent via-accent to-ok/70"
+            pct >= 100
+              ? "bg-ok"
+              : "bg-gradient-to-r from-accent via-accent to-ok/70"
           }`}
           style={{ width: `${pct}%` }}
         />
@@ -89,7 +93,9 @@ export function TodoPanel({ todos, onDismiss }: { todos: Todo[]; onDismiss: () =
               key={i}
               ref={isCurrent ? currentRef : undefined}
               className={`relative flex items-center gap-2.5 ${itemPx} ${itemPy} border-b border-border-soft last:border-b-0 transition-colors duration-200 ${
-                isCurrent ? "bg-accent-soft/70" : "bg-transparent hover:bg-bg-elev"
+                isCurrent
+                  ? "bg-accent-soft/70"
+                  : "bg-transparent hover:bg-bg-elev"
               } ${isSub ? (compact ? "pl-8" : "pl-9") : ""}`}
             >
               {/* 左强调条 — 进行中带微动画 */}

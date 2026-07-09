@@ -11,6 +11,8 @@
 // 缓存安全: 纯前端 mock，不触及 Go 内核。
 
 import type {
+  KnowledgeEntry,
+  KnowledgeSummary,
   MCPServerInput,
   MemorySuggestion,
   Meta,
@@ -75,15 +77,7 @@ export function makeMockApp(): AppBindings {
   const runningMock = scenario === "running";
   let cancelled = false;
   let cwd = "~/projects/gaeaW"; // mutable so PickWorkspace is visible in dev
-  let workspaces = freshMock
-    ? []
-    : [
-        "~/projects/gaeaW",
-        "~/projects/blade",
-        "~/projects/deepseek-forge",
-        "~/projects/cc-switch-light",
-        "~/projects/SuperRig",
-      ];
+  let workspaces = freshMock ? [] : ["~/projects/gaeaW", "~/projects/blade", "~/projects/deepseek-forge", "~/projects/cc-switch-light", "~/projects/SuperRig"];
   const day = 86_400_000;
   const t0 = Date.now();
   // Mutable so MCP add/remove/retry are observable in browser dev.
@@ -102,44 +96,14 @@ export function makeMockApp(): AppBindings {
         { name: "search", description: "Search for files by name pattern." },
       ],
     },
-    {
-      name: "github",
-      transport: "stdio",
-      status: "connected",
-      tools: 12,
-      prompts: 2,
-      resources: 0,
-    },
+    { name: "github", transport: "stdio", status: "connected", tools: 12, prompts: 2, resources: 0 },
     { name: "linear", transport: "http", status: "connected", tools: 8, prompts: 0, resources: 0 },
-    {
-      name: "figma",
-      transport: "http",
-      status: "failed",
-      tools: 0,
-      prompts: 0,
-      resources: 0,
-      error: "connect: 401 unauthorized",
-    },
+    { name: "figma", transport: "http", status: "failed", tools: 0, prompts: 0, resources: 0, error: "connect: 401 unauthorized" },
   ];
   const capSkills: SkillView[] = [
-    {
-      name: "research",
-      description: "Research a question with web search and analysis",
-      scope: "builtin",
-      runAs: "subagent",
-    },
-    {
-      name: "risk-assessment",
-      description: "Create a risk assessment report",
-      scope: "project",
-      runAs: "inline",
-    },
-    {
-      name: "site-survey",
-      description: "Generate a site survey report from field data",
-      scope: "project",
-      runAs: "inline",
-    },
+    { name: "research", description: "Research a question with web search and analysis", scope: "builtin", runAs: "subagent" },
+    { name: "risk-assessment", description: "Create a risk assessment report", scope: "project", runAs: "inline" },
+    { name: "site-survey", description: "Generate a site survey report from field data", scope: "project", runAs: "inline" },
   ];
   const mockSwitchWorkspace = async (path: string) => {
     cwd = path || "~";
@@ -147,94 +111,23 @@ export function makeMockApp(): AppBindings {
     return cwd;
   };
   // Mutable so delete/rename are observable in browser dev.
-  const sessions: SessionMeta[] = freshMock
-    ? []
-    : [
-        {
-          path: "/mock/sessions/a.jsonl",
-          preview: "generate soil remediation report",
-          turns: 12,
-          modTime: t0 - 3_600_000,
-          current: true,
-        },
-        {
-          path: "/mock/sessions/b.jsonl",
-          preview: "create site survey document",
-          turns: 5,
-          modTime: t0 - 6 * 3_600_000,
-          current: false,
-        },
-        {
-          path: "/mock/sessions/c.jsonl",
-          preview: "draft risk assessment matrix",
-          turns: 8,
-          modTime: t0 - day - 3_600_000,
-          current: false,
-        },
-        {
-          path: "/mock/sessions/d.jsonl",
-          preview: "explain the plugin host design",
-          turns: 3,
-          modTime: t0 - 4 * day,
-          current: false,
-        },
-      ];
+  const sessions: SessionMeta[] = freshMock ? [] : [
+    { path: "/mock/sessions/a.jsonl", preview: "generate soil remediation report", turns: 12, modTime: t0 - 3_600_000, current: true },
+    { path: "/mock/sessions/b.jsonl", preview: "create site survey document", turns: 5, modTime: t0 - 6 * 3_600_000, current: false },
+    { path: "/mock/sessions/c.jsonl", preview: "draft risk assessment matrix", turns: 8, modTime: t0 - day - 3_600_000, current: false },
+    { path: "/mock/sessions/d.jsonl", preview: "explain the plugin host design", turns: 3, modTime: t0 - 4 * day, current: false },
+  ];
   // Mutable settings so the Settings panel's edits are observable in browser dev.
   const settings: SettingsView = {
     defaultModel: "deepseek-flash",
     providers: [
-      {
-        name: "deepseek-flash",
-        kind: "openai",
-        baseUrl: "https://api.deepseek.com",
-        models: ["deepseek-v4-flash"],
-        default: "deepseek-v4-flash",
-        apiKeyEnv: "DEEPSEEK_API_KEY",
-        keySet: !freshMock,
-        balanceUrl: "https://api.deepseek.com/user/balance",
-        contextWindow: 1_000_000,
-        oauthKind: "",
-        oauthReady: false,
-      },
-      {
-        name: "mimo-pro",
-        kind: "openai",
-        baseUrl: "https://api.xiaomimimo.com/v1",
-        models: ["mimo-v2.5-pro"],
-        default: "mimo-v2.5-pro",
-        apiKeyEnv: "MIMO_API_KEY",
-        keySet: false,
-        balanceUrl: "",
-        contextWindow: 1_000_000,
-        oauthKind: "",
-        oauthReady: false,
-      },
-      {
-        name: "xai-oauth",
-        kind: "xai",
-        baseUrl: "https://api.x.ai/v1",
-        models: ["grok-4.3"],
-        default: "grok-4.3",
-        apiKeyEnv: "",
-        keySet: false,
-        balanceUrl: "",
-        contextWindow: 1_000_000,
-        oauthKind: "xai",
-        oauthReady: false,
-      },
+      { name: "deepseek-flash", kind: "openai", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4-flash"], default: "deepseek-v4-flash", apiKeyEnv: "DEEPSEEK_API_KEY", keySet: !freshMock, balanceUrl: "https://api.deepseek.com/user/balance", contextWindow: 1_000_000, oauthKind: "", oauthReady: false },
+      { name: "mimo-pro", kind: "openai", baseUrl: "https://api.xiaomimimo.com/v1", models: ["mimo-v2.5-pro"], default: "mimo-v2.5-pro", apiKeyEnv: "MIMO_API_KEY", keySet: false, balanceUrl: "", contextWindow: 1_000_000, oauthKind: "", oauthReady: false },
+      { name: "xai-oauth", kind: "xai", baseUrl: "https://api.x.ai/v1", models: ["grok-4.3"], default: "grok-4.3", apiKeyEnv: "", keySet: false, balanceUrl: "", contextWindow: 1_000_000, oauthKind: "xai", oauthReady: false },
     ],
     permissions: { mode: "ask", allow: ["ls", "read_file"], ask: [], deny: ["bash(rm *)"] },
     sandbox: { bash: "enforce", network: true, workspaceRoot: "", allowWrite: [] },
-    agent: {
-      temperature: 0.2,
-      maxSteps: 0,
-      systemPrompt: "You are gaeaW, a coding agent.",
-      plannerTemperature: 0,
-      subagentTemperature: 0,
-      effort: "",
-      plannerEffort: "",
-      subagentEffort: "",
-    },
+    agent: { temperature: 0.2, maxSteps: 0, systemPrompt: "You are gaeaW, a coding agent.", plannerTemperature: 0, subagentTemperature: 0, effort: "", plannerEffort: "", subagentEffort: "" },
     plannerModel: "",
     subagentModel: "",
     subagentModels: {},
@@ -253,56 +146,22 @@ export function makeMockApp(): AppBindings {
       if (runningMock) await delay(1500); // simulate existing reasoning in progress
       const isPoetry = /(诗|古诗|词)/.test(input);
       const isCodeReq = !isPoetry && /(写|创建|程序|代码|函数|排序)/.test(input);
-      const think = isPoetry
-        ? "用户想写诗，直接创作即可。"
-        : isCodeReq
-          ? `用户说"${input}"，这是编程任务，先检查项目结构。`
-          : `用户说"${input}"，让我看看上下文再回复。`;
-      for (const ch of think) {
-        if (cancelled) break;
-        emit({ kind: "reasoning", reasoning: ch });
-        await delay(12);
-      }
+      const think = isPoetry ? "用户想写诗，直接创作即可。"
+        : isCodeReq ? `用户说"${input}"，这是编程任务，先检查项目结构。`
+        : `用户说"${input}"，让我看看上下文再回复。`;
+      for (const ch of think) { if (cancelled) break; emit({ kind: "reasoning", reasoning: ch }); await delay(12); }
       await delay(200);
-      emit({
-        kind: "tool_dispatch",
-        tool: { id: "t1", name: "glob", args: '{"pattern":"**/*.go"}', readOnly: true },
-      });
+      emit({ kind: "tool_dispatch", tool: { id: "t1", name: "glob", args: '{"pattern":"**/*.go"}', readOnly: true } });
       await delay(400);
-      emit({
-        kind: "tool_result",
-        tool: {
-          id: "t1",
-          name: "glob",
-          output: "cmd/gaeaW/main.go\ninternal/agent/agent.go",
-          readOnly: true,
-        },
-      });
+      emit({ kind: "tool_result", tool: { id: "t1", name: "glob", output: "cmd/gaeaW/main.go\ninternal/agent/agent.go", readOnly: true } });
       await delay(200);
       let reply: string;
-      if (isPoetry)
-        reply = "**《山居秋暝》**\n\n> 空山新雨后，天气晚来秋。\n> 明月松间照，清泉石上流。";
-      else if (isCodeReq)
-        reply = `好的，"${input}"：项目是 Go，入口在 cmd/gaeaW/main.go。要具体实现什么？`;
+      if (isPoetry) reply = "**《山居秋暝》**\n\n> 空山新雨后，天气晚来秋。\n> 明月松间照，清泉石上流。";
+      else if (isCodeReq) reply = `好的，"${input}"：项目是 Go，入口在 cmd/gaeaW/main.go。要具体实现什么？`;
       else reply = `收到！**${input}**\n\nGo 项目 gaeaW，核心在 internal/。需要做什么？`;
-      for (const ch of reply) {
-        if (cancelled) break;
-        emit({ kind: "text", text: ch });
-        await delay(10);
-      }
+      for (const ch of reply) { if (cancelled) break; emit({ kind: "text", text: ch }); await delay(10); }
       emit({ kind: "message", text: reply });
-      emit({
-        kind: "usage",
-        usage: {
-          promptTokens: 1200,
-          completionTokens: 200,
-          totalTokens: 1400,
-          cacheHitTokens: 800,
-          cacheMissTokens: 400,
-          sessionCacheHitTokens: 800,
-          sessionCacheMissTokens: 400,
-        },
-      });
+      emit({ kind: "usage", usage: { promptTokens: 1200, completionTokens: 200, totalTokens: 1400, cacheHitTokens: 800, cacheMissTokens: 400, sessionCacheHitTokens: 800, sessionCacheMissTokens: 400 } });
       emit({
         kind: "usage",
         usage: {
@@ -327,9 +186,7 @@ export function makeMockApp(): AppBindings {
     async Approve() {},
     async AnswerQuestion() {},
     async SetAgentMode(_mode: string) {},
-    async AgentMode() {
-      return "develop";
-    },
+    async AgentMode() { return "develop"; },
     async Compact() {},
     async NewSession() {},
     async Checkpoints() {
@@ -348,10 +205,7 @@ export function makeMockApp(): AppBindings {
     async ResumeSession(path: string) {
       return [
         { role: "user", content: `(mock) resumed ${path}` },
-        {
-          role: "assistant",
-          content: "This is a mock resumed transcript — the real one comes from the kernel.",
-        },
+        { role: "assistant", content: "This is a mock resumed transcript — the real one comes from the kernel." },
       ];
     },
     async DeleteSession(path: string) {
@@ -372,9 +226,7 @@ export function makeMockApp(): AppBindings {
     async PickWorkspace() {
       // Browser dev has no native dialog; simulate picking a folder and re-root so
       // the topbar folder chip visibly changes.
-      return mockSwitchWorkspace(
-        cwd.endsWith("another-project") ? "~/projects/gaeaW" : "~/projects/another-project",
-      );
+      return mockSwitchWorkspace(cwd.endsWith("another-project") ? "~/projects/gaeaW" : "~/projects/another-project");
     },
     async SwitchWorkspace(path: string) {
       return mockSwitchWorkspace(path);
@@ -418,31 +270,15 @@ export function makeMockApp(): AppBindings {
     async Commands() {
       return [
         { name: "new", description: "Start a new session", kind: "builtin" as const },
-        {
-          name: "compact",
-          description: "Summarize older history to free up context",
-          kind: "builtin" as const,
-        },
+        { name: "compact", description: "Summarize older history to free up context", kind: "builtin" as const },
         { name: "model", description: "Switch model", kind: "builtin" as const },
         { name: "skill", description: "List skills", kind: "builtin" as const },
-        {
-          name: "explore",
-          description: "Investigate the codebase in an isolated subagent",
-          kind: "skill" as const,
-        },
-        {
-          name: "review",
-          description: "Review the staged diff",
-          hint: "[focus]",
-          kind: "custom" as const,
-        },
+        { name: "explore", description: "Investigate the codebase in an isolated subagent", kind: "skill" as const },
+        { name: "review", description: "Review the staged diff", hint: "[focus]", kind: "custom" as const },
       ];
     },
     async Capabilities() {
-      return {
-        servers: capServers.map((s) => ({ ...s })),
-        skills: capSkills.map((s) => ({ ...s })),
-      };
+      return { servers: capServers.map((s) => ({ ...s })), skills: capSkills.map((s) => ({ ...s })) };
     },
     async AddMCPServer(input: MCPServerInput) {
       const tools = input.transport === "stdio" ? 3 : 5;
@@ -471,12 +307,7 @@ export function makeMockApp(): AppBindings {
     async SetMCPServerEnabled(name: string, enabled: boolean) {
       capServers = capServers.map((s) =>
         s.name === name
-          ? {
-              ...s,
-              status: enabled ? "connected" : "disabled",
-              tools: enabled ? s.tools || 4 : 0,
-              error: undefined,
-            }
+          ? { ...s, status: enabled ? "connected" : "disabled", tools: enabled ? s.tools || 4 : 0, error: undefined }
           : s,
       );
     },
@@ -485,10 +316,7 @@ export function makeMockApp(): AppBindings {
       const from = input.lastIndexOf(" ") + 1;
       const cur = input.slice(from);
       const cmd = input.slice(0, input.indexOf(" ") < 0 ? input.length : input.indexOf(" "));
-      const subs: Record<
-        string,
-        { label: string; insert: string; hint: string; descend?: boolean }[]
-      > = {
+      const subs: Record<string, { label: string; insert: string; hint: string; descend?: boolean }[]> = {
         "/skill": [
           { label: "list", insert: "list", hint: "list skills" },
           { label: "show", insert: "show ", hint: "show a skill's body", descend: true },
@@ -500,22 +328,13 @@ export function makeMockApp(): AppBindings {
           { label: "trust", insert: "trust", hint: "trust this project's hooks" },
         ],
         "/model": [
-          {
-            label: "deepseek/deepseek-v4-flash",
-            insert: "deepseek/deepseek-v4-flash",
-            hint: "current",
-          },
+          { label: "deepseek/deepseek-v4-flash", insert: "deepseek/deepseek-v4-flash", hint: "current" },
           { label: "deepseek/deepseek-v4-pro", insert: "deepseek/deepseek-v4-pro", hint: "" },
         ],
       };
       const items = (subs[cmd] ?? [])
         .filter((it) => it.label.toLowerCase().startsWith(cur.toLowerCase()))
-        .map((it) => ({
-          label: it.label,
-          insert: it.insert,
-          hint: it.hint,
-          descend: it.descend ?? false,
-        }));
+        .map((it) => ({ label: it.label, insert: it.insert, hint: it.hint, descend: it.descend ?? false }));
       return { items, from };
     },
     async ListDir(rel: string) {
@@ -539,10 +358,9 @@ export function makeMockApp(): AppBindings {
     },
     async ReadFile(rel: string) {
       const samples: Record<string, string> = {
-        "README.md":
-          "# gaeaW\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
+        "README.md": "# gaeaW\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
         "go.mod": "module gaeaW\n\ngo 1.23\n",
-        "desktop/file.go": 'package desktop\n\nfunc main() {\n\tprintln("workspace preview")\n}\n',
+        "desktop/file.go": "package desktop\n\nfunc main() {\n\tprintln(\"workspace preview\")\n}\n",
         "internal/event.go": "package internal\n\n// mock file used by the browser dev seam\n",
       };
       return {
@@ -556,15 +374,9 @@ export function makeMockApp(): AppBindings {
     async OpenWorkspacePath(rel: string) {
       console.info("mock OpenWorkspacePath", rel);
     },
-    async SearchSpecs(query: string) {
-      console.info("mock SearchSpecs", query);
-      return [];
-    },
+    async WorkspaceChanges() { return []; },
     async RevealWorkspacePath(rel: string) {
       console.info("mock RevealWorkspacePath", rel);
-    },
-    async WorkspaceChanges() {
-      return [];
     },
     async SavePastedImage(_dataUrl: string) {
       return ".gaeaW/attachments/mock.png";
@@ -577,18 +389,8 @@ export function makeMockApp(): AppBindings {
     },
     async Models() {
       return [
-        {
-          ref: "deepseek/deepseek-v4-flash",
-          provider: "deepseek",
-          model: "deepseek-v4-flash",
-          current: true,
-        },
-        {
-          ref: "deepseek/deepseek-v4-pro",
-          provider: "deepseek",
-          model: "deepseek-v4-pro",
-          current: false,
-        },
+        { ref: "deepseek/deepseek-v4-flash", provider: "deepseek", model: "deepseek-v4-flash", current: true },
+        { ref: "deepseek/deepseek-v4-pro", provider: "deepseek", model: "deepseek-v4-pro", current: false },
       ];
     },
     async SetModel() {},
@@ -643,13 +445,7 @@ export function makeMockApp(): AppBindings {
       return name;
     },
     async MemorySuggestions() {
-      return {
-        memories: [],
-        skills: [],
-        generatedAt: new Date().toISOString(),
-        available: false,
-        source: "mock",
-      };
+      return { memories: [], skills: [], generatedAt: new Date().toISOString(), available: false, source: "mock" };
     },
     async AcceptMemorySuggestion(_candidate: MemorySuggestion) {
       return "mock-memory-path";
@@ -659,9 +455,7 @@ export function makeMockApp(): AppBindings {
     },
     async SelectTab(_tabID: string) {},
     async TabMeta() {
-      return [
-        { id: "mock-tab", scope: "project", workspaceRoot: "", title: "Mock", ready: true },
-      ] as any;
+      return [{ id: "mock-tab", scope: "project", workspaceRoot: "", title: "Mock", ready: true }] as any;
     },
     async Settings() {
       return JSON.parse(JSON.stringify(settings)) as SettingsView;
@@ -695,8 +489,7 @@ export function makeMockApp(): AppBindings {
     },
     async AddPermissionRule(list: string, rule: string) {
       const k = list as "allow" | "ask" | "deny";
-      if (settings.permissions[k] && !settings.permissions[k].includes(rule))
-        settings.permissions[k].push(rule);
+      if (settings.permissions[k] && !settings.permissions[k].includes(rule)) settings.permissions[k].push(rule);
     },
     async RemovePermissionRule(list: string, rule: string) {
       const k = list as "allow" | "ask" | "deny";
@@ -770,14 +563,41 @@ export function makeMockApp(): AppBindings {
         window.open("https://github.com/esengine/gaeaW/releases/latest", "_blank", "noopener");
       }
     },
-    async SaveWindowState(_state: {
-      width: number;
-      height: number;
-      x: number;
-      y: number;
-      maximised: boolean;
-    }) {
+    async SaveWindowState(_state: {width:number;height:number;x:number;y:number;maximised:boolean}) {
       // no-op in browser dev
+    },
+    async KnowledgeList(): Promise<KnowledgeSummary[]> {
+      return [
+        { name: "gb50300-2024", title: "建筑工程施工质量验收统一标准 GB 50300-2024", category: "规范标准", tags: ["施工", "质量", "验收"], status: "现行", updatedAt: "2025-01-15T00:00:00.000Z" },
+        { name: "case-bio-remediation", title: "某焦化厂生物修复工程案例", category: "工程案例", tags: ["焦化厂", "生物修复", "PAHs"], status: "已归档", updatedAt: "2024-11-20T00:00:00.000Z" },
+        { name: "soil-sampling-guide", title: "污染场地土壤采样技术要点", category: "经验总结", tags: ["采样", "布点", "质量控制"], status: "常用", updatedAt: "2025-02-10T00:00:00.000Z" },
+        { name: "hdp-liner-spec", title: "HDPE 土工膜施工技术规范", category: "材料工艺", tags: ["HDPE", "土工膜", "防渗"], status: "现行", updatedAt: "2024-09-05T00:00:00.000Z" },
+      ];
+    },
+    async KnowledgeGet(name: string): Promise<KnowledgeEntry | null> {
+      const entries: Record<string, KnowledgeEntry> = {
+        "gb50300-2024": {
+          name: "gb50300-2024", title: "建筑工程施工质量验收统一标准 GB 50300-2024", category: "规范标准", tags: ["施工", "质量", "验收"], status: "现行", updatedAt: "2025-01-15T00:00:00.000Z",
+          body: "## 适用范围\n\n本标准适用于建筑工程施工质量的验收，包括地基与基础、主体结构、建筑装饰装修、建筑屋面、建筑给排水及供暖、通风与空调、建筑电气、智能建筑、建筑节能、电梯等分部工程。\n\n## 基本规定\n\n1. 施工现场质量管理应有相应的技术标准。\n2. 建筑工程施工质量应按下列要求进行验收。\n3. 建筑工程施工质量验收应划分为单位工程、分部工程、分项工程和检验批。",
+          phase: "施工验收", discipline: "土木工程", source: "住房和城乡建设部", version: 2, author: "住建部标准定额司",
+        },
+        "case-bio-remediation": {
+          name: "case-bio-remediation", title: "某焦化厂生物修复工程案例", category: "工程案例", tags: ["焦化厂", "生物修复", "PAHs"], status: "已归档", updatedAt: "2024-11-20T00:00:00.000Z",
+          body: "## 项目概况\n\n某焦化厂退役地块，占地面积约 120 亩。主要污染物为多环芳烃（PAHs）、苯系物（BTEX）和氰化物。\n\n## 修复方案\n\n采用原位生物通风+化学氧化联合修复工艺。\n- 生物通风：注入空气和营养盐，促进土著微生物降解\n- 化学氧化：注射过硫酸钠氧化高浓度区域\n\n## 修复效果\n\n经过 18 个月的修复运行，目标污染物去除率达到 85% 以上，达到修复目标值。",
+          phase: "施工", discipline: "环境工程", source: "内部案例库", version: 1, author: "张三",
+        },
+        "soil-sampling-guide": {
+          name: "soil-sampling-guide", title: "污染场地土壤采样技术要点", category: "经验总结", tags: ["采样", "布点", "质量控制"], status: "常用", updatedAt: "2025-02-10T00:00:00.000Z",
+          body: "## 采样前准备\n\n1. 收集场地历史资料，了解潜在污染物类型\n2. 制定采样方案，明确布点方法和数量\n3. 准备采样设备、样品容器和现场记录表\n\n## 布点方法\n\n- 系统布点法：适用于污染物分布均匀的场地\n- 分层布点法：适用于污染来源明确的场地\n- 判断布点法：适用于历史污染区域\n\n## 质量控制\n\n- 现场平行样：每 10 个样品至少 1 个\n- 运输空白样：每批次至少 1 个\n- 设备清洗样：每个采样点之间采集",
+          phase: "调查", discipline: "环境工程", source: "项目经验总结", version: 3, author: "李四",
+        },
+        "hdp-liner-spec": {
+          name: "hdp-liner-spec", title: "HDPE 土工膜施工技术规范", category: "材料工艺", tags: ["HDPE", "土工膜", "防渗"], status: "现行", updatedAt: "2024-09-05T00:00:00.000Z",
+          body: "## 材料要求\n\nHDPE 土工膜厚度不应小于 1.5mm，密度不低于 0.94g/cm³。\n\n## 施工要点\n\n1. 基底应平整压实，无尖锐物\n2. 膜与膜之间采用热熔焊接\n3. 焊缝强度不低于母材强度\n4. 铺设时应预留 5%-8% 的伸缩余量\n\n## 质量检验\n\n- 目测检查：膜面有无破损、褶皱\n- 气密性试验：焊缝处进行气压测试\n- 厚度检测：每 500m² 测一点",
+          phase: "施工", discipline: "岩土工程", source: "施工技术手册", version: 2, author: "王五",
+        },
+      };
+      return entries[name] || null;
     },
   };
 }

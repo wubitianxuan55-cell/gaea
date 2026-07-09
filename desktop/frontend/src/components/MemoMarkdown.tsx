@@ -106,53 +106,50 @@ function useProgressiveMarkdown(text: string): { stable: string; pending: string
  * 流式期间：找到稳定段落边界（\n\n），前缀用完整 Markdown 渲染，
  * 未完成尾部用简单样式。流式结束后全量 Markdown 渲染。
  */
-export const MemoMarkdown = memo(
-  function MemoMarkdown({ text, streaming }: MemoMarkdownProps) {
-    // RAF 节流：每帧最多更新一次
-    const [visible, setVisible] = useState(text);
-    const rafRef = useRef(0);
+export const MemoMarkdown = memo(function MemoMarkdown({ text, streaming }: MemoMarkdownProps) {
+  // RAF 节流：每帧最多更新一次
+  const [visible, setVisible] = useState(text);
+  const rafRef = useRef(0);
 
-    useEffect(() => {
-      if (!streaming) {
-        setVisible(text);
-        return;
-      }
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => setVisible(text));
-      return () => cancelAnimationFrame(rafRef.current);
-    }, [text, streaming]);
-
-    const { stable, pending } = useProgressiveMarkdown(visible);
-
-    // 流式结束：全量 Markdown
+  useEffect(() => {
     if (!streaming) {
-      return (
-        <div className="break-words overflow-wrap-break-word">
-          <Markdown text={text || ""} />
-        </div>
-      );
+      setVisible(text);
+      return;
     }
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => setVisible(text));
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [text, streaming]);
 
-    // 流式中：稳定部分 Markdown + 不稳定部分简单样式 + 闪烁光标
+  const { stable, pending } = useProgressiveMarkdown(visible);
+
+  // 流式结束：全量 Markdown
+  if (!streaming) {
     return (
       <div className="break-words overflow-wrap-break-word">
-        {stable && (
-          <div className="md text-[14px] leading-relaxed">
-            <Markdown text={stable} />
-          </div>
-        )}
-        {pending && (
-          <div
-            className="!font-sans whitespace-pre-wrap !bg-transparent !p-0 !m-0 !text-[inherit] !border-0 leading-relaxed text-[14px]"
-            dangerouslySetInnerHTML={{ __html: renderPending(pending) }}
-          />
-        )}
-        <span
-          className="inline-block w-[2px] h-[1em] bg-accent align-middle ml-px animate-pulse"
-          aria-hidden
-        />
+        <Markdown text={text || ""} />
       </div>
     );
-  },
-  (prev, next) => prev.text === next.text && prev.streaming === next.streaming,
-);
+  }
+
+  // 流式中：稳定部分 Markdown + 不稳定部分简单样式 + 闪烁光标
+  return (
+    <div className="break-words overflow-wrap-break-word">
+      {stable && (
+        <div className="md text-[14px] leading-relaxed">
+          <Markdown text={stable} />
+        </div>
+      )}
+      {pending && (
+        <div
+          className="!font-sans whitespace-pre-wrap !bg-transparent !p-0 !m-0 !text-[inherit] !border-0 leading-relaxed text-[14px]"
+          dangerouslySetInnerHTML={{ __html: renderPending(pending) }}
+        />
+      )}
+      <span
+        className="inline-block w-[2px] h-[1em] bg-accent align-middle ml-px animate-pulse"
+        aria-hidden
+      />
+    </div>
+  );
+}, (prev, next) => prev.text === next.text && prev.streaming === next.streaming);

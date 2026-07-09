@@ -5,12 +5,9 @@ import type { WireUsage } from "./types";
 
 // ─── price table ───────────────────────────────────────────────
 
-export const MODEL_PRICES: Record<
-  string,
-  { cacheHit: number; input: number; output: number; label: string }
-> = {
+export const MODEL_PRICES: Record<string, { cacheHit: number; input: number; output: number; label: string }> = {
   "deepseek-v4-flash": { cacheHit: 0.0203, input: 1.015, output: 2.03, label: "V4 Flash" },
-  "deepseek-v4-pro": { cacheHit: 0.0263, input: 3.154, output: 6.308, label: "V4 Pro" },
+  "deepseek-v4-pro":   { cacheHit: 0.0263, input: 3.154, output: 6.308, label: "V4 Pro" },
 };
 const DEFAULT_PRICE = MODEL_PRICES["deepseek-v4-flash"];
 
@@ -78,11 +75,7 @@ export interface ColStats {
 
 /** Aggregate a list of steps into column stats (cost summed directly from StepRecord). */
 export function aggSteps(steps: StepRecord[]): ColStats {
-  let prompt = 0,
-    completion = 0,
-    cacheHit = 0,
-    cacheMiss = 0,
-    cost = 0;
+  let prompt = 0, completion = 0, cacheHit = 0, cacheMiss = 0, cost = 0;
   for (const s of steps) {
     prompt += s.prompt;
     completion += s.completion;
@@ -96,23 +89,14 @@ export function aggSteps(steps: StepRecord[]): ColStats {
 /** Convert a WireUsage snapshot to column stats (cost from costUsd). */
 export function colFromUsage(u: WireUsage | undefined): ColStats {
   if (!u) return { prompt: 0, completion: 0, cacheHit: 0, cacheMiss: 0, cost: 0 };
-  return {
-    prompt: u.promptTokens,
-    completion: u.completionTokens,
-    cacheHit: u.cacheHitTokens,
-    cacheMiss: u.cacheMissTokens,
-    cost: u.costUsd ?? 0,
-  };
+  return { prompt: u.promptTokens, completion: u.completionTokens, cacheHit: u.cacheHitTokens, cacheMiss: u.cacheMissTokens, cost: u.costUsd ?? 0 };
 }
 
 /** Filter steps by source tag. */
-export function filterSteps(
-  steps: StepRecord[],
-  source: "main" | "subagent" | "all",
-): StepRecord[] {
+export function filterSteps(steps: StepRecord[], source: "main" | "subagent" | "all"): StepRecord[] {
   if (source === "all") return steps;
   const target = source === "subagent" ? "subagent" : "main";
-  return steps.filter((s) => s.source === target || (!s.source && source === "main"));
+  return steps.filter(s => s.source === target || (!s.source && source === "main"));
 }
 
 // ─── hit rate helpers for StatsPanel ────────────────────────────

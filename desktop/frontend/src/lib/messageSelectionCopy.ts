@@ -56,10 +56,9 @@ function rangeIntersectsMessage(range: Range, root: ParentNode): boolean {
   if (directMessage) return true;
 
   const scope = common ?? root;
-  const candidates =
-    scope instanceof Element && scope.matches(MESSAGE_SELECTION_SELECTOR)
-      ? [scope, ...Array.from(scope.querySelectorAll(MESSAGE_SELECTION_SELECTOR))]
-      : Array.from(scope.querySelectorAll(MESSAGE_SELECTION_SELECTOR));
+  const candidates = scope instanceof Element && scope.matches(MESSAGE_SELECTION_SELECTOR)
+    ? [scope, ...Array.from(scope.querySelectorAll(MESSAGE_SELECTION_SELECTOR))]
+    : Array.from(scope.querySelectorAll(MESSAGE_SELECTION_SELECTOR));
 
   return candidates.some((node) => {
     try {
@@ -86,5 +85,5 @@ function elementFromEventTarget(target: EventTarget | null): Element | null {
 
 function elementFromNode(node: Node | null): Element | null {
   if (!node) return null;
-  return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  return node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
 }

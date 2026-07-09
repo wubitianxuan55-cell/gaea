@@ -1,18 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  priceFor,
-  calcCost,
-  fmtTokens,
-  fmtCost,
-  fmtElapsed,
-  hitRateColor,
-  hitRate,
-  aggSteps,
-  colFromUsage,
-  filterSteps,
-  hitPct,
-  withHitRate,
-  mergeCols,
+  priceFor, calcCost, fmtTokens, fmtCost, fmtElapsed,
+  hitRateColor, hitRate, aggSteps, colFromUsage,
+  filterSteps, hitPct, withHitRate, mergeCols,
 } from "./stats";
 import type { StepRecord } from "./stats";
 
@@ -110,13 +100,9 @@ describe("colFromUsage", () => {
 
   it("computes cost from usage snapshot", () => {
     const c = colFromUsage({
-      promptTokens: 1000,
-      completionTokens: 500,
-      cacheHitTokens: 800,
-      cacheMissTokens: 200,
-      totalTokens: 1500,
-      sessionCacheHitTokens: 0,
-      sessionCacheMissTokens: 0,
+      promptTokens: 1000, completionTokens: 500,
+      cacheHitTokens: 800, cacheMissTokens: 200,
+      totalTokens: 1500, sessionCacheHitTokens: 0, sessionCacheMissTokens: 0,
       costUsd: 0.005,
     });
     expect(c.prompt).toBe(1000);
@@ -129,24 +115,8 @@ describe("colFromUsage", () => {
 
 describe("aggSteps", () => {
   const steps: StepRecord[] = [
-    {
-      step: 1,
-      prompt: 100,
-      completion: 50,
-      cacheHit: 80,
-      cacheMiss: 20,
-      cost: 0.001,
-      source: "main",
-    },
-    {
-      step: 2,
-      prompt: 200,
-      completion: 100,
-      cacheHit: 160,
-      cacheMiss: 40,
-      cost: 0.002,
-      source: "subagent",
-    },
+    { step: 1, prompt: 100, completion: 50, cacheHit: 80, cacheMiss: 20, cost: 0.001, source: "main" },
+    { step: 2, prompt: 200, completion: 100, cacheHit: 160, cacheMiss: 40, cost: 0.002, source: "subagent" },
   ];
 
   it("aggregates all steps", () => {
@@ -167,24 +137,8 @@ describe("aggSteps", () => {
 
 describe("filterSteps", () => {
   const steps: StepRecord[] = [
-    {
-      step: 1,
-      prompt: 100,
-      completion: 50,
-      cacheHit: 80,
-      cacheMiss: 20,
-      cost: 0.001,
-      source: "main",
-    },
-    {
-      step: 2,
-      prompt: 200,
-      completion: 100,
-      cacheHit: 160,
-      cacheMiss: 40,
-      cost: 0.002,
-      source: "subagent",
-    },
+    { step: 1, prompt: 100, completion: 50, cacheHit: 80, cacheMiss: 20, cost: 0.001, source: "main" },
+    { step: 2, prompt: 200, completion: 100, cacheHit: 160, cacheMiss: 40, cost: 0.002, source: "subagent" },
     { step: 3, prompt: 150, completion: 75, cacheHit: 0, cacheMiss: 0, cost: 0 }, // no source → main
   ];
 
@@ -195,7 +149,7 @@ describe("filterSteps", () => {
   it("filters main", () => {
     const r = filterSteps(steps, "main");
     expect(r.length).toBe(2);
-    expect(r.every((s) => !s.source || s.source !== "subagent")).toBe(true);
+    expect(r.every(s => !s.source || s.source !== "subagent")).toBe(true);
   });
 
   it("filters subagent", () => {

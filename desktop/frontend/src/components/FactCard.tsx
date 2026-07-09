@@ -46,11 +46,7 @@ function renderWithLinks(
       );
     } else {
       out.push(
-        <span
-          key={k++}
-          className="inline text-fg-faint line-through font-mono text-[11px]"
-          title={`未找到 "${target}"`}
-        >
+        <span key={k++} className="inline text-fg-faint line-through font-mono text-[11px]" title={`未找到 "${target}"`}>
           {target}
         </span>,
       );
@@ -72,8 +68,7 @@ export function FactCard(p: {
   onForget: () => void;
   onChangeType: (name: string, newType: string) => void;
 }) {
-  const { fact, factNames, expanded, highlight, onToggle, onJump, onSave, onForget, onChangeType } =
-    p;
+  const { fact, factNames, expanded, highlight, onToggle, onJump, onSave, onForget, onChangeType } = p;
   const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(fact.body);
@@ -188,19 +183,9 @@ export function FactCard(p: {
                     }`}
                     disabled={isCurrent}
                     onClick={() => onChangeType(fact.name, tgt)}
-                    title={
-                      isCurrent
-                        ? t("memory.typeCurrent")
-                        : t(
-                            `memory.promoteTo${tgt.charAt(0).toUpperCase() + tgt.slice(1)}` as never,
-                          )
-                    }
+                    title={isCurrent ? t("memory.typeCurrent") : t(`memory.promoteTo${tgt.charAt(0).toUpperCase() + tgt.slice(1)}` as never)}
                   >
-                    {tgt === "user" ? (
-                      <ArrowUp size={10} />
-                    ) : tgt === "feedback" ? (
-                      <ArrowDown size={10} />
-                    ) : null}
+                    {tgt === "user" ? <ArrowUp size={10} /> : tgt === "feedback" ? <ArrowDown size={10} /> : null}
                     {factTypeLabel(t, tgt)}
                   </button>
                 );
@@ -223,11 +208,7 @@ export function FactCard(p: {
                   }}
                   disabled={!l.exists}
                   type="button"
-                  title={
-                    l.exists
-                      ? `${t("memory.jumpTo")} ${l.name}`
-                      : t("memory.deadLink", { name: l.name })
-                  }
+                  title={l.exists ? `${t("memory.jumpTo")} ${l.name}` : t("memory.deadLink", { name: l.name })}
                 >
                   {l.name}
                 </button>

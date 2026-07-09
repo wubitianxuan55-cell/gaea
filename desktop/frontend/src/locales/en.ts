@@ -27,6 +27,15 @@ export const en = {
   "topbar.customize": "Customize",
   "topbar.newSession": "New session",
   "topbar.startupError": "startup error: {msg}",
+  "topbar.knowledge": "Knowledge",
+
+  // knowledge base panel
+  "knowledge.title": "Knowledge Base",
+  "knowledge.search": "Search entries…",
+  "knowledge.empty": "Knowledge base is empty",
+  "knowledge.noMatch": "No matching entries",
+  "knowledge.category": "Category",
+  "knowledge.all": "All",
 
   // sidebar
   "sidebar.recent": "Recent",
@@ -114,32 +123,27 @@ export const en = {
   "caps.noSkillMatches": "No matching skills.",
 
   // welcome / empty state
-  "welcome.tagline":
-    "A soil remediation engineering AI assistant — describe a task or ask anything.",
+  "welcome.tagline": "A soil remediation engineering AI assistant — describe a task or ask anything.",
   "welcome.hintCommands": "commands",
   "welcome.hintFiles": "reference files",
   "welcome.hintSend": "send",
   // V5.16: Quick task cards
   "welcome.card1.title": "Site Investigation",
   "welcome.card1.desc": "Start a preliminary/detailed investigation report framework",
-  "welcome.card1.prompt":
-    "Help me start a preliminary site investigation report framework, covering site basic info, historical usage, and surrounding sensitive targets.",
+  "welcome.card1.prompt": "Help me start a preliminary site investigation report framework, covering site basic info, historical usage, and surrounding sensitive targets.",
   "welcome.card2.title": "Risk Assessment",
   "welcome.card2.desc": "Evaluate contamination against GB 36600/GB 15618 standards",
-  "welcome.card2.prompt":
-    "Based on the provided testing data, evaluate against GB 36600 and GB 15618 standards for exceedance determination and risk assessment.",
+  "welcome.card2.prompt": "Based on the provided testing data, evaluate against GB 36600 and GB 15618 standards for exceedance determination and risk assessment.",
   "welcome.card3.title": "Cost Estimation",
   "welcome.card3.desc": "Generate a 7-category cost breakdown for remediation projects",
-  "welcome.card3.prompt":
-    "Generate a 7-category cost estimation table for soil remediation engineering, covering site investigation, risk assessment, design, construction, monitoring and acceptance.",
+  "welcome.card3.prompt": "Generate a 7-category cost estimation table for soil remediation engineering, covering site investigation, risk assessment, design, construction, monitoring and acceptance.",
   "welcome.ex1": "What soil pollution risk control standards exist",
   "welcome.ex2": "How to choose remediation technologies",
   "welcome.ex3": "How to write a site investigation report",
 
   // loading
   "skeleton.title": "Connecting…",
-  "skeleton.desc":
-    "gaeaW is initializing the remediation engine. Sit tight — you'll be working in a moment.",
+  "skeleton.desc": "gaeaW is initializing the remediation engine. Sit tight — you'll be working in a moment.",
   "skeleton.tools": "Tools",
   "skeleton.toolsDesc": "Doc/calc/spec tools",
   "skeleton.skills": "Skills",
@@ -156,8 +160,7 @@ export const en = {
   "composer.modeExplore": "Explore",
   "composer.modeDevelop": "Develop",
   "composer.modeOrchestrate": "Orchestrate",
-  "composer.modeExploreDesc":
-    "Read-only research: understand code, answer questions, trace call chains",
+  "composer.modeExploreDesc": "Read-only research: understand code, answer questions, trace call chains",
   "composer.modeDevelopDesc": "Full development: complete toolset, default mode",
   "composer.modeOrchestrateDesc": "Orchestrated delivery: plan → execute → verify workflow",
   "composer.yoloToggle": "YOLO",
@@ -239,8 +242,7 @@ export const en = {
   "memory.instructionFiles": "Instruction files",
   "memory.noDocs": "No REASONIX.md found. Quick-add one above.",
   "memory.savedMemories": "Saved memories",
-  "memory.fallibleNote":
-    "Background memory. Verify file, function, and flag references before relying on them.",
+  "memory.fallibleNote": "Background memory. Verify file, function, and flag references before relying on them.",
   "memory.searchPlaceholder": "Search title, slug, description, or body…",
   "memory.typeFilter": "Memory type filter",
   "memory.allTypes": "All",
@@ -315,12 +317,10 @@ export const en = {
   "settings.providerApiKeyEnv": "api_key_env (e.g. DEEPSEEK_API_KEY)",
   "settings.providerBalanceUrl": "Balance URL (optional)",
   "settings.balanceUrlPlaceholder": "balance endpoint (e.g. https://api.deepseek.com/user/balance)",
-  "settings.balanceUrlHint":
-    "Optional. If set, the wallet balance is queried and shown in the status bar.",
+  "settings.balanceUrlHint": "Optional. If set, the wallet balance is queried and shown in the status bar.",
   "settings.providerContextWindow": "Context window",
   "settings.contextWindowPlaceholder": "tokens (0 = provider default)",
-  "settings.contextWindowHint":
-    "Max tokens to keep in context for this provider. Leave 0 to use the provider's default.",
+  "settings.contextWindowHint": "Max tokens to keep in context for this provider. Leave 0 to use the provider's default.",
   "settings.setKey": "set {env} (→ .env)",
   "settings.saveKey": "Save key",
   "settings.permissions": "Permissions",
@@ -330,8 +330,7 @@ export const en = {
   "settings.modeDeny": "deny (block writers)",
   "settings.ruleForm": "Rule form: ToolName or ToolName(glob). Precedence: deny > ask > allow.",
   "settings.yolo": "YOLO — skip all approvals (this session)",
-  "settings.yoloHint":
-    "Auto-runs every tool call (writers, bash) without asking. Deny rules still block. Runtime-only — resets on relaunch.",
+  "settings.yoloHint": "Auto-runs every tool call (writers, bash) without asking. Deny rules still block. Runtime-only — resets on relaunch.",
   "settings.addRule": "add {list} rule…",
   "settings.sandboxTitle": "Sandbox & workspace",
   "settings.bashSandbox": "Bash sandbox",
@@ -409,8 +408,7 @@ export const en = {
   "updater.releaseNotes": "Release notes",
   "updater.installNow": "Update now",
   "updater.goToDownload": "Go to download page",
-  "updater.macHint":
-    "Automatic update isn't available on macOS yet — please download and install manually.",
+  "updater.macHint": "Automatic update isn't available on macOS yet — please download and install manually.",
   "updater.downloading": "Downloading… {done} / {total} ({pct}%)",
   "updater.verifying": "Verifying signature…",
   "updater.applying": "Installing…",
@@ -437,8 +435,7 @@ export const en = {
   "memory.archived": "Archived",
   "memory.facts": "Facts",
   "memory.docs": "Docs",
-  "memory.noSuggestions":
-    "No suggestions yet. The AI will suggest memories after analyzing your workflow.",
+  "memory.noSuggestions": "No suggestions yet. The AI will suggest memories after analyzing your workflow.",
   "memory.jumpTo": "Jump to",
   "memory.scopeUser": "User",
   "memory.scopeProject": "Project",

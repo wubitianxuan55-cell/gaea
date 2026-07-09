@@ -115,10 +115,7 @@ export function AskCard({
     setSel((s) => {
       const cur = s[q.id] ?? [];
       if (q.multi) {
-        return {
-          ...s,
-          [q.id]: cur.includes(label) ? cur.filter((x) => x !== label) : [...cur, label],
-        };
+        return { ...s, [q.id]: cur.includes(label) ? cur.filter((x) => x !== label) : [...cur, label] };
       }
       return { ...s, [q.id]: [label] };
     });
@@ -153,7 +150,9 @@ export function AskCard({
         className="relative flex flex-col gap-4 w-full max-w-lg max-h-[85vh] overflow-y-auto bg-bg-elev border border-border rounded-xl p-5 pt-8 animate-[scaleIn_.2s_ease-out] pointer-events-auto"
         style={{
           boxShadow: "var(--ds-shadow-panel)",
-          ...(pos ? { position: "absolute", left: pos.x, top: pos.y } : { visibility: "hidden" }),
+          ...(pos
+            ? { position: "absolute", left: pos.x, top: pos.y }
+            : { visibility: "hidden" })
         }}
       >
         {/* 拖拽手柄 */}
@@ -203,23 +202,18 @@ export function AskCard({
                           : `w-[18px] h-[18px] rounded-full border-2 ${on ? "border-accent bg-accent" : "border-fg-faint"}`
                       }`}
                     >
-                      {on &&
-                        (q.multi ? (
-                          <span className="text-accent-fg text-[10px] font-bold">✓</span>
-                        ) : (
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-fg" />
-                        ))}
+                      {on && (
+                        q.multi
+                          ? <span className="text-accent-fg text-[10px] font-bold">✓</span>
+                          : <span className="w-1.5 h-1.5 rounded-full bg-accent-fg" />
+                      )}
                     </span>
                     <span className="flex flex-col gap-0.5 min-w-0">
-                      <span
-                        className={`text-[13px] leading-snug ${on ? "text-fg font-medium" : "text-fg-dim"}`}
-                      >
+                      <span className={`text-[13px] leading-snug ${on ? "text-fg font-medium" : "text-fg-dim"}`}>
                         {o.label}
                       </span>
                       {o.description && (
-                        <span className="text-fg-faint text-[11px] leading-snug">
-                          {o.description}
-                        </span>
+                        <span className="text-fg-faint text-[11px] leading-snug">{o.description}</span>
                       )}
                     </span>
                   </button>

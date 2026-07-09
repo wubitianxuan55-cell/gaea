@@ -21,7 +21,10 @@ export function DocEditor(p: {
           <div className="border border-border-soft rounded-lg overflow-hidden" key={d.path}>
             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-bg-soft/50">
               <span className="badge badge--project shrink-0">{d.scope}</span>
-              <span className="flex-1 text-fg-dim font-mono text-[10.5px] truncate" title={d.path}>
+              <span
+                className="flex-1 text-fg-dim font-mono text-[10.5px] truncate"
+                title={d.path}
+              >
                 {d.path}
               </span>
               {!editing && (

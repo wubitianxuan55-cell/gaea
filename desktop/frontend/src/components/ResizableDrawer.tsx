@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type {
-  CSSProperties,
-  KeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-  ReactNode,
-} from "react";
+import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useT } from "../lib/i18n";
 import { loadLayoutSize, saveLayoutSize, type LayoutSizeKey } from "../lib/layoutPreferences";
 
@@ -63,21 +58,13 @@ export function ResizableDrawer({
     setExiting(true);
     setTimeout(() => onClose(), 120); // matches drawer-out duration
   }, [exiting, onClose]);
-  const [viewportWidth, setViewportWidth] = useState(() =>
-    typeof window === "undefined" ? 1440 : window.innerWidth,
-  );
+  const [viewportWidth, setViewportWidth] = useState(() => (typeof window === "undefined" ? 1440 : window.innerWidth));
   const [width, setWidth] = useState(() =>
     loadLayoutSize(config.key, config.defaultWidth, (value) => clampDrawerWidth(value, wide)),
   );
   const [resizing, setResizing] = useState(false);
-  const effectiveWidth = useMemo(
-    () => clampDrawerWidth(width, wide, viewportWidth),
-    [viewportWidth, wide, width],
-  );
-  const style = useMemo(
-    () => ({ "--drawer-width": `${effectiveWidth}px` }) as CSSProperties,
-    [effectiveWidth],
-  );
+  const effectiveWidth = useMemo(() => clampDrawerWidth(width, wide, viewportWidth), [viewportWidth, wide, width]);
+  const style = useMemo(() => ({ "--drawer-width": `${effectiveWidth}px` }) as CSSProperties, [effectiveWidth]);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -101,11 +88,7 @@ export function ResizableDrawer({
       setResizing(true);
       let nextWidth = effectiveWidth;
       const onMove = (moveEvent: PointerEvent) => {
-        nextWidth = clampDrawerWidth(
-          window.innerWidth - moveEvent.clientX,
-          wide,
-          window.innerWidth,
-        );
+        nextWidth = clampDrawerWidth(window.innerWidth - moveEvent.clientX, wide, window.innerWidth);
         setWidth(nextWidth);
       };
       const onDone = () => {
@@ -148,42 +131,38 @@ export function ResizableDrawer({
       {/* transparent click-to-close layer */}
       <div className="absolute inset-0" onClick={handleClose} />
       {/* visual backdrop only — does not intercept scroll */}
-      <div
-        className={"absolute inset-0 pointer-events-none " + (subtle ? "bg-bg/16" : "bg-bg/60")}
-      />
+      <div className={"absolute inset-0 pointer-events-none " + (subtle ? "bg-bg/16" : "bg-bg/60")} />
       {/* positioning layer */}
       <div className="absolute inset-0 flex justify-end pointer-events-none">
-        <aside
-          className={
-            "relative flex flex-col h-full bg-bg-elev border-l border-border pointer-events-auto " +
-            (exiting ? "anim-drawer-out" : "anim-drawer-in") +
-            (resizing ? " drawer--resizing" : "") +
-            " " +
-            (wide
-              ? "w-[min(var(--drawer-width,720px),94vw)]"
-              : "w-[min(var(--drawer-width,440px),92vw)]")
-          }
-          onClick={(e) => e.stopPropagation()}
-          style={{ ...style, boxShadow: "var(--ds-shadow-panel)" }}
+      <aside
+        className={"relative flex flex-col h-full bg-bg-elev border-l border-border pointer-events-auto " + (
+          exiting ? "anim-drawer-out" : "anim-drawer-in"
+        ) + (resizing ? " drawer--resizing" : "") + " " + (
+          wide
+            ? "w-[min(var(--drawer-width,720px),94vw)]"
+            : "w-[min(var(--drawer-width,440px),92vw)]"
+        )}
+        onClick={(e) => e.stopPropagation()}
+        style={{...style, boxShadow: "var(--ds-shadow-panel)"}}
+      >
+        <button
+          className="absolute top-0 bottom-0 left-[-4px] z-[4] w-2 p-0 border-0 bg-transparent cursor-col-resize no-drag group"
+          type="button"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("drawer.resize")}
+          aria-valuemin={config.minWidth}
+          aria-valuemax={config.maxWidth}
+          aria-valuenow={effectiveWidth}
+          onPointerDown={startResize}
+          onKeyDown={onKeyDown}
+          onDoubleClick={() => saveWidth(config.defaultWidth)}
+          title={t("drawer.resize")}
         >
-          <button
-            className="absolute top-0 bottom-0 left-[-4px] z-[4] w-2 p-0 border-0 bg-transparent cursor-col-resize no-drag group"
-            type="button"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label={t("drawer.resize")}
-            aria-valuemin={config.minWidth}
-            aria-valuemax={config.maxWidth}
-            aria-valuenow={effectiveWidth}
-            onPointerDown={startResize}
-            onKeyDown={onKeyDown}
-            onDoubleClick={() => saveWidth(config.defaultWidth)}
-            title={t("drawer.resize")}
-          >
-            <span className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-[background,box-shadow] duration-[var(--dur-fast)] group-hover:bg-accent group-hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_24%,transparent)] group-focus-visible:bg-accent group-focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_24%,transparent)] pointer-events-none" />
-          </button>
-          {children}
-        </aside>
+          <span className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-[background,box-shadow] duration-[var(--dur-fast)] group-hover:bg-accent group-hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_24%,transparent)] group-focus-visible:bg-accent group-focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_24%,transparent)] pointer-events-none" />
+        </button>
+        {children}
+      </aside>
       </div>
     </div>
   );

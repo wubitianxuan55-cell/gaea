@@ -25,12 +25,7 @@ const STATE_COLORS: Record<ProcessState, string> = {
   stopped: "var(--ds-warn)",
 };
 
-function ProcessIcon({
-  size = 14,
-  tone = "default",
-  children,
-  ...rest
-}: IconProps & { tone?: ProcessTone; children: ReactNode }) {
+function ProcessIcon({ size = 14, tone = "default", children, ...rest }: IconProps & { tone?: ProcessTone; children: ReactNode }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -50,27 +45,15 @@ function ProcessIcon({
 }
 
 export function ProcessChevronIcon(props: IconProps & { tone?: ProcessTone }) {
-  return (
-    <ProcessIcon {...props}>
-      <path d="m6 9 6 6 6-6" />
-    </ProcessIcon>
-  );
+  return <ProcessIcon {...props}><path d="m6 9 6 6 6-6" /></ProcessIcon>;
 }
 
 export function ProcessCheckIcon(props: IconProps & { tone?: ProcessTone }) {
-  return (
-    <ProcessIcon {...props}>
-      <path d="m5 12 5 5L20 7" />
-    </ProcessIcon>
-  );
+  return <ProcessIcon {...props}><path d="m5 12 5 5L20 7" /></ProcessIcon>;
 }
 
 export function ProcessXIcon(props: IconProps & { tone?: ProcessTone }) {
-  return (
-    <ProcessIcon {...props}>
-      <path d="M6 6l12 12M18 6 6 18" />
-    </ProcessIcon>
-  );
+  return <ProcessIcon {...props}><path d="M6 6l12 12M18 6 6 18" /></ProcessIcon>;
 }
 
 export function ProcessBrainIcon(props: IconProps & { tone?: ProcessTone }) {
@@ -93,16 +76,11 @@ export function ProcessToolIcon(props: IconProps & { tone?: ProcessTone }) {
 /** 根据 ProcessState 返回对应的 tone。 */
 export function processStateToTone(state: ProcessState): ProcessTone {
   switch (state) {
-    case "done":
-      return "success";
-    case "failed":
-      return "danger";
-    case "running":
-      return "accent";
-    case "stopped":
-      return "warning";
-    default:
-      return "default";
+    case "done": return "success";
+    case "failed": return "danger";
+    case "running": return "accent";
+    case "stopped": return "warning";
+    default: return "default";
   }
 }
 

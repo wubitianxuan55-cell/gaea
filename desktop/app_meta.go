@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
+	"time"
 
 	"gaeaW/internal/agent"
 	"gaeaW/internal/boot"
 	"gaeaW/internal/config"
 	"gaeaW/internal/control"
-	gaeaWbuiltin "gaeaW/internal/tool/builtin"
 	"gaeaW/internal/i18n"
+	"gaeaW/internal/knowledge"
 	"gaeaW/internal/memory"
 	"gaeaW/internal/provider"
 	"gaeaW/internal/provider/xai"
@@ -491,30 +493,86 @@ func parseScope(s string) memory.Scope {
 	}
 }
 
-// SpecEntryView 是规范条目的前端视图
-type SpecEntryView struct {
-	Code        string `json:"code"`
-	Clause      string `json:"clause"`
-	Title       string `json:"title"`
-	Category    string `json:"category"`
-	Content     string `json:"content"`
-	Explanation string `json:"explanation"`
+// openKnowledgeStore opens the user's knowledge directory (~/.gaeaW/knowledge).
+func openKnowledgeStore() (*knowledge.Store, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	dir := filepath.Join(home, ".gaeaW", "knowledge")
+	return knowledge.Open(dir)
 }
 
-// SearchSpecs searches the built-in specification index for matching entries.
-// This is a Wails-bound method (no receiver state needed).
-func (a *App) SearchSpecs(query string) []SpecEntryView {
-	entries := gaeaWbuiltin.SearchSpecs(query)
-	result := make([]SpecEntryView, len(entries))
-	for i, e := range entries {
-		result[i] = SpecEntryView{
-			Code:        e.Code,
-			Clause:      e.Clause,
-			Title:       e.Title,
-			Category:    e.Category,
-			Content:     e.Content,
-			Explanation: e.Explanation,
-		}
+// KnowledgeSummary is the lightweight view of a knowledge entry (without body).
+type KnowledgeSummary struct {
+	Name      string    `json:"name"`
+	Title     string    `json:"title"`
+	Category  string    `json:"category"`
+	Tags      []string  `json:"tags"`
+	Status    string    `json:"status"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// KnowledgeEntry is the full knowledge entry including body.
+type KnowledgeEntry struct {
+	Name       string    `json:"name"`
+	Title      string    `json:"title"`
+	Category   string    `json:"category"`
+	Phase      string    `json:"phase"`
+	Discipline string    `json:"discipline"`
+	Tags       []string  `json:"tags"`
+	Status     string    `json:"status"`
+	Version    int       `json:"version"`
+	Author     string    `json:"author"`
+	Source     string    `json:"source"`
+	Body       string    `json:"body"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+// KnowledgeList returns all knowledge entries as summaries (without body).
+func (a *App) KnowledgeList() []KnowledgeSummary {
+	store, err := openKnowledgeStore()
+	if err != nil {
+		return []KnowledgeSummary{}
 	}
-	return result
+	list := store.List()
+	out := make([]KnowledgeSummary, 0, len(list))
+	for _, s := range list {
+		out = append(out, KnowledgeSummary{
+			Name:      s.Name,
+			Title:     s.Title,
+			Category:  s.Category,
+			Tags:      s.Tags,
+			Status:    s.Status,
+			UpdatedAt: s.UpdatedAt,
+		})
+	}
+	return out
+}
+
+// KnowledgeGet returns a single knowledge entry with full body by name.
+// Returns nil when the entry is not found.
+func (a *App) KnowledgeGet(name string) *KnowledgeEntry {
+	store, err := openKnowledgeStore()
+	if err != nil {
+		return nil
+	}
+	e, err := store.Get(name)
+	if err != nil {
+		return nil
+	}
+	return &KnowledgeEntry{
+		Name:       e.Name,
+		Title:      e.Title,
+		Category:   e.Category,
+		Phase:      e.Phase,
+		Discipline: e.Discipline,
+		Tags:       e.Tags,
+		Status:     e.Status,
+		Version:    e.Version,
+		Author:     e.Author,
+		Source:     e.Source,
+		Body:       e.Body,
+		UpdatedAt:  e.UpdatedAt,
+	}
 }

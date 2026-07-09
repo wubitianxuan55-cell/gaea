@@ -84,10 +84,9 @@ export function useGSAPCollapse(
     } else {
       // Close: if caller provided a pre-swap height use it as the start,
       // otherwise measure the current scrollHeight.
-      const startHeight =
-        prevHeightRef.current && prevHeightRef.current > 0
-          ? prevHeightRef.current
-          : (gsap.set(el, { height: "auto" }), el.scrollHeight);
+      const startHeight = prevHeightRef.current && prevHeightRef.current > 0
+        ? prevHeightRef.current
+        : (gsap.set(el, { height: "auto" }), el.scrollHeight);
       gsap.fromTo(
         el,
         { height: startHeight },

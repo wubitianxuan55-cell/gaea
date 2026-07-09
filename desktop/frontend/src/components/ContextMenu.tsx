@@ -1,9 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type {
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-  ReactNode,
-} from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export type ContextMenuPoint = { left: number; top: number };
@@ -26,22 +22,11 @@ export type ContextMenuItem =
 
 const EDGE_GAP = 8;
 
-function clampMenuPoint(
-  left: number,
-  top: number,
-  width: number,
-  height: number,
-): ContextMenuPoint {
+function clampMenuPoint(left: number, top: number, width: number, height: number): ContextMenuPoint {
   if (typeof window === "undefined") return { left, top };
   return {
-    left: Math.min(
-      Math.max(EDGE_GAP, left),
-      Math.max(EDGE_GAP, window.innerWidth - width - EDGE_GAP),
-    ),
-    top: Math.min(
-      Math.max(EDGE_GAP, top),
-      Math.max(EDGE_GAP, window.innerHeight - height - EDGE_GAP),
-    ),
+    left: Math.min(Math.max(EDGE_GAP, left), Math.max(EDGE_GAP, window.innerWidth - width - EDGE_GAP)),
+    top: Math.min(Math.max(EDGE_GAP, top), Math.max(EDGE_GAP, window.innerHeight - height - EDGE_GAP)),
   };
 }
 
@@ -109,17 +94,12 @@ export function ContextMenu({
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      const actionItems = items.filter(
-        (item): item is Extract<ContextMenuItem, { type?: "item" }> =>
-          item.type !== "separator" && !("disabled" in item && item.disabled),
-      );
+      const actionItems = items.filter((item): item is Extract<ContextMenuItem, { type?: "item" }> => item.type !== "separator" && !("disabled" in item && item.disabled));
       if (actionItems.length === 0) return;
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         const dir = event.key === "ArrowDown" ? 1 : -1;
-        focusIndexRef.current =
-          (((focusIndexRef.current + dir) % actionItems.length) + actionItems.length) %
-          actionItems.length;
+        focusIndexRef.current = ((focusIndexRef.current + dir) % actionItems.length + actionItems.length) % actionItems.length;
         const btn = itemRefs.current[focusIndexRef.current];
         btn?.focus();
       } else if (event.key === "Enter" || event.key === " ") {
@@ -169,9 +149,7 @@ export function ContextMenu({
         return (
           <button
             key={item.key}
-            ref={(el) => {
-              itemRefs.current[idx] = el;
-            }}
+            ref={(el) => { itemRefs.current[idx] = el; }}
             className={`context-menu__item${item.danger ? " context-menu__item--danger" : ""}${item.variant === "section" ? " context-menu__item--section" : ""}`}
             role="menuitem"
             disabled={disabled}

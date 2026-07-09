@@ -1,26 +1,9 @@
 import type { SettingsView } from "../lib/types";
 import { useT } from "../lib/i18n";
 
-export type SettingsTab =
-  | "models"
-  | "providers"
-  | "permissions"
-  | "sandbox"
-  | "agent"
-  | "appearance"
-  | "updates"
-  | "mobile";
+export type SettingsTab = "models" | "providers" | "permissions" | "sandbox" | "agent" | "appearance" | "updates" | "mobile";
 
-export const SETTINGS_TABS: SettingsTab[] = [
-  "models",
-  "providers",
-  "permissions",
-  "sandbox",
-  "agent",
-  "appearance",
-  "updates",
-  "mobile",
-];
+export const SETTINGS_TABS: SettingsTab[] = ["models", "providers", "permissions", "sandbox", "agent", "appearance", "updates", "mobile"];
 
 export type SectionProps = {
   s: SettingsView;
@@ -50,11 +33,7 @@ export function settingsTabLabel(id: SettingsTab, t: ReturnType<typeof useT>): s
   }
 }
 
-export function settingsTabMeta(
-  id: SettingsTab,
-  s: SettingsView,
-  t: ReturnType<typeof useT>,
-): string {
+export function settingsTabMeta(id: SettingsTab, s: SettingsView, t: ReturnType<typeof useT>): string {
   switch (id) {
     case "models":
       return toRef(s.defaultModel, s) || t("common.none");

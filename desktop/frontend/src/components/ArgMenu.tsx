@@ -22,14 +22,9 @@ export function ArgMenu({
           role="option"
           aria-selected={i === activeIndex}
           className={`flex items-baseline gap-2 w-full px-2 py-1.5 bg-transparent border-0 rounded-md text-inherit text-left cursor-pointer transition-colors duration-100 ${
-            i === activeIndex
-              ? "bg-accent-soft border-l-[2px] border-l-accent pl-[6px]"
-              : "border-l-[2px] border-l-transparent pl-[6px]"
+            i === activeIndex ? "bg-accent-soft border-l-[2px] border-l-accent pl-[6px]" : "border-l-[2px] border-l-transparent pl-[6px]"
           }`}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onPick(it);
-          }}
+          onMouseDown={(e) => { e.preventDefault(); onPick(it); }}
           onMouseMove={() => onHover(i)}
         >
           <span className="font-mono text-[13px] text-accent shrink-0">{it.label}</span>

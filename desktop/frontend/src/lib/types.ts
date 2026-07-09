@@ -263,6 +263,26 @@ export interface MemoryView {
   archives?: MemoryArchive[];
 }
 
+// KnowledgeSummary is the lightweight view of a knowledge entry (without body).
+export interface KnowledgeSummary {
+  name: string;
+  title: string;
+  category: string;
+  tags: string[];
+  status: string;
+  updatedAt: string;
+}
+
+// KnowledgeEntry is the full knowledge entry including body.
+export interface KnowledgeEntry extends KnowledgeSummary {
+  body: string;
+  phase: string;
+  discipline: string;
+  source: string;
+  version: number;
+  author: string;
+}
+
 // Settings panel payloads (desktop/settings_app.go).
 export interface ProviderView {
   name: string;
@@ -428,21 +448,11 @@ export interface TabMeta {
 export interface TraceStep {
   id: string;
   turnTimestamp: number; // 所属回合开始时间戳
-  seq: number; // 步骤序号（递增）
+  seq: number;           // 步骤序号（递增）
   type: "phase" | "tool" | "thinking" | "decision" | "compaction";
-  timestamp: number; // 事件发生时间戳（ms）
-  label: string; // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
-  detail?: string; // 详细内容（展开时显示）
-  status?: "pending" | "running" | "done" | "error"; // 当前状态
-  duration?: number; // 耗时（ms，完成时设置）
-}
-
-// SpecEntryView is the frontend representation of a specification entry.
-export interface SpecEntryView {
-  code: string;
-  clause: string;
-  title: string;
-  category: string;
-  content: string;
-  explanation: string;
+  timestamp: number;     // 事件发生时间戳（ms）
+  label: string;         // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
+  detail?: string;       // 详细内容（展开时显示）
+  status?: "pending" | "running" | "done" | "error";  // 当前状态
+  duration?: number;     // 耗时（ms，完成时设置）
 }

@@ -71,9 +71,7 @@ export function useUpdater(): Updater {
         setStatus({ kind: "error", message: info.err });
         return;
       }
-      setStatus(
-        info.available ? { kind: "available", info } : { kind: "upToDate", current: info.current },
-      );
+      setStatus(info.available ? { kind: "available", info } : { kind: "upToDate", current: info.current });
     } catch (e) {
       setStatus({ kind: "error", message: errMsg(e) });
     }

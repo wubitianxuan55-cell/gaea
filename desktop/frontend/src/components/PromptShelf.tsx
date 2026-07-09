@@ -26,11 +26,18 @@ export function PromptShelf(p: {
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span id={p.titleId} className="text-fg text-[12.5px] font-semibold shrink-0">
+          <span
+            id={p.titleId}
+            className="text-fg text-[12.5px] font-semibold shrink-0"
+          >
             {p.title}
           </span>
-          {p.badges && <span className="flex items-center gap-1">{p.badges}</span>}
-          {p.meta && <span className="text-fg-faint text-[11px] truncate">{p.meta}</span>}
+          {p.badges && (
+            <span className="flex items-center gap-1">{p.badges}</span>
+          )}
+          {p.meta && (
+            <span className="text-fg-faint text-[11px] truncate">{p.meta}</span>
+          )}
         </div>
         {p.headerActions && (
           <div className="flex items-center gap-1 shrink-0">{p.headerActions}</div>
@@ -38,7 +45,9 @@ export function PromptShelf(p: {
       </div>
 
       {/* Body */}
-      {p.children && <div className="border-t border-border-soft">{p.children}</div>}
+      {p.children && (
+        <div className="border-t border-border-soft">{p.children}</div>
+      )}
 
       {/* Footer actions */}
       {p.actions && (
@@ -60,7 +69,10 @@ export function PromptBadge(p: { children: ReactNode }) {
 }
 
 /** PromptHeaderAction is a text button in the shelf header (collapse/close). */
-export function PromptHeaderAction(p: { onClick: () => void; children: ReactNode }) {
+export function PromptHeaderAction(p: {
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
     <button
       className="border-0 bg-transparent text-fg-faint text-[11px] cursor-pointer px-1.5 py-0.5 rounded hover:text-fg hover:bg-bg transition-colors"

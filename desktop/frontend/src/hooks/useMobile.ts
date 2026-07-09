@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 
 /** 检测是否为移动端屏幕（宽度 < 768px） */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 768,
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768
   );
 
   useEffect(() => {

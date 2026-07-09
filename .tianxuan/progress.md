@@ -1,15 +1,12 @@
 # 任务进度
 
-> 最后更新: 2026-07-09 13:57:44
+> 最后更新: 2026-07-09 15:15:39
 
 | 状态 | 任务 |
 |------|------|
-| 🔄 |   └─ 1. 更新 VERSION 文件：v0.12.0 → v0.13.0 |
-| ⬜ |   └─ 2. 更新 CHANGELOG.md 新增 v0.13.0 条目 |
-| ⬜ |   └─ 3. 创建 release/v0.13.0/ 目录 |
-| ⬜ |   └─ 4. 构建 CLI gaeaW.exe |
-| ⬜ |   └─ 5. 构建桌面端 gaeaW-desktop.exe |
-| ⬜ |   └─ 6. 生成 SHA256 校验文件 |
-| ⬜ |   └─ 7. 全量测试验证 |
-| ⬜ |   └─ 8. Git 提交 + tag |
-| ⬜ |   └─ 9. 记忆更新 |
+| 🔄 | Step 1: 版本号与 CHANGELOG — 更新 VERSION 和 CHANGELOG.md |
+| ⬜ | Step 2: 构建 — 编译桌面端和 CLI 产物 |
+| ⬜ | Step 3: 生成 SHA256 — release/v0.13.1/SHA256SUMS |
+| ⬜ | Step 4: 创建 release 文档 — gaeaW-v0-13-1-release.md |
+| ⬜ | Step 5: 提交所有变更 — git commit + tag |
+| ⬜ | Step 6: 更新记忆 — 保存 release 记忆 |

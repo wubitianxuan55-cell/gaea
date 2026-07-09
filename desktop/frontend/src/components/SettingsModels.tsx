@@ -5,17 +5,7 @@ import { useT } from "../lib/i18n";
 import { ModelSwitcher } from "./ModelSwitcher";
 import { allRefs, toRef, type SectionProps } from "./SettingsShared";
 
-function ModelCard({
-  icon,
-  title,
-  desc,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  children: React.ReactNode;
-}) {
+function ModelCard({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc: string; children: React.ReactNode }) {
   return (
     <div className="bg-bg-soft border border-border-soft rounded-lg p-3.5 mb-3">
       <div className="flex items-center gap-2 mb-2.5">
@@ -36,22 +26,13 @@ const EFFORT_LEVELS = [
   { key: "max", label: "深度" },
 ] as const;
 
-export function EffortSelect({
-  value,
-  onChange,
-  busy,
-}: {
-  value: string;
-  onChange: (e: string) => void;
-  busy: boolean;
-}) {
+export function EffortSelect({ value, onChange, busy }: { value: string; onChange: (e: string) => void; busy: boolean }) {
   const v = value ?? ""; // normalize undefined → ""
   return (
     <div className="flex items-center gap-1">
       <span className="text-fg-faint text-[11px] shrink-0 mr-0.5">推理</span>
       {EFFORT_LEVELS.map((l) => (
-        <button
-          key={l.key}
+        <button key={l.key}
           className={`px-2 py-0.5 text-[11px] border rounded transition-colors ${
             v === l.key
               ? "text-accent border-accent bg-accent/15 font-semibold ring-1 ring-accent/30"
@@ -59,20 +40,13 @@ export function EffortSelect({
           }`}
           disabled={busy}
           onClick={() => onChange(l.key)}
-        >
-          {l.label}
-        </button>
+        >{l.label}</button>
       ))}
     </div>
   );
 }
 
-export function ModelsSection({
-  s,
-  busy,
-  apply,
-  onManageProviders,
-}: SectionProps & { onManageProviders: () => void }) {
+export function ModelsSection({ s, busy, apply, onManageProviders }: SectionProps & { onManageProviders: () => void }) {
   const t = useT();
   const refs = allRefs(s);
   const defaultRef = toRef(s.defaultModel, s);
@@ -86,11 +60,7 @@ export function ModelsSection({
     <section className="mb-3">
       <div className="text-fg text-sm font-semibold px-1 pb-3">{t("settings.tab.models")}</div>
 
-      <ModelCard
-        icon={<Cpu size={18} />}
-        title="默认执行模型 (Hephaestus)"
-        desc="执行代码修改、运行命令等所有写操作"
-      >
+      <ModelCard icon={<Cpu size={18} />} title="默认执行模型 (Hephaestus)" desc="执行代码修改、运行命令等所有写操作">
         <select
           className="w-full bg-bg border border-border-soft rounded-md text-fg text-[13px] px-2.5 py-1.5 outline-none focus:border-accent"
           value={toRef(s.defaultModel, s)}
@@ -98,9 +68,7 @@ export function ModelsSection({
           onChange={(e) => void apply(() => app.SetDefaultModel(e.target.value))}
         >
           {refs.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
+            <option key={r} value={r}>{r}</option>
           ))}
         </select>
         <div className="mt-2">
@@ -112,11 +80,7 @@ export function ModelsSection({
         </div>
       </ModelCard>
 
-      <ModelCard
-        icon={<Brain size={18} />}
-        title="规划模型 (Hermes)"
-        desc="只读研究代码、制定执行计划。留空则使用单模型模式"
-      >
+      <ModelCard icon={<Brain size={18} />} title="规划模型 (Hermes)" desc="只读研究代码、制定执行计划。留空则使用单模型模式">
         <ModelSwitcher
           label={plannerLabel}
           allowInherit
@@ -132,11 +96,7 @@ export function ModelsSection({
         </div>
       </ModelCard>
 
-      <ModelCard
-        icon={<Bot size={18} />}
-        title="子代理模型"
-        desc="task / explore / review 等子任务使用的模型"
-      >
+      <ModelCard icon={<Bot size={18} />} title="子代理模型" desc="task / explore / review 等子任务使用的模型">
         <ModelSwitcher
           label={subagentLabel}
           allowInherit
@@ -164,23 +124,17 @@ export function ModelsSection({
                 {s.subagentSkills.map((skill: string) => {
                   const skillRef = subagentModels[skill] || "";
                   const globalRef = s.subagentModel;
-                  const inheritText = globalRef
-                    ? `继承全局: ${globalRef}`
-                    : t("settings.subagentInherit");
+                  const inheritText = globalRef ? `继承全局: ${globalRef}` : t("settings.subagentInherit");
                   const skillLabel = skillRef || inheritText;
                   return (
                     <div key={skill} className="flex items-center gap-2">
-                      <label className="text-fg-dim text-[11px] w-[90px] shrink-0 font-mono">
-                        {skill}
-                      </label>
+                      <label className="text-fg-dim text-[11px] w-[90px] shrink-0 font-mono">{skill}</label>
                       <div className="flex-1">
                         <ModelSwitcher
                           label={skillLabel}
                           allowInherit
                           inheritLabel={inheritText}
-                          onPick={(ref: string) =>
-                            void apply(() => app.SetSubagentModelForSkill(skill, ref))
-                          }
+                          onPick={(ref: string) => void apply(() => app.SetSubagentModelForSkill(skill, ref))}
                         />
                       </div>
                     </div>
@@ -193,15 +147,9 @@ export function ModelsSection({
       </ModelCard>
 
       <div className="flex items-center gap-2 px-3 py-2 border border-border-soft rounded-lg">
-        <span className="text-fg-faint text-[11px] shrink-0">
-          当前: {defaultProvider || t("common.none")} ·{" "}
-          {defaultModel || defaultRef || t("common.none")}
-        </span>
+        <span className="text-fg-faint text-[11px] shrink-0">当前: {defaultProvider || t("common.none")} · {defaultModel || defaultRef || t("common.none")}</span>
         <span className="flex-1" />
-        <button
-          className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors"
-          onClick={onManageProviders}
-        >
+        <button className="px-2.5 py-1 text-xs border border-border-soft rounded bg-transparent text-fg-dim cursor-pointer hover:text-fg hover:bg-bg-soft transition-colors" onClick={onManageProviders}>
           {t("settings.manageProviders")}
         </button>
       </div>

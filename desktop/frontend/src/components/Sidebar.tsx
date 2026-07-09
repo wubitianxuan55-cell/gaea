@@ -1,12 +1,8 @@
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useState, useEffect } from "react";
 import {
-  SquarePen,
-  Brain,
-  Blocks,
-  MessageSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
+  SquarePen, Brain, Blocks, BookOpen, MessageSquare,
+  PanelLeftClose, PanelLeftOpen,
   Settings as SettingsIcon,
 } from "lucide-react";
 import logo from "../assets/logo.png";
@@ -30,6 +26,7 @@ export interface SidebarProps {
   onOpenHistory: () => void;
   onOpenMemory: () => void;
   onOpenCaps: () => void;
+  onOpenKnowledge: () => void;
   onOpenSettings: () => void;
   startResize: (e: ReactPointerEvent<HTMLButtonElement>) => void;
   resizeWithKeyboard: (e: KeyboardEvent<HTMLButtonElement>) => void;
@@ -55,6 +52,7 @@ export function Sidebar({
   onOpenHistory,
   onOpenMemory,
   onOpenCaps,
+  onOpenKnowledge,
   onOpenSettings,
   startResize,
   resizeWithKeyboard,
@@ -71,9 +69,7 @@ export function Sidebar({
   const [renameDraft, setRenameDraft] = useState("");
   // 搜索防抖：本地输入即时更新，200ms 后才同步到父组件触发过滤
   const [localQuery, setLocalQuery] = useState(searchQuery);
-  useEffect(() => {
-    setLocalQuery(searchQuery);
-  }, [searchQuery]);
+  useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
   useEffect(() => {
     const timer = setTimeout(() => onSearchChange(localQuery), 200);
     return () => clearTimeout(timer);
@@ -89,11 +85,9 @@ export function Sidebar({
         aria-label="gaeaW navigation"
       >
         {/* Brand */}
-        <div
-          className={`flex items-center gap-2.5 px-2 pb-3.5 text-fg text-[15px] font-semibold ${
-            collapsed ? "flex-col gap-2 px-0 pb-3" : ""
-          }`}
-        >
+        <div className={`flex items-center gap-2.5 px-2 pb-3.5 text-fg text-[15px] font-semibold ${
+          collapsed ? "flex-col gap-2 px-0 pb-3" : ""
+        }`}>
           <img src={logo} alt="" className="w-6 h-6 rounded-md" />
           {!collapsed && <span>gaeaW</span>}
           <button
@@ -123,19 +117,18 @@ export function Sidebar({
         </button>
 
         {/* Collapsed session indicator */}
-        {collapsed &&
-          (() => {
-            const cur = sessions.find((s) => s.current);
-            return cur ? (
-              <button
-                className="w-9 h-9 mb-3 rounded-full bg-sidebar-active text-accent text-[12px] font-bold flex items-center justify-center cursor-pointer hover:bg-sidebar-hover transition-colors no-drag"
-                title={sessionTitle(cur, "")}
-                type="button"
-              >
-                {(cur.title || cur.preview || "?").charAt(0).toUpperCase()}
-              </button>
-            ) : null;
-          })()}
+        {collapsed && (() => {
+          const cur = sessions.find(s => s.current);
+          return cur ? (
+            <button
+              className="w-9 h-9 mb-3 rounded-full bg-sidebar-active text-accent text-[12px] font-bold flex items-center justify-center cursor-pointer hover:bg-sidebar-hover transition-colors no-drag"
+              title={sessionTitle(cur, "")}
+              type="button"
+            >
+              {(cur.title || cur.preview || "?").charAt(0).toUpperCase()}
+            </button>
+          ) : null;
+        })()}
 
         {/* Sessions section (hidden when collapsed) */}
         {!collapsed && (
@@ -157,23 +150,20 @@ export function Sidebar({
               className="w-full bg-bg-soft border border-border-soft rounded-[5px] text-fg text-xs py-1 px-2 mb-2 outline-none focus:border-accent no-drag"
               placeholder={t("sidebar.search")}
               value={localQuery}
-              onChange={(e) => setLocalQuery(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
+              onChange={e => setLocalQuery(e.target.value)}
+              onKeyDown={e => e.stopPropagation()}
             />
             <div className="min-h-0 overflow-y-auto pr-0.5">
               {(() => {
                 const q = localQuery.trim().toLowerCase();
                 const visible = q
-                  ? sessions.filter(
-                      (s: SessionMeta) =>
-                        (s.title || s.preview || "").toLowerCase().includes(q) ||
-                        s.path.toLowerCase().includes(q),
+                  ? sessions.filter((s: SessionMeta) =>
+                      (s.title || s.preview || "").toLowerCase().includes(q) ||
+                      s.path.toLowerCase().includes(q)
                     )
                   : sessions;
                 if (sessions.length === 0)
-                  return (
-                    <div className="py-2 px-2.5 text-fg-faint text-xs">{t("sidebar.noRecent")}</div>
-                  );
+                  return <div className="py-2 px-2.5 text-fg-faint text-xs">{t("sidebar.noRecent")}</div>;
                 if (visible.length === 0 && q)
                   return <div className="py-2 px-2.5 text-fg-faint text-xs">无匹配</div>;
                 return visible.map((session: SessionMeta) => (
@@ -200,37 +190,21 @@ export function Sidebar({
                           <input
                             className="w-full bg-bg border border-accent rounded px-1 py-0 text-fg text-[12.5px] outline-none"
                             value={renameDraft}
-                            onChange={(e) => setRenameDraft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                void onRenameSession(
-                                  session.path,
-                                  renameDraft.trim() || sessionTitle(session, ""),
-                                );
-                                setRenameTarget(null);
-                              }
-                              if (e.key === "Escape") {
-                                e.preventDefault();
-                                setRenameTarget(null);
-                              }
+                            onChange={e => setRenameDraft(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") { e.preventDefault(); void onRenameSession(session.path, renameDraft.trim() || sessionTitle(session, "")); setRenameTarget(null); }
+                              if (e.key === "Escape") { e.preventDefault(); setRenameTarget(null); }
                             }}
-                            onBlur={() => {
-                              void onRenameSession(
-                                session.path,
-                                renameDraft.trim() || sessionTitle(session, ""),
-                              );
-                              setRenameTarget(null);
-                            }}
+                            onBlur={() => { void onRenameSession(session.path, renameDraft.trim() || sessionTitle(session, "")); setRenameTarget(null); }}
                             autoFocus
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                           />
                         ) : (
                           <span
                             className={`overflow-hidden text-ellipsis whitespace-nowrap text-fg-dim text-[12.5px] leading-[1.35] font-medium cursor-text ${
                               session.current ? "text-accent" : ""
                             }`}
-                            onDoubleClick={(e) => {
+                            onDoubleClick={e => {
                               if (session.current) return;
                               e.stopPropagation();
                               setRenameTarget(session.path);
@@ -246,26 +220,13 @@ export function Sidebar({
                         </span>
                       </span>
                     </button>
-                    {!session.current &&
-                      (deleteConfirm === session.path ? (
+                    {!session.current && (
+                      deleteConfirm === session.path ? (
                         <span className="flex items-center gap-1 shrink-0">
-                          <button
-                            className="bg-transparent border-0 text-[10px] text-err cursor-pointer px-1 py-0.5 rounded hover:bg-err/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void onDeleteSession(session.path);
-                              setDeleteConfirm(null);
-                            }}
-                          >
+                          <button className="bg-transparent border-0 text-[10px] text-err cursor-pointer px-1 py-0.5 rounded hover:bg-err/10" onClick={e => { e.stopPropagation(); void onDeleteSession(session.path); setDeleteConfirm(null); }}>
                             确认
                           </button>
-                          <button
-                            className="bg-transparent border-0 text-[10px] text-fg-faint cursor-pointer px-1 py-0.5 rounded hover:bg-bg-soft"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirm(null);
-                            }}
-                          >
+                          <button className="bg-transparent border-0 text-[10px] text-fg-faint cursor-pointer px-1 py-0.5 rounded hover:bg-bg-soft" onClick={e => { e.stopPropagation(); setDeleteConfirm(null); }}>
                             取消
                           </button>
                         </span>
@@ -273,14 +234,12 @@ export function Sidebar({
                         <button
                           className="hidden group-hover:block bg-transparent border-0 text-fg-faint text-[15px] cursor-pointer px-1 py-0.5 rounded-[3px] mt-1 hover:text-err"
                           title="删除"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteConfirm(session.path);
-                          }}
+                          onClick={e => { e.stopPropagation(); setDeleteConfirm(session.path); }}
                         >
                           ×
                         </button>
-                      ))}
+                      )
+                    )}
                   </div>
                 ));
               })()}
@@ -300,8 +259,7 @@ export function Sidebar({
         <nav
           className={`flex flex-col gap-0.5 shrink-0 pt-2.5 pb-2 border-t border-border-soft ${
             collapsed ? "items-center w-full !pt-0 !pb-3" : ""
-          }`}
-        >
+          }`}>
           <button
             className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}
             onClick={() => void onOpenMemory()}
@@ -309,6 +267,14 @@ export function Sidebar({
           >
             <Brain size={15} />
             {!collapsed && <span>{t("topbar.memory")}</span>}
+          </button>
+          <button
+            className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}
+            onClick={() => void onOpenKnowledge()}
+            title={t("topbar.knowledge")}
+          >
+            <BookOpen size={15} />
+            {!collapsed && <span>{t("topbar.knowledge")}</span>}
           </button>
           <button
             className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}

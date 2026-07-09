@@ -27,9 +27,7 @@ export function useModeManager(
     const temp = THINK_TEMPS[level] ?? 0.3;
     try {
       const settings = await app.Settings();
-      app
-        .SetAgentParams(temp, settings.agent.maxSteps, settings.agent.systemPrompt)
-        .catch(() => {});
+      app.SetAgentParams(temp, settings.agent.maxSteps, settings.agent.systemPrompt).catch(() => {});
     } catch {
       app.SetAgentParams(temp, 0, "").catch(() => {});
     }
@@ -44,14 +42,5 @@ export function useModeManager(
     [setModel],
   );
 
-  return {
-    permLevel,
-    setPermLevel,
-    thinkLevel,
-    themeNow,
-    setTheme,
-    switchingModel,
-    handleThinkLevelChange,
-    switchModel,
-  };
+  return { permLevel, setPermLevel, thinkLevel, themeNow, setTheme, switchingModel, handleThinkLevelChange, switchModel };
 }

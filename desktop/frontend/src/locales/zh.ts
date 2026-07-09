@@ -28,6 +28,15 @@ export const zh: Record<DictKey, string> = {
   "topbar.customize": "自定义",
   "topbar.newSession": "新建会话",
   "topbar.startupError": "启动错误：{msg}",
+  "topbar.knowledge": "知识库",
+
+  // 知识库面板
+  "knowledge.title": "知识库",
+  "knowledge.search": "搜索条目…",
+  "knowledge.empty": "知识库为空",
+  "knowledge.noMatch": "无匹配条目",
+  "knowledge.category": "分类",
+  "knowledge.all": "全部",
 
   // 侧边栏
   "sidebar.recent": "最近",
@@ -122,16 +131,13 @@ export const zh: Record<DictKey, string> = {
   // V5.16: 快捷任务卡片
   "welcome.card1.title": "场地环境调查",
   "welcome.card1.desc": "启动初调/详调报告框架，梳理场地基本信息",
-  "welcome.card1.prompt":
-    "请帮我启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。",
+  "welcome.card1.prompt": "请帮我启动场地环境调查初调报告框架，梳理场地基本信息、历史使用情况、周边敏感目标等关键内容。",
   "welcome.card2.title": "污染风险评估",
   "welcome.card2.desc": "对标 GB 36600/GB 15618 进行超标判定与风险计算",
-  "welcome.card2.prompt":
-    "请根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。",
+  "welcome.card2.prompt": "请根据提供的检测数据，对标 GB 36600 和 GB 15618 进行超标判定，计算污染风险并给出评估结论。",
   "welcome.card3.title": "费用估算",
   "welcome.card3.desc": "生成七项汇总成本测算表，涵盖调查/修复全流程",
-  "welcome.card3.prompt":
-    "请生成土壤修复工程七项汇总成本测算表，包括场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。",
+  "welcome.card3.prompt": "请生成土壤修复工程七项汇总成本测算表，包括场地调查、风险评估、方案设计、施工实施、监测验收等各阶段费用。",
   "welcome.ex1": "土壤污染风险管控标准有哪些",
   "welcome.ex2": "污染场地修复技术怎么选",
   "welcome.ex3": "场地环境调查报告怎么写",
@@ -315,8 +321,7 @@ export const zh: Record<DictKey, string> = {
   "settings.balanceUrlHint": "可选。填了就会查询并在状态栏显示钱包余额。",
   "settings.providerContextWindow": "上下文窗口",
   "settings.contextWindowPlaceholder": "token 数（0 = 模型服务默认值）",
-  "settings.contextWindowHint":
-    "该模型服务在上下文中保留的最大 token 数。填 0 表示使用模型服务默认值。",
+  "settings.contextWindowHint": "该模型服务在上下文中保留的最大 token 数。填 0 表示使用模型服务默认值。",
   "settings.setKey": "设置 {env}（→ .env）",
   "settings.saveKey": "保存密钥",
   "settings.permissions": "权限",
@@ -326,8 +331,7 @@ export const zh: Record<DictKey, string> = {
   "settings.modeDeny": "deny（阻止写操作）",
   "settings.ruleForm": "规则格式：ToolName 或 ToolName(glob)。优先级：deny > ask > allow。",
   "settings.yolo": "YOLO —— 跳过所有批准（仅本会话）",
-  "settings.yoloHint":
-    "所有工具调用（写文件、bash）自动执行、不再询问。deny 规则仍会拦截。仅运行时生效，重启后失效。",
+  "settings.yoloHint": "所有工具调用（写文件、bash）自动执行、不再询问。deny 规则仍会拦截。仅运行时生效，重启后失效。",
   "settings.addRule": "添加 {list} 规则…",
   "settings.sandboxTitle": "沙箱与工作区",
   "settings.bashSandbox": "Bash 沙箱",

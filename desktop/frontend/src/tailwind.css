@@ -86,14 +86,11 @@
 
 /* ── base layer ── */
 @layer base {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     box-sizing: border-box;
   }
 
-  html,
-  #root {
+  html, #root {
     height: 100%;
   }
 
@@ -125,15 +122,10 @@
 
 /* ── component utilities (keep for complex patterns not easily expressed in Tailwind) ── */
 @utility scrollbar-thin {
-  &::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
+  &::-webkit-scrollbar { width: 4px; height: 4px; }
 }
 @utility scrollbar-hidden {
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 }
 @utility drag-region {
   --wails-draggable: drag;
@@ -159,16 +151,10 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    filter var(--transition-fast),
-    transform var(--transition-fast);
+  transition: filter var(--transition-fast), transform var(--transition-fast);
 }
-.btn--primary:hover {
-  filter: brightness(1.1);
-}
-.btn--primary:active {
-  transform: scale(0.97);
-}
+.btn--primary:hover { filter: brightness(1.1); }
+.btn--primary:active { transform: scale(0.97); }
 .btn--primary:disabled {
   opacity: 0.4;
   cursor: default;
@@ -188,10 +174,7 @@
   background: var(--color-bg-soft);
   color: var(--color-fg-faint);
   cursor: pointer;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 .close-btn:hover {
   color: var(--color-fg);
@@ -212,19 +195,13 @@
   color: var(--color-fg-dim);
   font-size: var(--font-size-xs);
   cursor: pointer;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast),
-    transform var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 .toolbar-btn:hover {
   color: var(--color-fg);
   border-color: var(--color-fg-faint);
 }
-.toolbar-btn:active {
-  transform: scale(0.97);
-}
+.toolbar-btn:active { transform: scale(0.97); }
 .toolbar-btn:disabled {
   opacity: 0.4;
   cursor: default;
@@ -247,83 +224,43 @@
 
 /* ── keyframes (referenced by Tailwind arbitrary animation utilities) ── */
 @keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes drawer-in {
-  from {
-    transform: translateX(12px);
-    opacity: 0.6;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(12px); opacity: 0.6; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 @keyframes drawer-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(12px);
-    opacity: 0;
-  }
+  from { transform: translateX(0);  opacity: 1; }
+  to   { transform: translateX(12px); opacity: 0; }
 }
 
 @keyframes menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* reasoning shimmer */
 @keyframes shimmer-sweep {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── accessibility: reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

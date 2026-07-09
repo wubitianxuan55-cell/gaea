@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -34,15 +33,13 @@ func (bidProposal) Schema() json.RawMessage {
   "target_value":{"type":"string","description":"修复目标值简述"},
   "construction_period":{"type":"string","description":"施工工期要求"},
   "team_size":{"type":"integer","description":"拟投入人员数量"},
-  "key_equipment":{"type":"string","description":"关键设备配置"},
-  "output_path":{"type":"string","description":"输出文件路径（可选，指定后写入文件）"},
-  "output_format":{"type":"string","description":"输出格式：md（默认）或 docx"}
+  "key_equipment":{"type":"string","description":"关键设备配置"}
 },
 "required":["project_name","bidder"]
 }`)
 }
 
-func (bidProposal) ReadOnly() bool { return false }
+func (bidProposal) ReadOnly() bool { return true }
 
 func (bidProposal) CompactDescription() string { return compactDesc["bid_proposal"] }
 func (bidProposal) CompactSchema() json.RawMessage   { return compactSchema["bid_proposal"] }
@@ -58,8 +55,6 @@ type bidInput struct {
 	ConstructionPeriod string `json:"construction_period,omitempty"`
 	TeamSize         int      `json:"team_size,omitempty"`
 	KeyEquipment     string   `json:"key_equipment,omitempty"`
-	OutputPath       string   `json:"output_path,omitempty"`
-	OutputFormat     string   `json:"output_format,omitempty"`
 }
 
 func (bidProposal) Execute(ctx context.Context, args json.RawMessage) (string, error) {
@@ -244,26 +239,7 @@ func (bidProposal) Execute(ctx context.Context, args json.RawMessage) (string, e
 	fmt.Fprintf(&b, "（列表展示投标单位近3-5年的同类土壤修复项目业绩，含合同、验收证明等）\n\n")
 
 	fmt.Fprintf(&b, "---\n*本方案由 gaeaW bid_proposal 生成，需结合实际项目情况调整。*\n")
-	body := b.String()
-
-	// 若指定了输出路径，写入文件
-	if p.OutputPath != "" {
-		cleanPath, err := safeOutputPath(p.OutputPath)
-		if err != nil {
-			return "", err
-		}
-		if p.OutputFormat == "docx" {
-			if err := writeDocxFile(cleanPath, "投标方案："+p.ProjectName, body); err != nil {
-				return "", fmt.Errorf("写入 docx 文件失败: %w", err)
-			}
-		} else {
-			if err := os.WriteFile(cleanPath, []byte(body), 0644); err != nil {
-				return "", fmt.Errorf("写入文件失败: %w", err)
-			}
-		}
-	}
-
-	return tool.WrapText(body), nil
+	return tool.WrapText(b.String()), nil
 }
 
 func recommendTech(contaminant string) string {

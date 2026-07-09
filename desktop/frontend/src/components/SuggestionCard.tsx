@@ -11,7 +11,7 @@ export const SuggestionCard = memo(function SuggestionCard(p: {
 }) {
   const { item, accepted, badge, acceptedBadge, actionLabel, onAccept } = p;
   const name = "name" in item ? item.name : "";
-  const title = "title" in item ? item.title || item.name : name;
+  const title = "title" in item ? (item.title || item.name) : name;
   const type = "type" in item ? item.type : undefined;
 
   return (

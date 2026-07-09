@@ -1,11 +1,6 @@
 import { Plus, RefreshCw, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  MemorySuggestion,
-  MemorySuggestionsView,
-  MemoryView,
-  SkillSuggestion,
-} from "../lib/types";
+import type { MemorySuggestion, MemorySuggestionsView, MemoryView, SkillSuggestion } from "../lib/types";
 import { DocEditor } from "./DocEditor";
 import { useT } from "../lib/i18n";
 import { FactCard } from "./FactCard";
@@ -27,18 +22,7 @@ export function MemoryPanel(p: {
   onAcceptSkillSuggestion: (candidate: SkillSuggestion) => Promise<void> | void;
   onRefreshSuggestions: () => Promise<MemorySuggestionsView | null>;
 }) {
-  const {
-    view,
-    onClose,
-    onRemember,
-    onForget,
-    onSaveDoc,
-    onSaveFact,
-    onChangeType,
-    onAcceptMemorySuggestion,
-    onAcceptSkillSuggestion,
-    onRefreshSuggestions,
-  } = p;
+  const { view, onClose, onRemember, onForget, onSaveDoc, onSaveFact, onChangeType, onAcceptMemorySuggestion, onAcceptSkillSuggestion, onRefreshSuggestions } = p;
   const t = useT();
   const [note, setNote] = useState("");
   const [scope, setScope] = useState("");
@@ -97,28 +81,22 @@ export function MemoryPanel(p: {
     }, 1500);
   }, []);
 
-  const scrollToFact = useCallback(
-    (name: string) => {
-      factRefs.current[name]?.scrollIntoView({ behavior: "smooth", block: "center" });
-      triggerHighlight(name);
-    },
-    [triggerHighlight],
-  );
+  const scrollToFact = useCallback((name: string) => {
+    factRefs.current[name]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    triggerHighlight(name);
+  }, [triggerHighlight]);
 
-  const jumpTo = useCallback(
-    (name: string) => {
-      setTab("facts");
-      const visible = filteredFacts.some((f) => f.name === name);
-      if (!visible) {
-        setQuery("");
-        setTypeFilter("all");
-        setTimeout(() => scrollToFact(name), 0);
-      } else {
-        scrollToFact(name);
-      }
-    },
-    [filteredFacts, scrollToFact],
-  );
+  const jumpTo = useCallback((name: string) => {
+    setTab("facts");
+    const visible = filteredFacts.some((f) => f.name === name);
+    if (!visible) {
+      setQuery("");
+      setTypeFilter("all");
+      setTimeout(() => scrollToFact(name), 0);
+    } else {
+      scrollToFact(name);
+    }
+  }, [filteredFacts, scrollToFact]);
 
   const toggleFact = useCallback((name: string) => {
     setExpandedFacts((prev) => {
@@ -129,12 +107,9 @@ export function MemoryPanel(p: {
   }, []);
 
   // 稳定的 ref callback（避免每次渲染重建）
-  const setFactRef = useCallback(
-    (name: string) => (el: HTMLElement | null) => {
-      factRefs.current[name] = el;
-    },
-    [],
-  );
+  const setFactRef = useCallback((name: string) => (el: HTMLElement | null) => {
+    factRefs.current[name] = el;
+  }, []);
 
   const submitNote = useCallback(() => {
     if (!note.trim() || busy) return;
@@ -170,20 +145,17 @@ export function MemoryPanel(p: {
   );
 
   // 键盘快捷键（用 useCallback 避免重复注册）
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement === document.body && tab === "facts") {
-        e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
-      if (e.ctrlKey && e.key === "n") {
-        e.preventDefault();
-        noteRef.current?.focus();
-      }
-    },
-    [tab],
-  );
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "/" && document.activeElement === document.body && tab === "facts") {
+      e.preventDefault();
+      searchRef.current?.focus();
+      return;
+    }
+    if (e.ctrlKey && e.key === "n") {
+      e.preventDefault();
+      noteRef.current?.focus();
+    }
+  }, [tab]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -198,12 +170,7 @@ export function MemoryPanel(p: {
   }, []);
 
   return (
-    <div
-      className="drawer-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="drawer-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="drawer drawer--wide" onClick={(e) => e.stopPropagation()}>
         {/* ═══ 标题栏 ═══ */}
         <div className="drawer__head">
@@ -234,13 +201,7 @@ export function MemoryPanel(p: {
             >
               {scopes.map((s) => (
                 <option key={s.scope} value={s.scope}>
-                  {s.scope === "user"
-                    ? t("memory.scopeUser")
-                    : s.scope === "project"
-                      ? t("memory.scopeProject")
-                      : s.scope === "local"
-                        ? t("memory.scopeLocal")
-                        : s.scope}
+                  {s.scope === "user" ? t("memory.scopeUser") : s.scope === "project" ? t("memory.scopeProject") : s.scope === "local" ? t("memory.scopeLocal") : s.scope}
                 </option>
               ))}
             </select>
@@ -316,18 +277,9 @@ export function MemoryPanel(p: {
               )}
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <FilterChip
-                active={typeFilter === "all"}
-                label={t("memory.filterAll")}
-                onClick={() => setTypeFilter("all")}
-              />
+              <FilterChip active={typeFilter === "all"} label={t("memory.filterAll")} onClick={() => setTypeFilter("all")} />
               {factTypes.map((ft) => (
-                <FilterChip
-                  key={ft}
-                  active={typeFilter === ft}
-                  label={ft}
-                  onClick={() => setTypeFilter(ft)}
-                />
+                <FilterChip key={ft} active={typeFilter === ft} label={ft} onClick={() => setTypeFilter(ft)} />
               ))}
             </div>
           </div>
@@ -346,10 +298,7 @@ export function MemoryPanel(p: {
                   {(query || typeFilter !== "all") && (
                     <button
                       className="block mx-auto mt-2 text-accent text-[12px] bg-transparent border-0 cursor-pointer hover:underline"
-                      onClick={() => {
-                        setQuery("");
-                        setTypeFilter("all");
-                      }}
+                      onClick={() => { setQuery(""); setTypeFilter("all"); }}
                     >
                       {t("memory.clearFilters")}
                     </button>
@@ -358,7 +307,11 @@ export function MemoryPanel(p: {
               ) : (
                 <div className="flex flex-col gap-2">
                   {filteredFacts.map((fact) => (
-                    <div key={fact.name} ref={setFactRef(fact.name)} className="fact-card-wrapper">
+                    <div
+                      key={fact.name}
+                      ref={setFactRef(fact.name)}
+                      className="fact-card-wrapper"
+                    >
                       <FactCard
                         fact={fact}
                         factNames={factNames}

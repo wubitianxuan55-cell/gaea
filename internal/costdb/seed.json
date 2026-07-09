@@ -1,0 +1,43 @@
+{
+  "items": [
+    {"code":"DR-001","name":"标准钻孔","category":"钻孔勘察","unit":"元/孔","base_price":800,"labor_cost":400,"material_cost":100,"machine_cost":300,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.05,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"15m深标准钻孔，含套管"},
+    {"code":"CJ-001","name":"土壤采样检测","category":"采样检测","unit":"元/样","base_price":1200,"labor_cost":300,"material_cost":100,"machine_cost":800,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.0,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"常规全套检测（重金属+有机物）"},
+    {"code":"MA-001","name":"化学氧化药剂","category":"药剂材料","unit":"元/m³","base_price":350,"labor_cost":0,"material_cost":350,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"过硫酸钠+双氧水体系"},
+    {"code":"MA-002","name":"固化/稳定化药剂","category":"药剂材料","unit":"元/m³","base_price":180,"labor_cost":0,"material_cost":180,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"水泥基固化材料"},
+    {"code":"MA-003","name":"热脱附辅助材料","category":"药剂材料","unit":"元/m³","base_price":100,"labor_cost":0,"material_cost":100,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.05,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"活性炭等辅助材料"},
+    {"code":"MA-004","name":"土壤淋洗药剂","category":"药剂材料","unit":"元/m³","base_price":120,"labor_cost":0,"material_cost":120,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"表面活性剂+络合剂"},
+    {"code":"MA-005","name":"生物修复药剂","category":"药剂材料","unit":"元/m³","base_price":200,"labor_cost":0,"material_cost":200,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.6,"region":"全国","valid_from":"2024-01-01","remark":"微生物菌剂+营养液"},
+    {"code":"MA-006","name":"SVE/气相抽提辅材","category":"药剂材料","unit":"元/m³","base_price":50,"labor_cost":0,"material_cost":50,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.05,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"活性炭过滤材料"},
+    {"code":"MA-007","name":"其他修复药剂","category":"药剂材料","unit":"元/m³","base_price":250,"labor_cost":0,"material_cost":250,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.6,"region":"全国","valid_from":"2024-01-01","remark":"未指定技术类型时的默认值"},
+    {"code":"TR-001","name":"土方运输","category":"土方运输","unit":"元/m³","base_price":35,"labor_cost":5,"material_cost":0,"machine_cost":30,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.05,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"30km以内运输"},
+    {"code":"TR-002","name":"土方处置","category":"土方运输","unit":"元/m³","base_price":80,"labor_cost":0,"material_cost":0,"machine_cost":80,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.05,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"合规填埋处置"},
+    {"code":"EQ-001","name":"通用设备租赁","category":"设备租赁","unit":"元/m³","base_price":120,"labor_cost":20,"material_cost":10,"machine_cost":90,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"挖掘机/装载机/运输车等通用设备"},
+    {"code":"EQ-002","name":"热脱附设备","category":"设备租赁","unit":"元/m³","base_price":250,"labor_cost":40,"material_cost":20,"machine_cost":190,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"热脱附成套设备（燃气+旋转窑）"},
+    {"code":"EQ-003","name":"SVE/气相设备","category":"设备租赁","unit":"元/m³","base_price":80,"labor_cost":15,"material_cost":5,"machine_cost":60,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.1,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"真空泵+气液分离+活性炭罐"},
+    {"code":"LB-001","name":"人工费","category":"人工","unit":"元/人·月","base_price":10000,"labor_cost":10000,"material_cost":0,"machine_cost":0,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.0,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"普工×5人，含社保"},
+    {"code":"EV-001","name":"效果评估费","category":"效果评估","unit":"元/m³","base_price":15,"labor_cost":10,"material_cost":2,"machine_cost":3,"overhead_rate":10,"profit_rate":8,"tax_rate":6,"waste_factor":1.0,"source":"经验估算","confidence":0.7,"region":"全国","valid_from":"2024-01-01","remark":"含验收检测和报告编制，最低50000元"}
+  ],
+  "labor": [
+    {"trade_type":"普工","unit":"元/工日","price":180,"region":"全国","price_date":"2024-01-01","source":"实际采集"},
+    {"trade_type":"技工","unit":"元/工日","price":250,"region":"全国","price_date":"2024-01-01","source":"实际采集"},
+    {"trade_type":"焊工","unit":"元/工日","price":350,"region":"全国","price_date":"2024-01-01","source":"实际采集"},
+    {"trade_type":"项目负责","unit":"元/工日","price":450,"region":"全国","price_date":"2024-01-01","source":"实际采集"}
+  ],
+  "materials": [
+    {"code":"MT-001","name_spec":"过硫酸钠","unit":"元/吨","price":5450,"source":"市场参考价","price_date":"2024-01-01","region":"全国"},
+    {"code":"MT-002","name_spec":"双氧水","unit":"元/吨","price":7200,"source":"市场参考价","price_date":"2024-01-01","region":"全国"},
+    {"code":"MT-003","name_spec":"石灰","unit":"元/吨","price":720,"source":"市场参考价","price_date":"2024-01-01","region":"全国"},
+    {"code":"MT-004","name_spec":"PAC","unit":"元/吨","price":1650,"source":"市场参考价","price_date":"2024-01-01","region":"全国"},
+    {"code":"MT-005","name_spec":"水泥 P.O42.5","unit":"元/吨","price":360,"source":"市场参考价","price_date":"2024-01-01","region":"全国"}
+  ],
+  "machines": [
+    {"code":"MC-001","name_spec":"ALLU筛分斗","unit":"元/台班","purchase_price":90000,"hourly_rate":11250,"fuel_rate":1500,"operator_labor":350,"region":"全国"},
+    {"code":"MC-002","name_spec":"注入设备","unit":"元/台班","purchase_price":2000,"hourly_rate":250,"fuel_rate":50,"operator_labor":250,"region":"全国"},
+    {"code":"MC-003","name_spec":"淋洗设备","unit":"元/台班","purchase_price":8000,"hourly_rate":1000,"fuel_rate":200,"operator_labor":250,"region":"全国"}
+  ],
+  "regions": [
+    {"region":"四川","adjustment_factor":1.0,"valid_from":"2024-01-01"},
+    {"region":"重庆","adjustment_factor":0.95,"valid_from":"2024-01-01"},
+    {"region":"西藏","adjustment_factor":1.35,"valid_from":"2024-01-01"}
+  ]
+}

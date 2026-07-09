@@ -31,7 +31,13 @@ export interface PaletteItem {
 function fuzzyMatch(query: string, item: PaletteItem): boolean {
   if (!query.trim()) return true;
   const tokens = query.trim().toLowerCase().split(/\s+/);
-  const haystack = [item.title, item.hint ?? "", ...(item.keywords ?? [])].join(" ").toLowerCase();
+  const haystack = [
+    item.title,
+    item.hint ?? "",
+    ...(item.keywords ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
   let pos = 0;
   for (const token of tokens) {
     const idx = haystack.indexOf(token, pos);
@@ -70,7 +76,9 @@ export function CommandPalette({
 
   // Filter + group
   const groups = useMemo(() => {
-    const filtered = query.trim() ? items.filter((it) => fuzzyMatch(query, it)) : items;
+    const filtered = query.trim()
+      ? items.filter((it) => fuzzyMatch(query, it))
+      : items;
     const map = new Map<string, PaletteItem[]>();
     for (const it of filtered) {
       const arr = map.get(it.group) ?? [];
@@ -83,7 +91,10 @@ export function CommandPalette({
     }));
   }, [items, query]);
 
-  const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const flat = useMemo(
+    () => groups.flatMap((g) => g.items),
+    [groups],
+  );
 
   // Clamp active
   const safeActive = flat.length === 0 ? 0 : Math.min(active, flat.length - 1);
@@ -172,14 +183,9 @@ export function CommandPalette({
                             key={it.id}
                             className={`palette__chip${on ? " palette__chip--on" : ""}`}
                             onMouseEnter={() => setActive(flat.indexOf(it))}
-                            onClick={() => {
-                              void it.run();
-                              onClose();
-                            }}
+                            onClick={() => { void it.run(); onClose(); }}
                           >
-                            <span className="palette__chip-icon">
-                              {it.icon ?? <Command size={15} />}
-                            </span>
+                            <span className="palette__chip-icon">{it.icon ?? <Command size={15} />}</span>
                             <span className="palette__chip-label">{it.title}</span>
                           </button>
                         );
@@ -198,10 +204,7 @@ export function CommandPalette({
                           className={`palette__item${on ? " palette__item--on" : ""}`}
                           data-palette-active={on}
                           onMouseEnter={() => setActive(idx)}
-                          onClick={() => {
-                            void it.run();
-                            onClose();
-                          }}
+                          onClick={() => { void it.run(); onClose(); }}
                         >
                           <span className="palette__item-icon" aria-hidden="true">
                             {it.icon ?? <Command size={15} />}
@@ -228,16 +231,9 @@ export function CommandPalette({
 
         {/* Footer */}
         <div className="palette__foot">
-          <span>
-            <kbd>↑</kbd>
-            <kbd>↓</kbd> 导航
-          </span>
-          <span>
-            <kbd>↵</kbd> 选择
-          </span>
-          <span>
-            <kbd>esc</kbd> 关闭
-          </span>
+          <span><kbd>↑</kbd><kbd>↓</kbd> 导航</span>
+          <span><kbd>↵</kbd> 选择</span>
+          <span><kbd>esc</kbd> 关闭</span>
         </div>
       </div>
     </div>

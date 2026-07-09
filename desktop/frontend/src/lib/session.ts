@@ -1,6 +1,9 @@
 import type { SessionMeta } from "./types";
 
-export function sessionTitle(session: SessionMeta, fallback: string): string {
+export function sessionTitle(
+  session: SessionMeta,
+  fallback: string,
+): string {
   return session.title || session.preview || fallback;
 }
 

@@ -60,19 +60,7 @@ interface Section {
 const SECTIONS: Section[] = [
   {
     title: "文件",
-    items: [
-      "read_file",
-      "write_file",
-      "edit_file",
-      "edit_lines",
-      "multi_edit",
-      "delete_range",
-      "delete_symbol",
-      "glob",
-      "grep",
-      "ls",
-      "notebook_edit",
-    ],
+    items: ["read_file", "write_file", "edit_file", "edit_lines", "multi_edit", "delete_range", "delete_symbol", "glob", "grep", "ls", "notebook_edit"],
   },
   {
     title: "命令",
@@ -114,22 +102,14 @@ function ToolCard({ name, count }: { name: string; count: number }) {
       }`}
       title={desc ?? name}
     >
-      <span
-        className={`w-1.5 h-1.5 mt-[5px] rounded-full shrink-0 ${active ? "bg-accent" : "bg-border-soft"}`}
-      />
+      <span className={`w-1.5 h-1.5 mt-[5px] rounded-full shrink-0 ${active ? "bg-accent" : "bg-border-soft"}`} />
       <span className="flex-1 min-w-0 flex flex-col gap-0.5 leading-[1.25]">
-        <span
-          className={`font-mono text-[10.5px] truncate ${active ? "text-accent font-semibold" : "text-fg-dim"}`}
-        >
+        <span className={`font-mono text-[10.5px] truncate ${active ? "text-accent font-semibold" : "text-fg-dim"}`}>
           {name}
         </span>
-        {desc && (
-          <span className="text-[10px] text-fg-faint leading-[1.3] line-clamp-1">{desc}</span>
-        )}
+        {desc && <span className="text-[10px] text-fg-faint leading-[1.3] line-clamp-1">{desc}</span>}
       </span>
-      <span
-        className={`shrink-0 font-mono text-[11px] font-semibold mt-px ${active ? "text-accent" : "text-fg-faint"}`}
-      >
+      <span className={`shrink-0 font-mono text-[11px] font-semibold mt-px ${active ? "text-accent" : "text-fg-faint"}`}>
         {count}
       </span>
     </div>
@@ -163,9 +143,7 @@ function ToolGroup({
           size={10}
           className={`text-fg-faint transition-transform duration-150 ${open ? "rotate-0" : "-rotate-90"}`}
         />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-fg-faint">
-          {title}
-        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-fg-faint">{title}</span>
         {activeCount > 0 && (
           <span className="ml-auto text-[9px] font-mono text-accent">{activeCount}</span>
         )}
@@ -195,13 +173,16 @@ export function RuntimePanel({ counts }: { counts: Counts }) {
   const filteredSections = useMemo(() => {
     if (!query.trim()) return SECTIONS;
     const q = query.toLowerCase();
-    return SECTIONS.map((sec) => ({
-      ...sec,
-      items: sec.items.filter(
-        (name) =>
-          name.toLowerCase().includes(q) || (TOOL_DESC[name] ?? "").toLowerCase().includes(q),
-      ),
-    })).filter((sec) => sec.items.length > 0);
+    return SECTIONS
+      .map((sec) => ({
+        ...sec,
+        items: sec.items.filter(
+          (name) =>
+            name.toLowerCase().includes(q) ||
+            (TOOL_DESC[name] ?? "").toLowerCase().includes(q),
+        ),
+      }))
+      .filter((sec) => sec.items.length > 0);
   }, [query]);
 
   const hasResults = filteredSections.length > 0;
@@ -230,10 +211,7 @@ export function RuntimePanel({ counts }: { counts: Counts }) {
         {query && (
           <button
             className="border-0 bg-transparent text-fg-faint cursor-pointer p-0 leading-none hover:text-fg"
-            onClick={() => {
-              setQuery("");
-              inputRef.current?.focus();
-            }}
+            onClick={() => { setQuery(""); inputRef.current?.focus(); }}
           >
             ✕
           </button>

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
+	"gaeaW/internal/costdb"
 	"gaeaW/internal/tool"
 )
 
@@ -39,14 +39,12 @@ func (costEstimate) Schema() json.RawMessage {
   "overhead_rate":{"type":"number","description":"管理费比例(%)","default":10},
   "profit_rate":{"type":"number","description":"利润率(%)","default":8},
   "tax_rate":{"type":"number","description":"税率(%)","default":6}
-  "output_path":{"type":"string","description":"输出文件路径（可选，指定后写入文件）"},
-  "output_format":{"type":"string","description":"输出格式：md（默认）或 docx"}
 },
 "required":["project_name","soil_volume","tech_type"]
 }`)
 }
 
-func (costEstimate) ReadOnly() bool { return false }
+func (costEstimate) ReadOnly() bool { return true }
 
 func (costEstimate) CompactDescription() string { return compactDesc["cost_estimate"] }
 func (costEstimate) CompactSchema() json.RawMessage   { return compactSchema["cost_estimate"] }
@@ -67,8 +65,6 @@ type costInput struct {
 	OverheadRate     float64 `json:"overhead_rate,omitempty"`
 	ProfitRate       float64 `json:"profit_rate,omitempty"`
 	TaxRate          float64 `json:"tax_rate,omitempty"`
-	OutputPath       string  `json:"output_path,omitempty"`
-	OutputFormat     string  `json:"output_format,omitempty"`
 }
 
 type costItem struct {
@@ -145,29 +141,16 @@ func (costEstimate) Execute(ctx context.Context, args json.RawMessage) (string, 
 	fmt.Fprintf(&b, "| **总计** | **%.2f** | **100%%** |\n", total)
 	fmt.Fprintf(&b, "\n| 单位方量成本 | **%.2f 元/m3** |\n", total/p.SoilVolume)
 
-	body := b.String()
-
-	// 若指定了输出路径，写入文件
-	if p.OutputPath != "" {
-		cleanPath, err := safeOutputPath(p.OutputPath)
-		if err != nil {
-			return "", err
-		}
-		if p.OutputFormat == "docx" {
-			if err := writeDocxFile(cleanPath, "成本测算："+p.ProjectName, body); err != nil {
-				return "", fmt.Errorf("写入 docx 文件失败: %w", err)
-			}
-		} else {
-			if err := os.WriteFile(cleanPath, []byte(body), 0644); err != nil {
-				return "", fmt.Errorf("写入文件失败: %w", err)
-			}
-		}
-	}
-
-	return tool.WrapText(body), nil
+	return tool.WrapText(b.String()), nil
 }
 
 func estimateCosts(tech string, p costInput) []costItem {
+	// Load cost database — silently fall back to hardcoded values on error.
+	db, dbErr := costdb.Load("")
+	if dbErr != nil {
+		db = nil
+	}
+
 	var items []costItem
 
 	// 1. 勘察/钻孔费
@@ -177,6 +160,11 @@ func estimateCosts(tech string, p costInput) []costItem {
 		boreholeCount = int(p.SoilVolume/500) + 3
 	}
 	boreholeUnitCost := 800.0 // 元/孔
+	if db != nil {
+		if costItems := db.QueryCost(costdb.Filter{Category: "钻孔勘察"}); len(costItems) > 0 {
+			boreholeUnitCost = costItems[0].BasePrice
+		}
+	}
 	boreholeTotal := float64(boreholeCount) * boreholeUnitCost
 	items = append(items, costItem{
 		Name:   "勘察钻孔费",
@@ -189,31 +177,63 @@ func estimateCosts(tech string, p costInput) []costItem {
 	if samplingCount <= 0 {
 		samplingCount = boreholeCount * 3 // 每孔3个样品
 	}
-	labTotal := float64(samplingCount) * p.LabCostPerSample
+	labCost := p.LabCostPerSample
+	if db != nil && labCost <= 0 {
+		if costItems := db.QueryCost(costdb.Filter{Category: "采样检测"}); len(costItems) > 0 {
+			labCost = costItems[0].BasePrice
+		}
+	}
+	if labCost <= 0 {
+		labCost = p.LabCostPerSample
+	}
+	labTotal := float64(samplingCount) * labCost
 	items = append(items, costItem{
 		Name:   "采样检测费",
 		Amount: labTotal,
-		Note:   fmt.Sprintf("%d样×%.0f元/样", samplingCount, p.LabCostPerSample),
+		Note:   fmt.Sprintf("%d样×%.0f元/样", samplingCount, labCost),
 	})
 
 	// 3. 药剂/材料费
 	medCost := p.UnitMedCost
 	if medCost <= 0 {
-		switch {
-		case strings.Contains(tech, "化学氧化") || strings.Contains(tech, "化学氧化"):
-			medCost = 350 // 元/m3
-		case strings.Contains(tech, "固化") || strings.Contains(tech, "稳定化"):
-			medCost = 180 // 元/m3（水泥）
-		case strings.Contains(tech, "热脱附"):
-			medCost = 100 // 元/m3（辅助材料）
-		case strings.Contains(tech, "土壤淋洗"):
-			medCost = 120 // 元/m3
-		case strings.Contains(tech, "生物"):
-			medCost = 200 // 元/m3
-		case strings.Contains(tech, "sve") || strings.Contains(tech, "气相"):
-			medCost = 50 // 元/m3
-		default:
-			medCost = 250
+		if db != nil {
+			techKeywords := map[string]string{
+				"化学氧化":  "化学氧化",
+				"固化":     "固化/稳定化",
+				"稳定化":   "固化/稳定化",
+				"热脱附":   "热脱附",
+				"土壤淋洗": "土壤淋洗",
+				"生物修复": "生物",
+				"生物":    "生物",
+				"sve":    "SVE/气相",
+				"气相":    "SVE/气相",
+			}
+			for kw, name := range techKeywords {
+				if strings.Contains(tech, kw) {
+					if its := db.QueryCost(costdb.Filter{Category: "药剂材料", NameKeyword: name}); len(its) > 0 {
+						medCost = its[0].BasePrice
+					}
+					break
+				}
+			}
+		}
+		if medCost <= 0 {
+			switch {
+			case strings.Contains(tech, "化学氧化") || strings.Contains(tech, "化学氧化"):
+				medCost = 350
+			case strings.Contains(tech, "固化") || strings.Contains(tech, "稳定化"):
+				medCost = 180
+			case strings.Contains(tech, "热脱附"):
+				medCost = 100
+			case strings.Contains(tech, "土壤淋洗"):
+				medCost = 120
+			case strings.Contains(tech, "生物"):
+				medCost = 200
+			case strings.Contains(tech, "sve") || strings.Contains(tech, "气相"):
+				medCost = 50
+			default:
+				medCost = 250
+			}
 		}
 	}
 	medTotal := medCost * p.SoilVolume
@@ -227,10 +247,20 @@ func estimateCosts(tech string, p costInput) []costItem {
 	transCost := p.UnitTransCost
 	if transCost <= 0 {
 		transCost = 35
+		if db != nil {
+			if its := db.QueryCost(costdb.Filter{Category: "土方运输", NameKeyword: "运输"}); len(its) > 0 {
+				transCost = its[0].BasePrice
+			}
+		}
 	}
 	disposalCost := p.UnitDisposalCost
 	if disposalCost <= 0 {
 		disposalCost = 80
+		if db != nil {
+			if its := db.QueryCost(costdb.Filter{Category: "土方运输", NameKeyword: "处置"}); len(its) > 0 {
+				disposalCost = its[0].BasePrice
+			}
+		}
 	}
 	earthTotal := (transCost + disposalCost) * p.SoilVolume
 	items = append(items, costItem{
@@ -243,10 +273,28 @@ func estimateCosts(tech string, p costInput) []costItem {
 	equipTotal := p.EquipCost
 	if equipTotal <= 0 {
 		rate := 120.0 // 元/m3
-		if strings.Contains(tech, "热脱附") {
-			rate = 250
-		} else if strings.Contains(tech, "sve") || strings.Contains(tech, "气相") {
-			rate = 80
+		if db != nil {
+			if strings.Contains(tech, "热脱附") {
+				if its := db.QueryCost(costdb.Filter{Category: "设备租赁", NameKeyword: "热脱附"}); len(its) > 0 {
+					rate = its[0].BasePrice
+				}
+			} else if strings.Contains(tech, "sve") || strings.Contains(tech, "气相") {
+				if its := db.QueryCost(costdb.Filter{Category: "设备租赁", NameKeyword: "SVE"}); len(its) > 0 {
+					rate = its[0].BasePrice
+				}
+			} else {
+				if its := db.QueryCost(costdb.Filter{Category: "设备租赁", NameKeyword: "通用"}); len(its) > 0 {
+					rate = its[0].BasePrice
+				}
+			}
+		}
+		if rate <= 0 {
+			rate = 120.0
+			if strings.Contains(tech, "热脱附") {
+				rate = 250
+			} else if strings.Contains(tech, "sve") || strings.Contains(tech, "气相") {
+				rate = 80
+			}
 		}
 		equipTotal = rate * p.SoilVolume
 	}
@@ -259,29 +307,43 @@ func estimateCosts(tech string, p costInput) []costItem {
 	// 6. 人工费
 	laborMonths := p.LaborMonths
 	if laborMonths <= 0 {
-		// 按5人×工期估算
 		durationMonths := p.SoilVolume / 2000
 		if durationMonths < 1 {
 			durationMonths = 1
 		}
 		laborMonths = 5 * durationMonths
 	}
-	laborTotal := laborMonths * p.LaborRate
+	laborRate := p.LaborRate
+	if db != nil && laborRate <= 0 {
+		if labItems := db.QueryLabor("普工", ""); len(labItems) > 0 {
+			laborRate = labItems[0].Price * 25 // 元/工日 × 约25工日/月
+		}
+	}
+	if laborRate <= 0 {
+		laborRate = p.LaborRate
+	}
+	laborTotal := laborMonths * laborRate
 	items = append(items, costItem{
 		Name:   "人工费",
 		Amount: laborTotal,
-		Note:   fmt.Sprintf("%.0f人·月×%.0f元/月", laborMonths, p.LaborRate),
+		Note:   fmt.Sprintf("%.0f人·月×%.0f元/月", laborMonths, laborRate),
 	})
 
 	// 7. 效果评估费
-	assessTotal := p.SoilVolume * 15
+	assessRate := 15.0
+	if db != nil {
+		if its := db.QueryCost(costdb.Filter{Category: "效果评估"}); len(its) > 0 {
+			assessRate = its[0].BasePrice
+		}
+	}
+	assessTotal := p.SoilVolume * assessRate
 	if assessTotal < 50000 {
 		assessTotal = 50000
 	}
 	items = append(items, costItem{
 		Name:   "效果评估费",
 		Amount: assessTotal,
-		Note:   fmt.Sprintf("含验收检测和报告编制"),
+		Note:   "含验收检测和报告编制",
 	})
 
 	return items
