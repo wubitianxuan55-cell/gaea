@@ -1,7 +1,7 @@
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useState, useEffect } from "react";
 import {
-  SquarePen, Brain, Blocks, BookOpen, MessageSquare,
+  SquarePen, Brain, Blocks, BookOpen, Calculator, MessageSquare,
   PanelLeftClose, PanelLeftOpen,
   Settings as SettingsIcon,
 } from "lucide-react";
@@ -26,6 +26,7 @@ export interface SidebarProps {
   onOpenHistory: () => void;
   onOpenMemory: () => void;
   onOpenCaps: () => void;
+  onOpenCost: () => void;
   onOpenKnowledge: () => void;
   onOpenSettings: () => void;
   startResize: (e: ReactPointerEvent<HTMLButtonElement>) => void;
@@ -35,7 +36,6 @@ export interface SidebarProps {
   SIDEBAR_MIN_WIDTH: number;
   SIDEBAR_MAX_WIDTH: number;
 }
-
 export function Sidebar({
   collapsed,
   toggleSidebar,
@@ -52,6 +52,7 @@ export function Sidebar({
   onOpenHistory,
   onOpenMemory,
   onOpenCaps,
+  onOpenCost,
   onOpenKnowledge,
   onOpenSettings,
   startResize,
@@ -64,10 +65,8 @@ export function Sidebar({
   const t = useT();
   const toggleTitle = collapsed ? t("sidebar.expand") : t("sidebar.collapse");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  // 内联重命名
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  // 搜索防抖：本地输入即时更新，200ms 后才同步到父组件触发过滤
   const [localQuery, setLocalQuery] = useState(searchQuery);
   useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
   useEffect(() => {
@@ -275,6 +274,14 @@ export function Sidebar({
           >
             <BookOpen size={15} />
             {!collapsed && <span>{t("topbar.knowledge")}</span>}
+          </button>
+          <button
+            className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}
+            onClick={() => void onOpenCost()}
+            title={t("topbar.cost")}
+          >
+            <Calculator size={15} />
+            {!collapsed && <span>{t("topbar.cost")}</span>}
           </button>
           <button
             className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-fg-faint text-[13px] no-drag transition-[color,background,transform] duration-[var(--dur-fast)] hover:text-fg hover:bg-sidebar-hover active:scale-[0.97] ${collapsed ? "justify-center w-10 !p-0 !gap-0" : ""}`}

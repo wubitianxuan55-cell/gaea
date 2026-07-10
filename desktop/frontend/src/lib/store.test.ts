@@ -1,117 +1,152 @@
 import { describe, it, expect } from "vitest";
+import type { WireEvent } from "./types";
+import type { ControllerState, Item } from "./store";
+import { applyEvent, flushPendingUser } from "./store";
 
-// Replicate the store's per-turn usage accumulation logic in a pure function.
-// This mirrors the case "usage" handler in store.ts without Zustand/React.
-
-interface WireUsage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  cacheHitTokens: number;
-  cacheMissTokens: number;
-  sessionCacheHitTokens: number;
-  sessionCacheMissTokens: number;
-  source?: string;
-  turn?: number;
-  costUsd?: number;
-}
-
-interface UsageAcc {
-  combined: WireUsage | undefined;
-  main: WireUsage | undefined;
-  sub: WireUsage | undefined;
-  steps: WireUsage[];
-}
-
-function accBySource(prev: WireUsage | undefined, u: WireUsage): WireUsage {
-  if (!prev) return { ...u };
+function baseState(overrides?: Partial<ControllerState>): ControllerState {
   return {
-    promptTokens: prev.promptTokens + u.promptTokens,
-    completionTokens: prev.completionTokens + u.completionTokens,
-    totalTokens: prev.totalTokens + u.totalTokens,
-    cacheHitTokens: prev.cacheHitTokens + u.cacheHitTokens,
-    cacheMissTokens: prev.cacheMissTokens + u.cacheMissTokens,
-    sessionCacheHitTokens: u.sessionCacheHitTokens > 0 ? u.sessionCacheHitTokens : prev.sessionCacheHitTokens,
-    sessionCacheMissTokens: u.sessionCacheMissTokens > 0 ? u.sessionCacheMissTokens : prev.sessionCacheMissTokens,
-  };
-}
-
-function applyUsage(acc: UsageAcc, u: WireUsage): UsageAcc {
-  const isSub = u.source === "subagent";
-  return {
-    combined: accBySource(acc.combined, u),
-    main: isSub ? acc.main : accBySource(acc.main, u),
-    sub: isSub ? accBySource(acc.sub, u) : acc.sub,
-    steps: [...acc.steps, { ...u }],
-  };
-}
-
-function emptyAcc(): UsageAcc {
-  return { combined: undefined, main: undefined, sub: undefined, steps: [] };
-}
-
-describe("store usage accumulation", () => {
-  const mkUsage = (overrides: Partial<WireUsage> = {}): WireUsage => ({
-    promptTokens: 100, completionTokens: 50, totalTokens: 150,
-    cacheHitTokens: 80, cacheMissTokens: 20,
-    sessionCacheHitTokens: 0, sessionCacheMissTokens: 0,
+    items: [], running: false, turnActive: false,
+    approval: undefined, ask: undefined, usage: undefined,
+    context: { used: 0, window: 0, plannerUsed: 0, plannerWindow: 0 },
+    meta: undefined, balance: undefined, tcca: undefined,
+    jobs: [], currentAssistant: undefined, pendingUser: undefined,
+    discardTurn: false, lastAssistantIdx: -1,
+    turnStartAt: 0, turnTokens: 0, seq: 0, sessionTotal: 0,
+    sessionNonce: 0, perTurnUsage: null, turnSteps: [],
+    perTurnPlannerUsage: undefined, perTurnExecutorUsage: undefined,
+    perTurnSubUsage: undefined,
+    _dispatch: () => {},
     ...overrides,
+  };
+}
+
+describe("flushPendingUser", () => {
+  it("returns unchanged when pendingUser is undefined", () => {
+    const s = baseState();
+    expect(flushPendingUser(s)).toBe(s);
   });
 
-  it("accumulates main-only usage correctly", () => {
-    const events = [
-      mkUsage({ promptTokens: 100, completionTokens: 50, totalTokens: 150, source: "main" }),
-      mkUsage({ promptTokens: 200, completionTokens: 100, totalTokens: 300, source: "main" }),
-    ];
-    const acc = events.reduce(applyUsage, emptyAcc());
-    expect(acc.combined?.promptTokens).toBe(300);
-    expect(acc.combined?.totalTokens).toBe(450);
-    expect(acc.main?.promptTokens).toBe(300);
-    expect(acc.sub).toBeUndefined();
-    expect(acc.steps.length).toBe(2);
+  it("deduplicates when last item matches pendingUser", () => {
+    const s = baseState({
+      pendingUser: "hello",
+      items: [{ kind: "user", id: "u0", text: "hello" } as Item],
+    });
+    const next = flushPendingUser(s);
+    expect(next.pendingUser).toBeUndefined();
+    expect(next.items.length).toBe(1);
   });
 
-  it("accumulates subagent-only usage correctly", () => {
-    const events = [
-      mkUsage({ promptTokens: 50, totalTokens: 80, source: "subagent" }),
-      mkUsage({ promptTokens: 30, totalTokens: 50, source: "subagent" }),
-    ];
-    const acc = events.reduce(applyUsage, emptyAcc());
-    expect(acc.combined?.promptTokens).toBe(80);
-    expect(acc.main).toBeUndefined();
-    expect(acc.sub?.promptTokens).toBe(80);
+  it("adds new user item when no duplicate", () => {
+    const s = baseState({ pendingUser: "world", seq: 5 });
+    const next = flushPendingUser(s);
+    expect(next.pendingUser).toBeUndefined();
+    expect(next.items.length).toBe(1);
+    expect(next.items[0]).toMatchObject({ kind: "user", id: "u5", text: "world" });
+    expect(next.seq).toBe(6);
+  });
+});
+
+describe("applyEvent — turn_started", () => {
+  it("resets turn state", () => {
+    const s = baseState({ running: true, turnActive: true, currentAssistant: "a0", lastAssistantIdx: 0, turnTokens: 100, perTurnUsage: { promptTokens: 10, completionTokens: 5, totalTokens: 15, cacheHitTokens: 8, cacheMissTokens: 2, sessionCacheHitTokens: 0, sessionCacheMissTokens: 0, costUsd: 0.001 } });
+    const e: WireEvent = { kind: "turn_started" };
+    const next = applyEvent(s, e);
+    expect(next.running).toBe(true);
+    expect(next.turnActive).toBe(true);
+    expect(next.currentAssistant).toBeUndefined();
+    expect(next.lastAssistantIdx).toBe(-1);
+    expect(next.turnTokens).toBe(0);
+    expect(next.perTurnUsage).toBeNull();
+    expect(next.turnSteps).toEqual([]);
+  });
+});
+
+describe("applyEvent — text/reasoning streaming", () => {
+  it("appends text to an existing streaming assistant", () => {
+    const s = baseState({
+      items: [{ kind: "assistant", id: "a0", text: "Hel", reasoning: "", streaming: true } as Item],
+      lastAssistantIdx: 0,
+      turnActive: true,
+    });
+    const e: WireEvent = { kind: "text", text: "lo" };
+    const next = applyEvent(s, e);
+    const a = next.items[0];
+    expect(a.kind).toBe("assistant");
+    if (a.kind === "assistant") {
+      expect(a.text).toBe("Hello");
+      expect(a.streaming).toBe(true);
+    }
   });
 
-  it("splits mixed main + subagent usage", () => {
-    const events = [
-      mkUsage({ promptTokens: 500, totalTokens: 600, source: "main" }),
-      mkUsage({ promptTokens: 200, totalTokens: 300, source: "main" }),
-      mkUsage({ promptTokens: 100, totalTokens: 150, source: "subagent" }),
-      mkUsage({ promptTokens: 50,  totalTokens: 80,  source: "subagent" }),
-    ];
-    const acc = events.reduce(applyUsage, emptyAcc());
-    expect(acc.combined?.promptTokens).toBe(850);
-    expect(acc.main?.promptTokens).toBe(700);
-    expect(acc.sub?.promptTokens).toBe(150);
-    expect(acc.steps.length).toBe(4);
-    expect(acc.steps[0].source).toBe("main");
-    expect(acc.steps[2].source).toBe("subagent");
+  it("creates new assistant when none exists", () => {
+    const s = baseState({ seq: 3, turnActive: true, lastAssistantIdx: -1 });
+    const e: WireEvent = { kind: "text", text: "Hi" };
+    const next = applyEvent(s, e);
+    const a = next.items[next.items.length - 1];
+    expect(a.kind).toBe("assistant");
+    if (a.kind === "assistant") {
+      expect(a.text).toBe("Hi");
+    }
+    expect(next.seq).toBe(4);
+  });
+});
+
+describe("applyEvent — tool_dispatch", () => {
+  it("adds a new tool item", () => {
+    const s = baseState({ seq: 2 });
+    const e: WireEvent = { kind: "tool_dispatch", tool: { id: "t0", name: "bash", args: "ls", readOnly: false } };
+    const next = applyEvent(s, e);
+    expect(next.items.length).toBe(1);
+    expect(next.items[0]).toMatchObject({ kind: "tool", id: "t0", name: "bash", args: "ls", status: "running" });
   });
 
-  it("handles empty events", () => {
-    const acc = emptyAcc();
-    expect(acc.combined).toBeUndefined();
-    expect(acc.main).toBeUndefined();
-    expect(acc.sub).toBeUndefined();
-    expect(acc.steps).toEqual([]);
+  it("merges args into existing tool", () => {
+    const s = baseState({
+      seq: 2,
+      items: [{ kind: "tool", id: "t0", name: "", args: "", readOnly: false, status: "running" } as Item],
+    });
+    const e: WireEvent = { kind: "tool_dispatch", tool: { id: "t0", name: "read_file", args: "foo.txt", readOnly: true } };
+    const next = applyEvent(s, e);
+    expect(next.items.length).toBe(1);
+    const t = next.items[0];
+    if (t.kind === "tool") {
+      expect(t.name).toBe("read_file");
+      expect(t.args).toBe("foo.txt");
+    }
   });
+});
 
-  it("treats missing source as main", () => {
-    const events = [
-      mkUsage({ promptTokens: 100, totalTokens: 150 }), // no source
-    ];
-    const acc = events.reduce(applyUsage, emptyAcc());
-    expect(acc.main?.promptTokens).toBe(100);
-    expect(acc.sub).toBeUndefined();
+describe("applyEvent — turn_done", () => {
+  it("ends the turn and finalises items", () => {
+    const s = baseState({
+      turnActive: true, running: true, currentAssistant: "a0",
+      items: [{ kind: "assistant", id: "a0", text: "done", reasoning: "", streaming: true } as Item],
+      lastAssistantIdx: 0,
+    });
+    const e: WireEvent = { kind: "turn_done" };
+    const next = applyEvent(s, e);
+    expect(next.running).toBe(false);
+    expect(next.turnActive).toBe(false);
+    expect(next.currentAssistant).toBeUndefined();
+    const a = next.items[0];
+    if (a.kind === "assistant") {
+      expect(a.streaming).toBe(false);
+    }
+  });
+});
+
+describe("applyEvent — discardTurn", () => {
+  it("ignores events until turn_done", () => {
+    const s = baseState({ discardTurn: true, currentAssistant: "a0", items: [{ kind: "assistant", id: "a0", text: "old", reasoning: "", streaming: true } as Item] });
+    // text event during discard
+    const e1: WireEvent = { kind: "text", text: "should be ignored" };
+    const mid = applyEvent(s, e1);
+    expect(mid.items.length).toBe(1); // no new item added
+
+    // turn_done ends the discard
+    const e2: WireEvent = { kind: "turn_done" };
+    const next = applyEvent(mid, e2);
+    expect(next.discardTurn).toBe(false);
+    expect(next.running).toBe(false);
   });
 });

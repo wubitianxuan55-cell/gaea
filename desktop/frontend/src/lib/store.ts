@@ -20,7 +20,7 @@ export type Item =
   | { kind: "compaction"; id: string; pending: boolean; trigger: string; messages: number; summary: string; archive: string }
   | { kind: "tool"; id: string; name: string; args: string; readOnly: boolean; status: ToolStatus; output?: string; error?: string; truncated?: boolean; recoverable?: boolean; parentId?: string };
 
-interface ControllerState {
+export interface ControllerState {
   items: Item[]; running: boolean; turnActive: boolean; approval?: WireApproval; ask?: WireAsk;
   usage?: WireUsage; context: ContextInfo; meta?: Meta; balance?: BalanceInfo; jobs: JobView[];
   tcca?: TCCAReport;
@@ -45,7 +45,7 @@ type Action =
   | { type: "history"; messages: HistoryMessage[] } | { type: "clearApproval" } | { type: "clearAsk" } | { type: "reset" };
 
 
-function flushPendingUser(s: ControllerState): ControllerState {
+export function flushPendingUser(s: ControllerState): ControllerState {
   if (s.pendingUser === undefined) return s;
   // 如果消息已通过 user action 立即加入 items，只清除 pendingUser 避免重复
   const last = s.items.length > 0 ? s.items[s.items.length - 1] : null;
@@ -56,7 +56,7 @@ function flushPendingUser(s: ControllerState): ControllerState {
 }
 
 
-function applyEvent(s: ControllerState, e: WireEvent): ControllerState {
+export function applyEvent(s: ControllerState, e: WireEvent): ControllerState {
   if (s.discardTurn) { if (e.kind === "turn_done") return { ...s, discardTurn: false, running: false, turnActive: false, currentAssistant: undefined }; return s; }
   if (s.pendingUser !== undefined && e.kind !== "turn_started" && e.kind !== "turn_done") s = flushPendingUser(s);
   switch (e.kind) {

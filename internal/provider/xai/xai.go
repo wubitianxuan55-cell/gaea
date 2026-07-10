@@ -2,7 +2,6 @@ package xai
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,18 +21,18 @@ func init() {
 	provider.Register("xai", New)
 }
 
-// ── Provider 实现 ─────────────────────────────────────────────────
+// ── Provider implementation ────────────────────────────────────────
 
 type xaiProvider struct {
 	name    string
 	baseURL string
 	model   string
 	tm      *tokenManager
-	client  *http.Client
+	sc      *provider.StreamHTTPClient
 }
 
-// New 创建 XAI provider。
-// cfg.APIKey 可选：设置后优先使用 API Key，否则使用 OAuth。
+// New creates an XAI provider.
+// cfg.APIKey is optional: when set, API Key takes precedence; otherwise OAuth is used.
 func New(cfg provider.Config) (provider.Provider, error) {
 	if cfg.BaseURL == "" {
 		return nil, fmt.Errorf("xai: base_url is required for provider %q", cfg.Name)
@@ -54,13 +53,18 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		baseURL: normalizeBaseURL(cfg.BaseURL),
 		model:   cfg.Model,
 		tm:      tm,
-		client:  getSharedClient(normalizeBaseURL(cfg.BaseURL)),
+		sc: &provider.StreamHTTPClient{
+			Name:       name,
+			HTTPClient: getSharedClient(normalizeBaseURL(cfg.BaseURL)),
+			Policy:     provider.DefaultRetryPolicy(),
+			RLPolicy:   provider.RateLimitRetryPolicy(),
+		},
 	}, nil
 }
 
 func (p *xaiProvider) Name() string { return p.name }
 
-// Stream 发起流式 Chat Completions 请求（OpenAI 兼容协议）。
+// Stream starts a streaming Chat Completions request (OpenAI-compatible protocol).
 func (p *xaiProvider) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
 	body, err := p.buildRequestBody(req)
 	if err != nil {
@@ -207,95 +211,28 @@ func (p *xaiProvider) buildRequestBody(req provider.Request) ([]byte, error) {
 	return json.Marshal(cr)
 }
 
-// ── HTTP 通信 ─────────────────────────────────────────────────────
+// ── HTTP communication ─────────────────────────────────────────────
 
 func (p *xaiProvider) sendWithRetry(ctx context.Context, body []byte) (*http.Response, error) {
-	const maxRetries = 5
-	const retryBase = 2 * time.Second
-	var lastErr error
-	rateLimitCount := 0
-
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		if attempt > 1 {
-			delay := retryBase * time.Duration(1<<(attempt-2))
-			if rateLimitCount >= 2 {
-				delay = retryBase * time.Duration(1<<(rateLimitCount+1))
-			}
-			slog.Debug("xai: retrying", "attempt", attempt, "delay", delay)
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(delay):
-			}
-		}
-
-		// 每次请求前重新获取 token
-		accessToken, err := p.tm.getAccessToken(ctx)
-		if err != nil {
-			slog.Error("xai: token acquisition failed", "provider", p.name, "err", err)
-			return nil, &provider.AuthError{Provider: p.name, KeyEnv: "XAI_API_KEY (or OAuth login)", Status: 401}
-		}
-
-		endpoint := strings.TrimSuffix(p.baseURL, "/") + "/chat/completions"
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(body))
-		if err != nil {
-			return nil, fmt.Errorf("%s: build request: %w", p.name, err)
-		}
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("Authorization", "Bearer "+accessToken)
-
-		resp, err := p.client.Do(httpReq)
-		if err != nil {
-			lastErr = fmt.Errorf("%s: request failed: %w", p.name, err)
-			continue
-		}
-
-		if resp.StatusCode < 400 {
-			return resp, nil
-		}
-
-		msg, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		resp.Body.Close()
-		if readErr != nil {
-			msg = []byte(fmt.Sprintf("(could not read error body: %v)", readErr))
-		}
-
-		if resp.StatusCode == 401 || resp.StatusCode == 403 {
-			slog.Error("xai: auth rejected", "status", resp.StatusCode, "body", strings.TrimSpace(string(msg)))
-			keyEnv := "XAI_API_KEY"
-			if p.tm.apiKey == "" {
-				keyEnv = "XAI OAuth token (try re-login via `gaeaW login xai`, or set XAI_API_KEY)"
-			}
-			return nil, &provider.AuthError{Provider: p.name, KeyEnv: keyEnv, Status: resp.StatusCode}
-		}
-
-		statusErr := &httpStatusError{name: p.name, code: resp.StatusCode, body: strings.TrimSpace(string(msg))}
-		if resp.StatusCode == 429 {
-			rateLimitCount++
-			lastErr = statusErr
-			if rateLimitCount >= 3 {
-				return nil, fmt.Errorf("%s: rate limited after %d attempts", p.name, rateLimitCount)
-			}
-			continue
-		}
-		if resp.StatusCode >= 500 {
-			lastErr = statusErr
-			continue
-		}
-		return nil, statusErr
+	accessToken, err := p.tm.getAccessToken(ctx)
+	if err != nil {
+		slog.Error("xai: token acquisition failed", "provider", p.name, "err", err)
+		return nil, &provider.AuthError{Provider: p.name, KeyEnv: "XAI_API_KEY (or OAuth login)", Status: 401}
 	}
 
-	return nil, lastErr
-}
-
-type httpStatusError struct {
-	name string
-	code int
-	body string
-}
-
-func (e *httpStatusError) Error() string {
-	return fmt.Sprintf("%s: HTTP %d: %s", e.name, e.code, e.body)
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer " + accessToken,
+	}
+	endpoint := strings.TrimSuffix(p.baseURL, "/") + "/chat/completions"
+	return p.sc.Do(ctx, http.MethodPost, endpoint, headers, body, func(code int, bodyStr string) error {
+		slog.Error("xai: auth rejected", "status", code, "body", bodyStr)
+		keyEnv := "XAI_API_KEY"
+		if p.tm.apiKey == "" {
+			keyEnv = "XAI OAuth token (try re-login via `gaeaW login xai`, or set XAI_API_KEY)"
+		}
+		return &provider.AuthError{Provider: p.name, KeyEnv: keyEnv, Status: code}
+	})
 }
 
 // ── SSE 流读取 ────────────────────────────────────────────────────
@@ -373,7 +310,7 @@ func (p *xaiProvider) readStream(ctx context.Context, resp *http.Response, out c
 				}
 			}
 
-			// 文本内容
+			// Text content
 			if delta.Content != "" {
 				out <- provider.Chunk{
 					Type: provider.ChunkText,
@@ -404,7 +341,7 @@ func (p *xaiProvider) readStream(ctx context.Context, resp *http.Response, out c
 				}
 			}
 
-			// 结束原因
+			// Finish reason
 			if choice.FinishReason != nil && *choice.FinishReason != "" {
 				if *choice.FinishReason == "stop" || *choice.FinishReason == "tool_calls" || *choice.FinishReason == "length" {
 					out <- provider.Chunk{Type: provider.ChunkDone}
@@ -436,7 +373,7 @@ func normalizeUsage(w *wireUsage) *provider.Usage {
 	}
 }
 
-// ── HTTP 连接池 ──────────────────────────────────────────────────
+// ── HTTP connection pool ───────────────────────────────────────────
 
 var (
 	clientPool   = make(map[string]*http.Client)
@@ -466,10 +403,10 @@ func getSharedClient(baseURL string) *http.Client {
 	return c
 }
 
-// ── 公开 API ──────────────────────────────────────────────────────
+// ── Public API ─────────────────────────────────────────────────────
 
-// EnsureLogin 确保已登录或已配置 API Key。
-// 返回 nil 表示可以直接使用；返回 error 表示需要先登录。
+// EnsureLogin checks that the user is logged in or has configured an API Key.
+// Returns nil if ready to use, or an error if login is required.
 func EnsureLogin() error {
 	tm := newTokenManager("")
 	if tm.IsLoggedIn() {
@@ -478,19 +415,19 @@ func EnsureLogin() error {
 	return fmt.Errorf("XAI 未登录：请运行 `gaeaW login xai` 在浏览器中登录，或设置 XAI_API_KEY 环境变量")
 }
 
-// Login 触发 XAI OAuth 登录。
+// Login triggers XAI OAuth login.
 func Login() error {
 	tm := newTokenManager("")
 	return tm.Login()
 }
 
-// Logout 登出 XAI（删除缓存 token，不影响 API Key 模式）。
+// Logout signs out of XAI (deletes cached token, does not affect API Key mode).
 func Logout() error {
 	tm := newTokenManager("")
 	return tm.Logout()
 }
 
-// IsLoggedIn 返回是否已认证（OAuth 或 API Key）。
+// IsLoggedIn returns whether the user is authenticated (OAuth or API Key).
 func IsLoggedIn() bool {
 	tm := newTokenManager("")
 	return tm.IsLoggedIn()

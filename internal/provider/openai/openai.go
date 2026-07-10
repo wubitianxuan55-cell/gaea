@@ -2,12 +2,9 @@ package openai
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"sort"
@@ -113,7 +110,12 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		effort:   effort,
 		deepseek: deepseek,
 		minimax:  minimax,
-		http:     getSharedClient(strings.TrimRight(cfg.BaseURL, "/")),
+		sc: &provider.StreamHTTPClient{
+			Name:       name,
+			HTTPClient: getSharedClient(strings.TrimRight(cfg.BaseURL, "/")),
+			Policy:     provider.DefaultRetryPolicy(),
+			RLPolicy:   provider.RateLimitRetryPolicy(),
+		},
 	}, nil
 }
 
@@ -124,7 +126,7 @@ type client struct {
 	authed   atomic.Bool // V10.0: a request has succeeded — gate transient-401 retry
 	baseURL  string
 	model    string
-	http     *http.Client
+	sc       *provider.StreamHTTPClient
 	effort   string // reasoning_effort for OpenAI; thinking.type for MiniMax; "" = auto/provider default
 	deepseek bool   // auto-detected: api.deepseek.com or reasoning_protocol=deepseek
 	minimax  bool   // auto-detected: *.minimaxi.com (requires thinking.type, not reasoning_effort)
@@ -148,113 +150,26 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	return out, nil
 }
 
-// sendWithRetry POSTs the request body and returns the streaming response,
-// retrying on transient network errors and retryable HTTP statuses (408, 429,
-// 5xx) with exponential backoff + jitter. Retries only cover the connection +
-// header phase; once we hand the response to readStream, mid-stream failures
-// surface as ChunkError without retry, since the model has already started
-// emitting tokens we'd otherwise duplicate.
-// maxAuthRetries bounds how many times a 401/403 is retried for a key that
-// has previously authenticated (transient auth failures from gateways).
 const maxAuthRetries = 2
 
 func (c *client) sendWithRetry(ctx context.Context, body []byte) (*http.Response, error) {
-	policy := provider.DefaultRetryPolicy()
-	rlPolicy := provider.RateLimitRetryPolicy()
-	var lastErr error
-	rateLimitCount := 0
 	authRetries := 0
-
-	// Use the larger of the two MaxAttempts so rate-limited requests get their
-	// full 5 attempts; non-retryable errors still exit early via IsRetryableStatus.
-	maxAttempts := policy.MaxAttempts
-	if rlPolicy.MaxAttempts > maxAttempts {
-		maxAttempts = rlPolicy.MaxAttempts
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer " + c.apiKey,
+		"Accept":        "text/event-stream",
 	}
-
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if attempt > 0 {
-			var delay time.Duration
-			if isRateLimit(lastErr) {
-				rateLimitCount++
-				if rateLimitCount >= rlPolicy.MaxAttempts {
-					return nil, fmt.Errorf("%s: rate limited after %d attempts", c.name, rateLimitCount)
-				}
-				delay = rlPolicy.Backoff.Duration(rateLimitCount - 1)
-			} else if isServerError(lastErr) {
-				delay = policy.Backoff.Duration(attempt - 1)
-			} else {
-				delay = policy.Backoff.Duration(attempt - 1)
-			}
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(delay):
-			}
-		}
-
-		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body))
-		if err != nil {
-			return nil, fmt.Errorf("%s: build request: %w", c.name, err)
-		}
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
-		httpReq.Header.Set("Accept", "text/event-stream")
-
-		resp, err := c.http.Do(httpReq)
-		if err != nil {
-			if !provider.IsTransientNetErr(err) {
-				return nil, fmt.Errorf("%s: request failed: %w", c.name, err)
-			}
-			lastErr = fmt.Errorf("%s: request failed: %w", c.name, err)
-			continue
-		}
-		if resp.StatusCode == http.StatusOK {
-			c.authed.Store(true)
-			return resp, nil
-		}
-		msg, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		if readErr != nil {
-			msg = []byte(fmt.Sprintf("(could not read error body: %v)", readErr))
-		}
-		_, _ = io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-			authErr := &provider.AuthError{Provider: c.name, KeyEnv: c.keyEnv, Status: resp.StatusCode}
+	return c.sc.Do(ctx, http.MethodPost, c.baseURL+"/chat/completions", headers, body, func(code int, bodyStr string) error {
+		if code == http.StatusUnauthorized || code == http.StatusForbidden {
+			authErr := &provider.AuthError{Provider: c.name, KeyEnv: c.keyEnv, Status: code}
 			if c.authed.Load() && authRetries < maxAuthRetries {
 				authRetries++
-				lastErr = authErr
-				continue
+				return nil
 			}
-			return nil, authErr
+			return authErr
 		}
-		statusErr := &httpStatusError{name: c.name, code: resp.StatusCode, body: strings.TrimSpace(string(msg))}
-		if !provider.IsRetryableStatus(resp.StatusCode) {
-			return nil, statusErr
-		}
-		if d := provider.ParseRetryAfter(resp, 120*time.Second); d > 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(d):
-			}
-		}
-		lastErr = statusErr
-	}
-	return nil, lastErr
-}
-
-// httpStatusError carries an HTTP status code so retry-classification helpers
-// (isRateLimit, isServerError) can inspect it directly instead of matching error
-// strings, which would break if the error format changed.
-type httpStatusError struct {
-	name string
-	code int
-	body string
-}
-
-func (e *httpStatusError) Error() string {
-	return fmt.Sprintf("%s: status %d: %s", e.name, e.code, e.body)
+		return &provider.AuthError{Provider: c.name, KeyEnv: c.keyEnv, Status: code}
+	})
 }
 
 func normalizeReasoningProtocol(raw string) string {
@@ -627,32 +542,4 @@ type wireUsage struct {
 	} `json:"completion_tokens_details"`
 }
 
-// isRateLimit 判断错误是否来自 429（Rate Limit）。
-// 优先使用结构化错误（httpStatusError），降级为字符串匹配以兼容非 HTTP 错误。
-func isRateLimit(err error) bool {
-	if err == nil {
-		return false
-	}
-	var se *httpStatusError
-	if errors.As(err, &se) {
-		return se.code == http.StatusTooManyRequests
-	}
-	s := err.Error()
-	return strings.Contains(s, "429") || strings.Contains(s, "rate limit") || strings.Contains(s, "too many")
-}
 
-// isServerError 判断错误是否来自 5xx（服务端错误）。
-// 优先使用结构化错误（httpStatusError），降级为字符串匹配以兼容非 HTTP 错误。
-func isServerError(err error) bool {
-	if err == nil {
-		return false
-	}
-	var se *httpStatusError
-	if errors.As(err, &se) {
-		return se.code >= 500 && se.code <= 599
-	}
-	s := err.Error()
-	return strings.Contains(s, "500") || strings.Contains(s, "501") ||
-		strings.Contains(s, "502") || strings.Contains(s, "503") ||
-		strings.Contains(s, "504") || strings.Contains(s, "505")
-}

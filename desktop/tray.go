@@ -1,4 +1,4 @@
-// tray.go — system tray icon + menu for gaeaW desktop.
+// tray.go — system tray icon + menu for gaea desktop.
 // Uses getlantern/systray to create a taskbar notification area icon.
 // The tray provides: Show/Hide window, Quit.
 package main
@@ -12,7 +12,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// trayIconICO is a 16×16 / 32×32 dark-teal W icon in ICO format.
+// trayIconICO is a 16×16 / 32×32 dark G-glyph icon in ICO format.
 //
 //go:embed tray_icon.ico
 var trayIconICO []byte
@@ -29,12 +29,12 @@ func runTray(ctx context.Context) {
 		func() {
 			// onReady — runs in a new goroutine after systray initializes.
 			systray.SetIcon(trayIconICO)
-			systray.SetTitle("gaeaW")
-			systray.SetTooltip("gaeaW — 大地工程AI助手")
+			systray.SetTitle("gaea")
+			systray.SetTooltip("gaea — 大地工程AI助手")
 
-			showItem := systray.AddMenuItem("显示 gaeaW", "恢复主窗口")
+			showItem := systray.AddMenuItem("显示 gaea", "恢复主窗口")
 			systray.AddSeparator()
-			quitItem := systray.AddMenuItem("退出", "完全退出 gaeaW")
+			quitItem := systray.AddMenuItem("退出", "完全退出 gaea")
 
 			// Handle menu clicks in a separate goroutine (systray requires it).
 			go func() {

@@ -29,12 +29,8 @@ type Config struct {
 	Sandbox      SandboxConfig     `toml:"sandbox"`
 	Plugins      []PluginEntry     `toml:"plugins"`
 	Skills       SkillsConfig      `toml:"skills"`
-	// [office 配置适配] Codegraph 配置段已废弃
-	// Codegraph    CodegraphConfig   `toml:"codegraph"`
 	Statusline   StatuslineConfig  `toml:"statusline"`
 	Notify       NotifyConfig      `toml:"notifications"`
-	// [office 配置适配] LSP 配置段已废弃
-	// LSP          LSPConfig         `toml:"lsp"`
 	Search       SearchConfig      `toml:"search"`
 	Network      NetworkConfig     `toml:"network"`
 	Bot          BotConfig         `toml:"bot"`
@@ -594,7 +590,6 @@ func Default() *Config {
 		// as a built-in MCP server, and AutoInstall fetches it into the cache on
 		// first use. Set enabled = false to opt out, or auto_install = false to
 		// require an explicit `gaeaW codegraph install`.
-				// [office 配置适配] Codegraph/LSP 默认值已废弃
 		Notify: NotifyConfig{Enabled: true, MinDuration: 5},
 		Tools: ToolsConfig{Enabled: []string{
 			"read_file", "write_file", "edit_file", "edit_lines", "move_file",

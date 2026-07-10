@@ -12,16 +12,21 @@ import type {
   CheckpointMeta,
   CommandInfo,
   ContextInfo,
+  CostDBView,
   DirEntry,
+  FilePickResult,
   FilePreview,
+  EstimateResultView,
+  ImportResultView,
   HistoryMessage,
-  KnowledgeEntry,
-  KnowledgeSummary,
   JobView,
+  KnowledgeEntry,
+  KnowledgeSaveRequest,
+  KnowledgeSummary,
   MCPServerInput,
-  MemoryView,
   MemorySuggestion,
   MemorySuggestionsView,
+  MemoryView,
   SkillSuggestion,
   TabMeta,
   Meta,
@@ -170,6 +175,20 @@ export interface AppBindings {
   // Knowledge base panel.
   KnowledgeList(): Promise<KnowledgeSummary[]>;
   KnowledgeGet(name: string): Promise<KnowledgeEntry | null>;
+  KnowledgeSave(entry: KnowledgeSaveRequest): Promise<void>;
+  KnowledgeDelete(name: string): Promise<void>;
+  // Cost database panel.
+  CostDBLoad(): Promise<CostDBView>;
+  CostDBSave(data: CostDBView): Promise<void>;
+  CostEstimate(codes: string[], quantities: number[], region: string): Promise<EstimateResultView>;
+  CostDBExportCSV(kind: string): Promise<string>;
+  CostDBImportCSV(kind: string, csvData: string): Promise<ImportResultView>;
+  CostDBBackup(): Promise<string>;
+  CostDBListBackups(): Promise<string[]>;
+  CostDBRestore(filename: string): Promise<void>;
+  // PickFiles opens a native file dialog and imports selected files.
+  PickFiles(): Promise<FilePickResult[]>;
+
 }
 
 interface WailsRuntime {

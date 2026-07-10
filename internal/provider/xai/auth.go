@@ -381,14 +381,14 @@ func normalizeBaseURL(rawURL string) string {
 	return candidate
 }
 
-// ── Token 获取（统一入口）────────────────────────────────────────
+// ── Token acquisition (unified entry) ─────────────────────────────
 
-// tokenManager 管理 XAI 认证 token 的生命周期。
+// tokenManager manages the lifecycle of XAI authentication tokens.
 type tokenManager struct {
 	store  *TokenStore
 	cfg    OAuthConfig
 	token  *Token
-	apiKey string // 如果设置了 XAI_API_KEY 则优先使用
+	apiKey string // When XAI_API_KEY is set, it takes precedence
 }
 
 func newTokenManager(apiKey string) *tokenManager {
@@ -397,7 +397,7 @@ func newTokenManager(apiKey string) *tokenManager {
 		cfg:    DefaultOAuthConfig(),
 		apiKey: apiKey,
 	}
-	// 尝试加载缓存的 token
+	// Try to load cached token
 	if stored, err := tm.store.Load(); err == nil && stored != nil {
 		tm.token = stored
 		slog.Debug("xai: loaded cached token", "path", TokenStorePath(), "expires_in", stored.ExpiresIn)
@@ -409,16 +409,16 @@ func newTokenManager(apiKey string) *tokenManager {
 	return tm
 }
 
-// getAccessToken 获取有效的 access token。
-// 优先级：API Key > 缓存 token > OAuth 登录。
+// getAccessToken returns a valid access token.
+// Priority: API Key > cached token > OAuth login.
 func (tm *tokenManager) getAccessToken(ctx context.Context) (string, error) {
-	// 1. API Key 优先
+	// 1. API Key first
 	if tm.apiKey != "" {
 		slog.Debug("xai: using API key", "prefix", tm.apiKey[:min(8, len(tm.apiKey))]+"...")
 		return tm.apiKey, nil
 	}
 
-	// 2. 缓存的 token 仍然有效
+	// 2. Cached token still valid
 	if tm.token != nil && !tm.token.IsExpired() {
 		slog.Debug("xai: using cached token", "expires_in", tm.token.ExpiresIn)
 		return tm.token.AccessToken, nil
@@ -428,7 +428,7 @@ func (tm *tokenManager) getAccessToken(ctx context.Context) (string, error) {
 		slog.Warn("xai: cached token expired", "expires_in", tm.token.ExpiresIn, "obtained_at", tm.token.ObtainedAt)
 	}
 
-	// 3. 尝试刷新
+	// 3. Try refresh
 	if tm.token != nil && tm.token.RefreshToken != "" {
 		slog.Info("xai: attempting token refresh")
 		newToken, err := RefreshAccessToken(tm.cfg.ClientID, tm.token.RefreshToken)
@@ -444,12 +444,12 @@ func (tm *tokenManager) getAccessToken(ctx context.Context) (string, error) {
 		}
 	}
 
-	// 4. 需要重新登录
+	// 4. Need re-login
 	slog.Error("xai: no valid token available — please login via Settings panel")
 	return "", fmt.Errorf("XAI 未登录：请运行 `gaeaW login xai` 在浏览器中登录，或设置 XAI_API_KEY 环境变量")
 }
 
-// IsLoggedIn 返回是否已登录（或已配置 API Key）。
+// IsLoggedIn returns whether the user is logged in (or has configured an API Key).
 func (tm *tokenManager) IsLoggedIn() bool {
 	if tm.apiKey != "" {
 		return true
@@ -457,7 +457,7 @@ func (tm *tokenManager) IsLoggedIn() bool {
 	return tm.token != nil && !tm.token.IsExpired()
 }
 
-// Login 触发 OAuth 登录流程。
+// Login triggers the OAuth login flow.
 func (tm *tokenManager) Login() error {
 	result, err := DoLogin(tm.cfg)
 	if err != nil {
@@ -467,7 +467,7 @@ func (tm *tokenManager) Login() error {
 	return tm.store.Save(result.Token)
 }
 
-// Logout 删除缓存的 token。
+// Logout deletes the cached token.
 func (tm *tokenManager) Logout() error {
 	tm.token = nil
 	return tm.store.Delete()

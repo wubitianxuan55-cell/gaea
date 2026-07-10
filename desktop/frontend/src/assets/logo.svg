@@ -1,122 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="gaeaW">
-  <title>gaeaW</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="gaea">
+  <title>gaea</title>
   <defs>
-    <!-- W 山形渐变：底部深 teal → 顶部亮 teal -->
-    <linearGradient id="w-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F766E"/>
-      <stop offset="50%" stop-color="#14B8A6"/>
-      <stop offset="100%" stop-color="#2DD4BF"/>
+    <!-- 主环渐变：indigo → cyan，135° 对角线 -->
+    <linearGradient id="ring-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
     </linearGradient>
-    <!-- AI 粒子发光 -->
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#14B8A6" stop-opacity="0.75"/>
-      <stop offset="60%" stop-color="#14B8A6" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#14B8A6" stop-opacity="0"/>
-    </radialGradient>
-    <!-- 背景微光 -->
-    <radialGradient id="bg-glow" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#CCFBF1" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#F8FAFC" stop-opacity="0"/>
+    <!-- 发光节点辉光 -->
+    <radialGradient id="node-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- 背景：暖白圆角方形 + 浅灰细边框 -->
-  <rect width="1024" height="1024" rx="224" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="3"/>
-  <rect width="1024" height="1024" rx="224" fill="url(#bg-glow)"/>
+  <!-- ====== 外环 ====== -->
+  <!-- 不完整圆环，右上角开口（从 30°→-30°，经过左侧），形成字母 G 的外廓 -->
+  <path d="M 360 316 A 120 120 0 1 0 360 196"
+        fill="none" stroke="url(#ring-grad)" stroke-width="28" stroke-linecap="round"/>
 
-  <!-- 网格线（下半区域，极淡 teal） -->
-  <g stroke="#CCFBF1" stroke-width="1" opacity="0.8">
-    <line x1="0" y1="576" x2="1024" y2="576"/>
-    <line x1="0" y1="704" x2="1024" y2="704"/>
-    <line x1="0" y1="832" x2="1024" y2="832"/>
-    <line x1="0" y1="960" x2="1024" y2="960"/>
-    <line x1="128" y1="540" x2="128" y2="1024"/>
-    <line x1="256" y1="540" x2="256" y2="1024"/>
-    <line x1="384" y1="540" x2="384" y2="1024"/>
-    <line x1="512" y1="540" x2="512" y2="1024"/>
-    <line x1="640" y1="540" x2="640" y2="1024"/>
-    <line x1="768" y1="540" x2="768" y2="1024"/>
-    <line x1="896" y1="540" x2="896" y2="1024"/>
-  </g>
+  <!-- ====== 内横杠 ====== -->
+  <!-- 从圆心水平向右延伸至环边缘，形成 G 的横杠 -->
+  <line x1="256" y1="256" x2="376" y2="256"
+        stroke="url(#ring-grad)" stroke-width="28" stroke-linecap="round"/>
 
-  <!-- ====== 四层山脉背景（W 后方） ====== -->
-  
-  <!-- 第4层（最外层/底部）：大地基底 -->
-  <polygon points="512,180 940,520 84,520" fill="#CCFBF1" opacity="0.7"/>
-  
-  <!-- 第3层：中层山脉 -->
-  <polygon points="512,260 856,520 168,520" fill="#99F6E4" opacity="0.6"/>
-  
-  <!-- 第2层：上升层 -->
-  <polygon points="512,340 750,520 274,520" fill="#5EEAD4" opacity="0.5"/>
+  <!-- ====== 数据节点 ====== -->
 
-  <!-- 第1层（最内层/顶部）：核心峰顶 — 最亮 -->
-  <polygon points="512,400 640,520 384,520" fill="#2DD4BF" opacity="0.35"/>
+  <!-- 弧起始节点（右下，连接起点） -->
+  <circle cx="360" cy="316" r="10" fill="#6366F1"/>
+  <circle cx="360" cy="316" r="18" fill="url(#node-glow)" opacity="0.3"/>
 
-  <!-- 山脉内部刻面细节（中心线） -->
-  <g stroke="#0F766E" stroke-width="1" opacity="0.12">
-    <line x1="512" y1="180" x2="512" y2="520"/>
-  </g>
+  <!-- 圆心节点（G 横杠与环的交汇点） -->
+  <circle cx="256" cy="256" r="10" fill="#6366F1"/>
+  <circle cx="256" cy="256" r="18" fill="url(#node-glow)" opacity="0.3"/>
 
-  <!-- ====== 山形 W — 4 块平行四边形 ====== -->
-  <g fill="url(#w-grad)" stroke="#0F766E" stroke-width="1.5" stroke-linejoin="round" opacity="0.95">
-    <!-- 块 1：左外侧 — 底部 → 左峰 -->
-    <polygon points="208,470 272,470 402,218 338,218" />
-    <!-- 块 2：左内侧 — 左峰 → 谷底 -->
-    <polygon points="372,238 434,238 540,470 476,470" />
-    <!-- 块 3：右内侧 — 谷底 → 右峰 -->
-    <polygon points="556,470 620,470 652,238 590,238" />
-    <!-- 块 4：右外侧 — 右峰 → 底部 -->
-    <polygon points="624,238 686,238 816,470 752,470" />
-  </g>
+  <!-- 弧终点发光节点（右上，数据汇聚） -->
+  <circle cx="360" cy="196" r="26" fill="url(#node-glow)"/>
+  <circle cx="360" cy="196" r="14" fill="#06B6D4"/>
 
-  <!-- W 内部分隔线（让 4 块之间更有层次） -->
-  <g stroke="#0F766E" stroke-width="1.5" stroke-linecap="round" opacity="0.3">
-    <!-- 块1→块2 分隔 -->
-    <line x1="320" y1="280" x2="340" y2="248" />
-    <!-- 块2→块3 分隔（谷底） -->
-    <line x1="508" y1="470" x2="508" y2="440" />
-    <!-- 块3→块4 分隔 -->
-    <line x1="660" y1="280" x2="648" y2="248" />
-  </g>
-
-  <!-- 地层线（两条水平 semi-transparent teal 线） -->
-  <g stroke="#0D9488" stroke-width="2.5" stroke-linecap="round" opacity="0.4">
-    <line x1="180" y1="528" x2="844" y2="528" />
-    <line x1="180" y1="550" x2="844" y2="550" />
-  </g>
-
-  <!-- ====== AI 粒子节点 ====== -->
-
-  <!-- 左峰顶点粒子 -->
-  <circle cx="386" cy="218" r="20" fill="url(#glow)"/>
-  <circle cx="386" cy="218" r="6" fill="#0F766E"/>
-
-  <!-- 右峰顶点粒子 -->
-  <circle cx="638" cy="238" r="18" fill="url(#glow)"/>
-  <circle cx="638" cy="238" r="5.5" fill="#0F766E"/>
-
-  <!-- 谷底粒子 -->
-  <circle cx="512" cy="470" r="14" fill="url(#glow)"/>
-  <circle cx="512" cy="470" r="4" fill="#0F766E"/>
-
-  <!-- 底部山脚节点 -->
-  <circle cx="200" cy="490" r="8" fill="url(#glow)" opacity="0.5"/>
-  <circle cx="200" cy="490" r="2.5" fill="#0F766E" opacity="0.6"/>
-  <circle cx="824" cy="490" r="8" fill="url(#glow)" opacity="0.5"/>
-  <circle cx="824" cy="490" r="2.5" fill="#0F766E" opacity="0.6"/>
-
-  <!-- 散落微粒子 -->
-  <circle cx="300" cy="380" r="2" fill="#14B8A6" opacity="0.35"/>
-  <circle cx="724" cy="390" r="2" fill="#14B8A6" opacity="0.35"/>
-  <circle cx="450" cy="340" r="1.5" fill="#0F766E" opacity="0.25"/>
-  <circle cx="580" cy="350" r="1.5" fill="#0F766E" opacity="0.25"/>
-
-  <!-- 峰顶菱形标记 -->
-  <g fill="#0F766E">
-    <!-- 左峰 -->
-    <polygon points="386,204 396,218 386,232 376,218" />
-    <!-- 右峰 -->
-    <polygon points="638,224 648,238 638,252 628,238" />
-  </g>
+  <!-- ====== 字标 ====== -->
+  <text x="256" y="460" text-anchor="middle"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-weight="600" font-size="80" letter-spacing="-0.02em" fill="#E2E8F0">
+    gaea
+  </text>
 </svg>

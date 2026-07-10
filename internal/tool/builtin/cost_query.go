@@ -20,32 +20,34 @@ type costQuery struct{}
 func (costQuery) Name() string { return "cost_query" }
 
 func (costQuery) Description() string {
-	return "查询工程成本数据：造价、人工单价、材料价格、机械台班费。支持按名称/编码关键词、分类、地区筛选。内置四川/重庆/西藏地区系数。"
+	return "查询工程成本数据：造价、人工单价、材料价格、机械台班费。支持按名称/编码关键词、分类、地区筛选。内置四川/重庆/西藏/贵州/云南/青海地区系数。支持批量估算和统计。"
 }
 
 func (costQuery) Schema() json.RawMessage {
 	return json.RawMessage(`{
 "type":"object",
 "properties":{
-  "keyword":{"type":"string","description":"名称或编码关键词（可选，不填返回概览）"},
-  "category":{"type":"string","description":"分类筛选（可选）：钻孔勘察/采样检测/药剂材料/土方运输/设备租赁/人工/效果评估"},
-  "region":{"type":"string","description":"地区（可选）：四川/重庆/西藏"},
-  "kind":{"type":"string","description":"查询类型（可选）：cost(成本条目)/labor(人工)/material(材料)/machine(机械)，默认cost"}
+  \"action\":{\"type\":\"string\",\"description\":\"特殊操作：estimate(批量估算)/stats(分类统计)/regions(地区对比)/export_csv(导出CSV)\"},
+  \"keyword\":{\"type\":\"string\",\"description\":\"名称或编码关键词（可选，不填返回概览）；export_csv时指定导出类型：items/labor/material/machine/regions\"},
+  "region":{"type":"string","description":"地区（可选）：四川/重庆/西藏/贵州/云南/青海"},
+  "kind":{"type":"string","description":"查询类型（可选）：cost(成本条目)/labor(人工)/material(材料)/machine(机械)，默认cost"},
+  "codes":{"type":"array","items":{"type":"string"},"description":"估算用：条目编码数组，配合quantities使用"},
+  "quantities":{"type":"array","items":{"type":"number"},"description":"估算用：数量数组，与codes一一对应"}
 }
 }`)
 }
 
 func (costQuery) ReadOnly() bool { return true }
 
-func (costQuery) CompactDescription() string { return compactDesc["cost_query"] }
-func (costQuery) CompactSchema() json.RawMessage   { return compactSchema["cost_query"] }
-
 func (costQuery) Execute(_ context.Context, args json.RawMessage) (string, error) {
 	var p struct {
-		Keyword  string `json:"keyword,omitempty"`
-		Category string `json:"category,omitempty"`
-		Region   string `json:"region,omitempty"`
-		Kind     string `json:"kind,omitempty"`
+		Keyword    string    `json:"keyword,omitempty"`
+		Category   string    `json:"category,omitempty"`
+		Region     string    `json:"region,omitempty"`
+		Kind       string    `json:"kind,omitempty"`
+		Action     string    `json:"action,omitempty"`
+		Codes      []string  `json:"codes,omitempty"`
+		Quantities []float64 `json:"quantities,omitempty"`
 	}
 	if err := json.Unmarshal(args, &p); err != nil {
 		return "", fmt.Errorf("参数无效: %w", err)
@@ -54,6 +56,18 @@ func (costQuery) Execute(_ context.Context, args json.RawMessage) (string, error
 	db, err := costdb.Load("")
 	if err != nil {
 		return "", fmt.Errorf("加载成本库失败: %w", err)
+	}
+
+	// Handle special actions first.
+	switch strings.ToLower(p.Action) {
+	case "estimate":
+		return runEstimate(db, p.Codes, p.Quantities, p.Region)
+	case "stats":
+		return runStats(db)
+	case "regions":
+		return runRegionsCompare(db, p.Keyword)
+	case "export_csv":
+		return runExportCSV(db, p.Keyword)
 	}
 
 	kind := strings.ToLower(p.Kind)
@@ -196,4 +210,96 @@ func queryMachine(db *costdb.CostDB, keyword, region string) (string, error) {
 			it.NameSpec, it.Unit, it.PurchasePrice, it.HourlyRate, it.FuelRate, it.OperatorLabor)
 	}
 	return b.String(), nil
+}
+
+func runEstimate(db *costdb.CostDB, codes []string, quantities []float64, region string) (string, error) {
+	if len(codes) == 0 {
+		return "请提供 codes 和 quantities 参数进行批量估算。", nil
+	}
+	if len(codes) != len(quantities) {
+		return "", fmt.Errorf("codes 和 quantities 长度不一致（%d vs %d）", len(codes), len(quantities))
+	}
+	if region == "" {
+		region = "全国"
+	}
+
+	items := make([]costdb.EstimateItem, len(codes))
+	for i := range codes {
+		items[i] = costdb.EstimateItem{Code: codes[i], Quantity: quantities[i]}
+	}
+
+	total, breakdown, err := db.Estimate(items, region)
+	if err != nil {
+		return "", fmt.Errorf("估算失败: %w", err)
+	}
+
+	var b strings.Builder
+	b.WriteString("## 批量估算结果\n\n")
+	b.WriteString("| 编码 | 名称 | 单位 | 单价(元) | 数量 | 小计(元) |\n")
+	b.WriteString("|------|------|------|----------|------|----------|\n")
+	for _, r := range breakdown {
+		fmt.Fprintf(&b, "| %s | %s | %s | %.2f | %.0f | %.2f |\n",
+			r.Code, r.Name, r.Unit, r.UnitPrice, r.Quantity, r.Subtotal)
+	}
+	fmt.Fprintf(&b, "\n**合计：%.2f 元**\n", total)
+	return b.String(), nil
+}
+
+func runStats(db *costdb.CostDB) (string, error) {
+	stats := db.StatsByCategory()
+	if len(stats) == 0 {
+		return "暂无统计数据。", nil
+	}
+
+	var b strings.Builder
+	b.WriteString("## 成本库统计\n\n")
+	b.WriteString("| 分类 | 条目数 | 平均单价 | 最低价 | 最高价 | 中位数 |\n")
+	b.WriteString("|------|--------|----------|--------|--------|--------|\n")
+	// Sort categories for stable output.
+	cats := make([]string, 0, len(stats))
+	for c := range stats {
+		cats = append(cats, c)
+	}
+	sort.Strings(cats)
+	for _, c := range cats {
+		s := stats[c]
+		fmt.Fprintf(&b, "| %s | %d | %.0f | %.0f | %.0f | %.0f |\n",
+			c, s.Count, s.Avg, s.Min, s.Max, s.Median)
+	}
+	return b.String(), nil
+}
+
+func runRegionsCompare(db *costdb.CostDB, itemCode string) (string, error) {
+	if itemCode == "" {
+		return "请提供 keyword 参数指定要对比的成本条目编码。", nil
+	}
+	result := db.RegionCompare(itemCode)
+	if len(result) == 0 {
+		return fmt.Sprintf("未找到条目或地区系数：%s", itemCode), nil
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "## 地区对比：%s\n\n", itemCode)
+	b.WriteString("| 地区 | 调整后单价 |\n")
+	b.WriteString("|------|-----------|\n")
+	regions := make([]string, 0, len(result))
+	for r := range result {
+		regions = append(regions, r)
+	}
+	sort.Strings(regions)
+	for _, r := range regions {
+		fmt.Fprintf(&b, "| %s | %.2f |\n", r, result[r])
+	}
+	return b.String(), nil
+}
+
+func runExportCSV(db *costdb.CostDB, kind string) (string, error) {
+	if kind == "" {
+		kind = "items"
+	}
+	data, err := db.ExportCSV(kind)
+	if err != nil {
+		return "", fmt.Errorf("导出CSV失败: %w", err)
+	}
+	return "```csv\n" + string(data) + "```\n", nil
 }

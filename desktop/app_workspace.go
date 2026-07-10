@@ -6,6 +6,7 @@ import (
 	"fmt"
 	goruntime "runtime"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -360,6 +361,75 @@ func (a *App) AttachmentDataURL(path string) (string, error) {
 	return control.ImageDataURL(path)
 }
 
+// FilePickResult describes one file picked from the native dialog.
+type FilePickResult struct {
+	Path string `json:"path"`
+	// PreviewURL is set only for image files (a data: URL the frontend can show).
+	PreviewURL string `json:"previewUrl,omitempty"`
+	Type       string `json:"type"` // "image" or "file"
+	Name       string `json:"name"`
+}
+
+// PickFiles opens a native multi-file picker dialog, reads each file, saves
+// images via SaveImageDataURL (with a preview URL) and other files via
+// SaveAttachmentFile, and returns the results so the frontend can attach them.
+func (a *App) PickFiles() ([]FilePickResult, error) {
+	if a.ctx == nil {
+		return nil, nil
+	}
+	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "选择要导入的文件",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("open file dialog: %w", err)
+	}
+	if len(files) == 0 {
+		return nil, nil
+	}
+	results := make([]FilePickResult, 0, len(files))
+	for _, fp := range files {
+		raw, err := os.ReadFile(fp)
+		if err != nil {
+			continue
+		}
+		if len(raw) == 0 || len(raw) > 10*1024*1024 {
+			continue
+		}
+		name := filepath.Base(fp)
+		mime := http.DetectContentType(raw[:min(len(raw), 512)])
+		if strings.HasPrefix(mime, "image/") {
+			// Save as image attachment and get preview
+			dataURL := "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(raw)
+			path, err := control.SaveImageDataURL(dataURL)
+			if err != nil {
+				continue
+			}
+			previewURL, err := control.ImageDataURL(path)
+			if err != nil {
+				continue
+			}
+			results = append(results, FilePickResult{
+				Path:       path,
+				PreviewURL: previewURL,
+				Type:       "image",
+				Name:       name,
+			})
+		} else {
+			// Save as generic attachment
+			encoded := base64.StdEncoding.EncodeToString(raw)
+			path, err := a.SaveAttachmentFile(name, encoded)
+			if err != nil {
+				continue
+			}
+			results = append(results, FilePickResult{
+				Path: path,
+				Type: "file",
+				Name: name,
+			})
+		}
+	}
+	return results, nil
+}
 // SaveAttachmentFile saves a file under .gaeaW/attachments/ and returns the
 // relative @-reference path. Accepts base64-encoded content.
 func (a *App) SaveAttachmentFile(fileName, base64Data string) (string, error) {

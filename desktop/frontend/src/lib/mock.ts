@@ -12,6 +12,7 @@
 
 import type {
   KnowledgeEntry,
+  KnowledgeSaveRequest,
   KnowledgeSummary,
   MCPServerInput,
   MemorySuggestion,
@@ -579,25 +580,105 @@ export function makeMockApp(): AppBindings {
         "gb50300-2024": {
           name: "gb50300-2024", title: "建筑工程施工质量验收统一标准 GB 50300-2024", category: "规范标准", tags: ["施工", "质量", "验收"], status: "现行", updatedAt: "2025-01-15T00:00:00.000Z",
           body: "## 适用范围\n\n本标准适用于建筑工程施工质量的验收，包括地基与基础、主体结构、建筑装饰装修、建筑屋面、建筑给排水及供暖、通风与空调、建筑电气、智能建筑、建筑节能、电梯等分部工程。\n\n## 基本规定\n\n1. 施工现场质量管理应有相应的技术标准。\n2. 建筑工程施工质量应按下列要求进行验收。\n3. 建筑工程施工质量验收应划分为单位工程、分部工程、分项工程和检验批。",
-          phase: "施工验收", discipline: "土木工程", source: "住房和城乡建设部", version: 2, author: "住建部标准定额司",
+          phase: "施工验收", discipline: "土木工程", source: "住房和城乡建设部", version: 2, author: "住建部标准定额司", reviewer: "", createdAt: "2024-06-01T00:00:00.000Z",
         },
         "case-bio-remediation": {
           name: "case-bio-remediation", title: "某焦化厂生物修复工程案例", category: "工程案例", tags: ["焦化厂", "生物修复", "PAHs"], status: "已归档", updatedAt: "2024-11-20T00:00:00.000Z",
           body: "## 项目概况\n\n某焦化厂退役地块，占地面积约 120 亩。主要污染物为多环芳烃（PAHs）、苯系物（BTEX）和氰化物。\n\n## 修复方案\n\n采用原位生物通风+化学氧化联合修复工艺。\n- 生物通风：注入空气和营养盐，促进土著微生物降解\n- 化学氧化：注射过硫酸钠氧化高浓度区域\n\n## 修复效果\n\n经过 18 个月的修复运行，目标污染物去除率达到 85% 以上，达到修复目标值。",
-          phase: "施工", discipline: "环境工程", source: "内部案例库", version: 1, author: "张三",
+          phase: "施工", discipline: "环境工程", source: "内部案例库", version: 1, author: "张三", reviewer: "", createdAt: "2024-06-15T00:00:00.000Z",
         },
         "soil-sampling-guide": {
           name: "soil-sampling-guide", title: "污染场地土壤采样技术要点", category: "经验总结", tags: ["采样", "布点", "质量控制"], status: "常用", updatedAt: "2025-02-10T00:00:00.000Z",
           body: "## 采样前准备\n\n1. 收集场地历史资料，了解潜在污染物类型\n2. 制定采样方案，明确布点方法和数量\n3. 准备采样设备、样品容器和现场记录表\n\n## 布点方法\n\n- 系统布点法：适用于污染物分布均匀的场地\n- 分层布点法：适用于污染来源明确的场地\n- 判断布点法：适用于历史污染区域\n\n## 质量控制\n\n- 现场平行样：每 10 个样品至少 1 个\n- 运输空白样：每批次至少 1 个\n- 设备清洗样：每个采样点之间采集",
-          phase: "调查", discipline: "环境工程", source: "项目经验总结", version: 3, author: "李四",
+          phase: "调查", discipline: "环境工程", source: "项目经验总结", version: 3, author: "李四", reviewer: "", createdAt: "2024-08-01T00:00:00.000Z",
         },
         "hdp-liner-spec": {
           name: "hdp-liner-spec", title: "HDPE 土工膜施工技术规范", category: "材料工艺", tags: ["HDPE", "土工膜", "防渗"], status: "现行", updatedAt: "2024-09-05T00:00:00.000Z",
           body: "## 材料要求\n\nHDPE 土工膜厚度不应小于 1.5mm，密度不低于 0.94g/cm³。\n\n## 施工要点\n\n1. 基底应平整压实，无尖锐物\n2. 膜与膜之间采用热熔焊接\n3. 焊缝强度不低于母材强度\n4. 铺设时应预留 5%-8% 的伸缩余量\n\n## 质量检验\n\n- 目测检查：膜面有无破损、褶皱\n- 气密性试验：焊缝处进行气压测试\n- 厚度检测：每 500m² 测一点",
-          phase: "施工", discipline: "岩土工程", source: "施工技术手册", version: 2, author: "王五",
+          phase: "施工", discipline: "岩土工程", source: "施工技术手册", version: 2, author: "王五", reviewer: "", createdAt: "2024-07-01T00:00:00.000Z",
         },
       };
       return entries[name] || null;
     },
+    // ── 知识库 CRUD Mock ────────────────────────────────────
+    async KnowledgeSave(_entry: KnowledgeSaveRequest) {
+      // mock: no-op
+    },
+    async KnowledgeDelete(_name: string) {
+      // mock: no-op
+    },
+    // ── 成本库 Mock ─────────────────────────────────────────
+    async CostDBLoad() {
+      return {
+        items: [
+          { code: "DR-001", name: "标准钻孔", category: "钻孔勘察", unit: "元/孔", basePrice: 800, laborCost: 400, materialCost: 100, machineCost: 300, overheadRate: 10, profitRate: 8, taxRate: 6, wasteFactor: 1.05, source: "经验估算", confidence: 0.7, region: "全国", validFrom: "2024-01-01", remark: "15m深标准钻孔" },
+          { code: "TR-001", name: "土方运输", category: "土方运输", unit: "元/m³", basePrice: 35, laborCost: 5, materialCost: 0, machineCost: 30, overheadRate: 10, profitRate: 8, taxRate: 6, wasteFactor: 1.05, source: "经验估算", confidence: 0.7, region: "全国", validFrom: "2024-01-01", remark: "30km以内" },
+          { code: "LB-001", name: "人工费", category: "人工", unit: "元/人·月", basePrice: 10000, laborCost: 10000, materialCost: 0, machineCost: 0, overheadRate: 10, profitRate: 8, taxRate: 6, wasteFactor: 1.0, source: "经验估算", confidence: 0.7, region: "全国", validFrom: "2024-01-01", remark: "普工×5人" },
+        ],
+        labor: [
+          { tradeType: "普工", unit: "元/工日", price: 180, region: "全国", priceDate: "2024-01-01", source: "实际采集" },
+          { tradeType: "技工", unit: "元/工日", price: 250, region: "全国", priceDate: "2024-01-01", source: "实际采集" },
+        ],
+        materials: [
+          { code: "MT-001", nameSpec: "过硫酸钠", unit: "元/吨", price: 5450, source: "市场参考价", priceDate: "2024-01-01", region: "全国" },
+          { code: "MT-002", nameSpec: "双氧水", unit: "元/吨", price: 7200, source: "市场参考价", priceDate: "2024-01-01", region: "全国" },
+        ],
+        machines: [
+          { code: "MC-001", nameSpec: "ALLU筛分斗", unit: "元/台班", purchasePrice: 90000, hourlyRate: 11250, fuelRate: 1500, operatorLabor: 350, region: "全国" },
+        ],
+        regions: [
+          { region: "四川", adjustmentFactor: 1.0, validFrom: "2024-01-01" },
+          { region: "重庆", adjustmentFactor: 0.95, validFrom: "2024-01-01" },
+          { region: "西藏", adjustmentFactor: 1.35, validFrom: "2024-01-01" },
+        ],
+      };
+    },
+    async CostDBSave(_data: import("./types").CostDBView) {
+      // mock: no-op
+    },
+    async CostEstimate(codes: string[], quantities: number[], _region: string) {
+      // Return a simple mock estimate
+      const db = await this.CostDBLoad();
+      const items = db.items;
+      const breakdown: import("./types").EstimateResultItemView[] = [];
+      let total = 0;
+      for (let i = 0; i < codes.length; i++) {
+        const item = items.find((it) => it.code === codes[i]);
+        if (item) {
+          const unitPrice = item.basePrice;
+          const subtotal = unitPrice * (quantities[i] || 1);
+          total += subtotal;
+          breakdown.push({
+            code: item.code,
+            name: item.name,
+            unit: item.unit,
+            unitPrice,
+            quantity: quantities[i] || 1,
+            subtotal,
+          });
+        }
+      }
+      return { total, breakdown };
+    },
+    async CostDBExportCSV(_kind: string): Promise<string> {
+      return "编码,名称,分类,单位,MOCK-001,模拟导出,测试,元/次";
+    },
+    async CostDBImportCSV(_kind: string, _csvData: string): Promise<import("./types").ImportResultView> {
+      return { added: 1, skipped: 0 };
+    },
+    async CostDBBackup(): Promise<string> {
+      return "costdb-20250101-120000.json";
+    },
+    async CostDBListBackups(): Promise<string[]> {
+      return ["costdb-20250101-120000.json", "costdb-20250102-080000.json"];
+    },
+    async CostDBRestore(_filename: string): Promise<void> {
+      // mock: no-op
+    },
+    async PickFiles(): Promise<import("./types").FilePickResult[]> {
+      // In dev mode there is no native dialog -- return empty.
+      return [];
+    },
+
   };
 }

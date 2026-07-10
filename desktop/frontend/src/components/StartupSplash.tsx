@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import logoSymbol from "../assets/logo.svg";
 import { useT } from "../lib/i18n";
 
-const SPLASH_FLAG = "gaeaW.splash.shown";
+const SPLASH_FLAG = "gaea.splash.shown";
 const MIN_VISIBLE_MS = 1400;
 const FADE_OUT_MS = 420;
 const MAX_HOLD_MS = 6000;
@@ -71,7 +71,7 @@ export function StartupSplash({ hold, onDone }: { hold: boolean; onDone: () => v
         <div className="startup-splash__mark" aria-hidden="true">
           <img src={logoSymbol} alt="" draggable={false} />
         </div>
-        <div className="startup-splash__name">gaeaW</div>
+        <div className="startup-splash__name">gaea</div>
         <div className="startup-splash__sub">{t("app.splashSubtitle") ?? "AI 办公助理"}</div>
         <div className="startup-splash__bar" aria-hidden="true" />
       </div>

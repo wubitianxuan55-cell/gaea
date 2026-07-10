@@ -11,17 +11,16 @@ export const zh: Record<DictKey, string> = {
   "common.cancel": "取消",
   "common.save": "保存",
   "common.edit": "编辑",
+  "common.confirm": "确认",
   "common.delete": "删除",
-  "common.add": "添加",
   "common.submit": "提交",
   "common.copy": "复制",
+  "common.add": "添加",
   "common.expand": "展开",
   "common.collapse": "收起",
   "common.none": "无",
   "common.busyHint": "请先完成或停止当前回合",
   "common.loading": "加载中…",
-
-  // 顶栏
   "topbar.history": "历史",
   "topbar.memory": "记忆",
   "topbar.settings": "设置",
@@ -29,15 +28,39 @@ export const zh: Record<DictKey, string> = {
   "topbar.newSession": "新建会话",
   "topbar.startupError": "启动错误：{msg}",
   "topbar.knowledge": "知识库",
-
-  // 知识库面板
+  "topbar.cost": "成本库",
+  "knowledge.all": "全部",
   "knowledge.title": "知识库",
   "knowledge.search": "搜索条目…",
   "knowledge.empty": "知识库为空",
   "knowledge.noMatch": "无匹配条目",
+  "knowledge.count": "共 {n} 条",
+  "knowledge.new": "新建",
+  "knowledge.save": "保存",
+  "knowledge.delete": "删除",
+  "knowledge.phase": "阶段",
+  "knowledge.tags": "标签（逗号分隔）",
+  "knowledge.source": "来源",
+  "knowledge.author": "作者",
+  "knowledge.namePlaceholder": "标识名（仅英文）",
+  "knowledge.body": "正文（Markdown）",
   "knowledge.category": "分类",
-  "knowledge.all": "全部",
 
+  // 成本库面板
+  "cost.title": "成本库管理平台",
+  "cost.search": "搜索条目…",
+  "cost.empty": "暂无数据",
+  "cost.noMatch": "无匹配条目",
+  "cost.tab.items": "成本条目",
+  "cost.tab.labor": "人工",
+  "cost.tab.material": "材料",
+  "cost.tab.machine": "机械",
+  "cost.tab.regions": "地区系数",
+  "cost.tab.estimate": "估算",
+  "cost.estimate.calculate": "计算",
+  "cost.estimate.total": "合计",
+
+  // 侧边栏
   // 侧边栏
   "sidebar.recent": "最近",
   "sidebar.conversations": "会话",
@@ -177,6 +200,7 @@ export const zh: Record<DictKey, string> = {
   "composer.pastedHidePreview": "收起粘贴文本预览",
   "composer.pastedExpand": "展开",
   "composer.pastedRemove": "删除粘贴文本",
+  "composer.importFile": "导入文件",
 
   // 状态栏
   "status.connecting": "连接中…",

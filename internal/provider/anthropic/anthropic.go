@@ -18,16 +18,11 @@ package anthropic
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"math/rand"
 	"net/http"
 	"strings"
-	"time"
 
 	"gaeaW/internal/provider"
 )
@@ -73,7 +68,12 @@ func New(cfg provider.Config) (provider.Provider, error) {
 		model:    cfg.Model,
 		thinking: thinking,
 		effort:   effort,
-		http:     &http.Client{}, // no overall timeout; lifecycle is ctx-driven
+		sc: &provider.StreamHTTPClient{
+			Name:       name,
+			HTTPClient: &http.Client{},
+			Policy:     provider.DefaultRetryPolicy(),
+			RLPolicy:   provider.RateLimitRetryPolicy(),
+		},
 	}, nil
 }
 
@@ -85,7 +85,7 @@ type client struct {
 	model    string
 	thinking string // "adaptive" enables extended thinking; "" = off (config-driven)
 	effort   string // output_config.effort: low|medium|high|xhigh|max; "" = provider default
-	http     *http.Client
+	sc       *provider.StreamHTTPClient
 }
 
 func (c *client) Name() string { return c.name }
@@ -106,74 +106,18 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	return out, nil
 }
 
-// sendWithRetry POSTs the request and returns the streaming response, retrying the
-// connection+header phase on transient errors and retryable statuses (408, 429,
-// 5xx — which covers Anthropic's 529 overloaded) with exponential backoff + jitter.
-// Mid-stream failures are not retried (the model has already emitted tokens).
+// sendWithRetry POSTs the request and returns the streaming response, retrying on
+// transient errors and retryable statuses via StreamHTTPClient.
 func (c *client) sendWithRetry(ctx context.Context, body []byte) (*http.Response, error) {
-	const maxAttempts = 3
-	var lastErr error
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if attempt > 0 {
-			delay := time.Duration(1<<(attempt-1))*500*time.Millisecond + time.Duration(rand.Intn(250))*time.Millisecond
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(delay):
-			}
-		}
-
-		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/v1/messages", bytes.NewReader(body))
-		if err != nil {
-			return nil, fmt.Errorf("%s: build request: %w", c.name, err)
-		}
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("Accept", "text/event-stream")
-		httpReq.Header.Set("x-api-key", c.apiKey)
-		httpReq.Header.Set("anthropic-version", anthropicVersion)
-
-		resp, err := c.http.Do(httpReq)
-		if err != nil {
-			if !isTransientErr(err) {
-				return nil, fmt.Errorf("%s: request failed: %w", c.name, err)
-			}
-			lastErr = fmt.Errorf("%s: request failed: %w", c.name, err)
-			continue
-		}
-		if resp.StatusCode == http.StatusOK {
-			return resp, nil
-		}
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		_, _ = io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-		// A rejected key is a configuration problem, not a transient one.
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-			return nil, &provider.AuthError{Provider: c.name, KeyEnv: c.keyEnv, Status: resp.StatusCode}
-		}
-		statusErr := fmt.Errorf("%s: status %d: %s", c.name, resp.StatusCode, strings.TrimSpace(string(msg)))
-		if !isRetryableStatus(resp.StatusCode) {
-			return nil, statusErr
-		}
-		lastErr = statusErr
+	headers := map[string]string{
+		"Content-Type":      "application/json",
+		"Accept":            "text/event-stream",
+		"x-api-key":         c.apiKey,
+		"anthropic-version": anthropicVersion,
 	}
-	return nil, lastErr
-}
-
-// isRetryableStatus matches 408, 429, and 5xx (incl. Anthropic's 529 overloaded).
-func isRetryableStatus(s int) bool {
-	return s == http.StatusRequestTimeout || s == http.StatusTooManyRequests || (s >= 500 && s <= 599)
-}
-
-// isTransientErr never retries ctx cancellation/deadline (caller intent); retries
-// everything else (DNS, connection reset, abrupt EOF).
-func isTransientErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return false
-	}
-	return true
+	return c.sc.Do(ctx, http.MethodPost, c.baseURL+"/v1/messages", headers, body, func(code int, bodyStr string) error {
+		return &provider.AuthError{Provider: c.name, KeyEnv: c.keyEnv, Status: code}
+	})
 }
 
 // buildRequest converts the transport-agnostic Request into the Messages API shape:

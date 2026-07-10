@@ -1,9 +1,9 @@
-// Package xai 实现 XAI / Grok 模型的 OAuth 认证 Provider。
-// 支持两种认证方式：
-//  1. OAuth PKCE 登录（默认）—— 首次使用时自动打开浏览器登录
-//  2. API Key —— 设置 XAI_API_KEY 环境变量后自动使用
+// Package xai implements the XAI / Grok OAuth provider.
+// Two authentication methods are supported:
+//  1. OAuth PKCE login (default) — opens the browser on first use
+//  2. API Key — set the XAI_API_KEY environment variable
 //
-// OAuth Token 缓存到 ~/.gaeaW/xai_token.json，过期自动刷新。
+// OAuth tokens are cached at ~/.gaeaW/xai_token.json and refreshed automatically when expired.
 package xai
 
 import (
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// Token 表示 XAI OAuth token 对。
+// Token represents an XAI OAuth token pair.
 type Token struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
@@ -24,7 +24,7 @@ type Token struct {
 	ObtainedAt   time.Time `json:"obtained_at"`
 }
 
-// Validate 检查 token 是否有效。
+// Validate checks whether the token is valid.
 func (t *Token) Validate() error {
 	if t == nil {
 		return fmt.Errorf("token 为空")

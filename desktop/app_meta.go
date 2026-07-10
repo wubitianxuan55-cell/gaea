@@ -2,14 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"gaeaW/internal/agent"
 	"gaeaW/internal/boot"
 	"gaeaW/internal/config"
 	"gaeaW/internal/control"
+	"gaeaW/internal/costdb"
 	"gaeaW/internal/i18n"
 	"gaeaW/internal/knowledge"
 	"gaeaW/internal/memory"
@@ -524,8 +527,10 @@ type KnowledgeEntry struct {
 	Status     string    `json:"status"`
 	Version    int       `json:"version"`
 	Author     string    `json:"author"`
+	Reviewer   string    `json:"reviewer"`
 	Source     string    `json:"source"`
 	Body       string    `json:"body"`
+	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
@@ -571,8 +576,372 @@ func (a *App) KnowledgeGet(name string) *KnowledgeEntry {
 		Status:     e.Status,
 		Version:    e.Version,
 		Author:     e.Author,
+		Reviewer:   e.Reviewer,
 		Source:     e.Source,
 		Body:       e.Body,
+		CreatedAt:  e.CreatedAt,
 		UpdatedAt:  e.UpdatedAt,
 	}
+}
+
+// KnowledgeSave saves a knowledge entry (create or update).
+func (a *App) KnowledgeSave(entry KnowledgeEntry) error {
+	store, err := openKnowledgeStore()
+	if err != nil {
+		return err
+	}
+	return store.Save(knowledge.Entry{
+		Name:       entry.Name,
+		Title:      entry.Title,
+		Category:   entry.Category,
+		Phase:      entry.Phase,
+		Discipline: entry.Discipline,
+		Tags:       entry.Tags,
+		Status:     entry.Status,
+		Version:    entry.Version,
+		Author:     entry.Author,
+		Reviewer:   entry.Reviewer,
+		Source:     entry.Source,
+		Body:       entry.Body,
+	})
+}
+
+// KnowledgeDelete deletes a knowledge entry by name.
+func (a *App) KnowledgeDelete(name string) error {
+	store, err := openKnowledgeStore()
+	if err != nil {
+		return err
+	}
+	return store.Delete(name)
+}
+
+// ── 成本库 ────────────────────────────────────────────────────────────────
+
+// ── 成本库 ────────────────────────────────────────────────────────────────
+
+// CostItemView 是前端展示用的成本条目结构。
+type CostItemView struct {
+	Code         string  `json:"code"`
+	Name         string  `json:"name"`
+	Category     string  `json:"category"`
+	Unit         string  `json:"unit"`
+	BasePrice    float64 `json:"basePrice"`
+	LaborCost    float64 `json:"laborCost"`
+	MaterialCost float64 `json:"materialCost"`
+	MachineCost  float64 `json:"machineCost"`
+	OverheadRate float64 `json:"overheadRate"`
+	ProfitRate   float64 `json:"profitRate"`
+	TaxRate      float64 `json:"taxRate"`
+	WasteFactor  float64 `json:"wasteFactor"`
+	Source       string  `json:"source"`
+	Confidence   float64 `json:"confidence"`
+	Region       string  `json:"region"`
+	ValidFrom    string  `json:"validFrom"`
+	ValidTo      string  `json:"validTo,omitempty"`
+	Remark       string  `json:"remark,omitempty"`
+}
+
+// LaborItemView 是前端展示用的人工单价结构。
+type LaborItemView struct {
+	TradeType string  `json:"tradeType"`
+	Unit      string  `json:"unit"`
+	Price     float64 `json:"price"`
+	Region    string  `json:"region"`
+	PriceDate string  `json:"priceDate"`
+	Source    string  `json:"source"`
+}
+
+// MaterialItemView 是前端展示用的材料价格结构。
+type MaterialItemView struct {
+	Code      string  `json:"code"`
+	NameSpec  string  `json:"nameSpec"`
+	Unit      string  `json:"unit"`
+	Price     float64 `json:"price"`
+	Source    string  `json:"source"`
+	PriceDate string  `json:"priceDate"`
+	Region    string  `json:"region"`
+}
+
+// MachineItemView 是前端展示用的机械台班结构。
+type MachineItemView struct {
+	Code          string  `json:"code"`
+	NameSpec      string  `json:"nameSpec"`
+	Unit          string  `json:"unit"`
+	PurchasePrice float64 `json:"purchasePrice"`
+	HourlyRate    float64 `json:"hourlyRate"`
+	FuelRate      float64 `json:"fuelRate"`
+	OperatorLabor float64 `json:"operatorLabor"`
+	Region        string  `json:"region"`
+}
+
+// RegionFactorView 是前端展示用的地区系数结构。
+type RegionFactorView struct {
+	Region           string  `json:"region"`
+	AdjustmentFactor float64 `json:"adjustmentFactor"`
+	ValidFrom        string  `json:"validFrom"`
+}
+
+// CostDBView 是完整的成本库快照，供前端展示和编辑。
+type CostDBView struct {
+	Items     []CostItemView     `json:"items"`
+	Labor     []LaborItemView    `json:"labor"`
+	Materials []MaterialItemView `json:"materials"`
+	Machines  []MachineItemView  `json:"machines"`
+	Regions   []RegionFactorView `json:"regions"`
+}
+
+// EstimateRequest 是前端的估算请求输入。
+type EstimateRequest struct {
+	Codes      []string  `json:"codes"`
+	Quantities []float64 `json:"quantities"`
+	Region     string    `json:"region"`
+}
+
+// EstimateResultItemView 是估算结果中的一行。
+type EstimateResultItemView struct {
+	Code      string  `json:"code"`
+	Name      string  `json:"name"`
+	Unit      string  `json:"unit"`
+	UnitPrice float64 `json:"unitPrice"`
+	Quantity  float64 `json:"quantity"`
+	Subtotal  float64 `json:"subtotal"`
+}
+
+// EstimateResultView 是完整的估算结果。
+type EstimateResultView struct {
+	Total     float64                  `json:"total"`
+	Breakdown []EstimateResultItemView `json:"breakdown"`
+}
+
+// ImportResultView 是 CSV 导入操作的结果。
+type ImportResultView struct {
+	Added   int      `json:"added"`
+	Skipped int      `json:"skipped"`
+	Errors  []string `json:"errors,omitempty"`
+}
+
+
+// CostDBLoad 返回成本库完整快照。
+func (a *App) CostDBLoad() *CostDBView {
+	db, err := costdb.Load("")
+	if err != nil {
+		return &CostDBView{
+			Items:     []CostItemView{},
+			Labor:     []LaborItemView{},
+			Materials: []MaterialItemView{},
+			Machines:  []MachineItemView{},
+			Regions:   []RegionFactorView{},
+		}
+	}
+	view := &CostDBView{
+		Items:     make([]CostItemView, len(db.Items)),
+		Labor:     make([]LaborItemView, len(db.Labor)),
+		Materials: make([]MaterialItemView, len(db.Materials)),
+		Machines:  make([]MachineItemView, len(db.Machines)),
+		Regions:   make([]RegionFactorView, len(db.Regions)),
+	}
+	for i, it := range db.Items {
+		view.Items[i] = CostItemView{
+			Code: it.Code, Name: it.Name, Category: it.Category, Unit: it.Unit,
+			BasePrice: it.BasePrice, LaborCost: it.LaborCost, MaterialCost: it.MaterialCost,
+			MachineCost: it.MachineCost, OverheadRate: it.OverheadRate, ProfitRate: it.ProfitRate,
+			TaxRate: it.TaxRate, WasteFactor: it.WasteFactor, Source: it.Source,
+			Confidence: it.Confidence, Region: it.Region, ValidFrom: it.ValidFrom,
+			ValidTo: it.ValidTo, Remark: it.Remark,
+		}
+	}
+	for i, l := range db.Labor {
+		view.Labor[i] = LaborItemView{TradeType: l.TradeType, Unit: l.Unit, Price: l.Price, Region: l.Region, PriceDate: l.PriceDate, Source: l.Source}
+	}
+	for i, m := range db.Materials {
+		view.Materials[i] = MaterialItemView{Code: m.Code, NameSpec: m.NameSpec, Unit: m.Unit, Price: m.Price, Source: m.Source, PriceDate: m.PriceDate, Region: m.Region}
+	}
+	for i, m := range db.Machines {
+		view.Machines[i] = MachineItemView{Code: m.Code, NameSpec: m.NameSpec, Unit: m.Unit, PurchasePrice: m.PurchasePrice, HourlyRate: m.HourlyRate, FuelRate: m.FuelRate, OperatorLabor: m.OperatorLabor, Region: m.Region}
+	}
+	for i, r := range db.Regions {
+		view.Regions[i] = RegionFactorView{Region: r.Region, AdjustmentFactor: r.AdjustmentFactor, ValidFrom: r.ValidFrom}
+	}
+	return view
+}
+
+// CostDBSave 保存前端传入的完整成本库快照。
+func (a *App) CostDBSave(data CostDBView) error {
+	// 将 View 结构映射回 costdb 类型
+	items := make([]costdb.CostItem, len(data.Items))
+	for i, v := range data.Items {
+		items[i] = costdb.CostItem{
+			Code: v.Code, Name: v.Name, Category: v.Category, Unit: v.Unit,
+			BasePrice: v.BasePrice, LaborCost: v.LaborCost, MaterialCost: v.MaterialCost,
+			MachineCost: v.MachineCost, OverheadRate: v.OverheadRate, ProfitRate: v.ProfitRate,
+			TaxRate: v.TaxRate, WasteFactor: v.WasteFactor, Source: v.Source,
+			Confidence: v.Confidence, Region: v.Region, ValidFrom: v.ValidFrom,
+			ValidTo: v.ValidTo, Remark: v.Remark,
+		}
+	}
+	labor := make([]costdb.LaborItem, len(data.Labor))
+	for i, v := range data.Labor {
+		labor[i] = costdb.LaborItem{TradeType: v.TradeType, Unit: v.Unit, Price: v.Price, Region: v.Region, PriceDate: v.PriceDate, Source: v.Source}
+	}
+	materials := make([]costdb.MaterialItem, len(data.Materials))
+	for i, v := range data.Materials {
+		materials[i] = costdb.MaterialItem{Code: v.Code, NameSpec: v.NameSpec, Unit: v.Unit, Price: v.Price, Source: v.Source, PriceDate: v.PriceDate, Region: v.Region}
+	}
+	machines := make([]costdb.MachineItem, len(data.Machines))
+	for i, v := range data.Machines {
+		machines[i] = costdb.MachineItem{Code: v.Code, NameSpec: v.NameSpec, Unit: v.Unit, PurchasePrice: v.PurchasePrice, HourlyRate: v.HourlyRate, FuelRate: v.FuelRate, OperatorLabor: v.OperatorLabor, Region: v.Region}
+	}
+	regions := make([]costdb.RegionFactor, len(data.Regions))
+	for i, v := range data.Regions {
+		regions[i] = costdb.RegionFactor{Region: v.Region, AdjustmentFactor: v.AdjustmentFactor, ValidFrom: v.ValidFrom}
+	}
+
+	// 直接通过 SetData+Save 写入文件（避开 costdb 包内部一致性检查）
+	db := &costdb.CostDB{}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	db.SetPath(filepath.Join(home, ".gaeaW", "costdb.json"))
+	db.SetData(items, labor, materials, machines, regions)
+	return db.Save()
+}
+
+// CostEstimate 计算批量估算结果。
+func (a *App) CostEstimate(codes []string, quantities []float64, region string) *EstimateResultView {
+	db, err := costdb.Load("")
+	if err != nil {
+		return &EstimateResultView{Breakdown: []EstimateResultItemView{}}
+	}
+	if region == "" {
+		region = "全国"
+	}
+	items := make([]costdb.EstimateItem, len(codes))
+	for i := range codes {
+		items[i] = costdb.EstimateItem{Code: codes[i], Quantity: quantities[i]}
+	}
+	total, breakdown, err := db.Estimate(items, region)
+	if err != nil {
+		return &EstimateResultView{Breakdown: []EstimateResultItemView{}}
+	}
+	view := &EstimateResultView{Total: total, Breakdown: make([]EstimateResultItemView, len(breakdown))}
+	for i, r := range breakdown {
+		view.Breakdown[i] = EstimateResultItemView{
+			Code: r.Code, Name: r.Name, Unit: r.Unit,
+			UnitPrice: r.UnitPrice, Quantity: r.Quantity, Subtotal: r.Subtotal,
+		}
+	}
+	return view
+}
+
+// backupDir returns the backup directory path.
+func backupDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(home, ".gaeaW", "backups")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// CostDBExportCSV 导出一个成本库表格为 CSV 文本。kind 取值：items/labor/material/machine/regions。
+func (a *App) CostDBExportCSV(kind string) string {
+	db, err := costdb.Load("")
+	if err != nil {
+		return ""
+	}
+	data, err := db.ExportCSV(kind)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+// CostDBImportCSV 从 CSV 文本导入数据到成本库，返回导入结果。
+func (a *App) CostDBImportCSV(kind string, csvData string) *ImportResultView {
+	db, err := costdb.Load("")
+	if err != nil {
+		return &ImportResultView{Errors: []string{err.Error()}}
+	}
+	summary, err := db.ImportCSV(kind, []byte(csvData))
+	if err != nil {
+		return &ImportResultView{Errors: []string{err.Error()}}
+	}
+	return &ImportResultView{
+		Added:   summary.Added,
+		Skipped: summary.Skipped,
+		Errors:  summary.Errors,
+	}
+}
+
+// CostDBBackup 在 ~/.gaeaW/backups/ 创建时间戳备份，返回备份文件名。
+func (a *App) CostDBBackup() (string, error) {
+	dir, err := backupDir()
+	if err != nil {
+		return "", err
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	src := filepath.Join(home, ".gaeaW", "costdb.json")
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return "", fmt.Errorf("读取成本库失败: %w", err)
+	}
+	ts := time.Now().Format("20060102-150405")
+	filename := "costdb-" + ts + ".json"
+	dst := filepath.Join(dir, filename)
+	if err := os.WriteFile(dst, data, 0644); err != nil {
+		return "", fmt.Errorf("写入备份失败: %w", err)
+	}
+	return filename, nil
+}
+
+// CostDBListBackups 列出备份目录中的所有备份文件名。
+func (a *App) CostDBListBackups() []string {
+	dir, err := backupDir()
+	if err != nil {
+		return []string{}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return []string{}
+	}
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+// CostDBRestore 从备份文件恢复成本库。
+func (a *App) CostDBRestore(filename string) error {
+	dir, err := backupDir()
+	if err != nil {
+		return err
+	}
+	src := filepath.Join(dir, filename)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("备份文件不存在: %s", filename)
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	dst := filepath.Join(home, ".gaeaW", "costdb.json")
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("读取备份失败: %w", err)
+	}
+	if err := os.WriteFile(dst, data, 0644); err != nil {
+		return fmt.Errorf("写入成本库失败: %w", err)
+	}
+	return nil
 }

@@ -29,6 +29,7 @@ const HistoryPanel = lazy(() => import("./components/HistoryPanel").then(m => ({
 const SettingsPanel = lazy(() => import("./components/SettingsPanel").then(m => ({ default: m.SettingsPanel })));
 const CapabilitiesPanel = lazy(() => import("./components/CapabilitiesPanel").then(m => ({ default: m.CapabilitiesPanel })));
 const KnowledgePanel = lazy(() => import("./components/KnowledgePanel").then(m => ({ default: m.KnowledgePanel })));
+const CostPanel = lazy(() => import("./components/CostPanel").then(m => ({ default: m.CostPanel })));
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { StartupSplash, shouldShowStartupSplash } from "./components/StartupSplash";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
@@ -146,6 +147,7 @@ export default function App() {
   const [statsReset, setStatsReset] = useState(0);
   const [capsOpen, setCapsOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [costOpen, setCostOpen] = useState(false);
   const [rightTab, setRightTab] = useState<"files" | "stats" | "messages" | "reports">("stats");
   const [pendingViewMode, setPendingViewMode] = useState<"files" | "changed" | null>(null);
   const [compactMode, setCompactMode] = useState(() => { try { return localStorage.getItem("gaeaW.compactMode") === "1"; } catch { return false; } });
@@ -182,7 +184,11 @@ export default function App() {
   const openKnowledge = useCallback(() => setKnowledgeOpen(true), []);
   const closeKnowledge = useCallback(() => setKnowledgeOpen(false), []);
 
+  const openCost = useCallback(() => setCostOpen(true), []);
+  const closeCost = useCallback(() => setCostOpen(false), []);
+
   // handleSend intercepts the slash commands that need a desktop-native action
+  // before they reach the backend: \"/model <ref>\" rebuilds on that model, and
   // before they reach the backend: "/model <ref>" rebuilds on that model, and
   // "/memory" opens the memory drawer. Everything else — skills (/init, …),
   // custom commands, bare /model and the other read-only management verbs
@@ -325,9 +331,8 @@ export default function App() {
         if (settingsOpen) { ke.preventDefault(); setSettingsOpen(false); return; }
         if (memView !== null) { ke.preventDefault(); setMemView(null); return; }
         if (histView !== null) { ke.preventDefault(); setHistView(null); return; }
+        if (costOpen) { ke.preventDefault(); setCostOpen(false); return; }
         if (knowledgeOpen) { ke.preventDefault(); setKnowledgeOpen(false); return; }
-        if (workspacePanelOpen) { ke.preventDefault(); setWorkspacePanel(false); return; }
-        return;
       }
       if (!mod) return;
       if (ke.key === "n" && !state.running) { ke.preventDefault(); void newSessionAndReset(); return; }
@@ -437,6 +442,7 @@ export default function App() {
           onOpenMemory={openMemory}
           onOpenCaps={() => setCapsOpen(true)}
           onOpenKnowledge={openKnowledge}
+          onOpenCost={openCost}
           onOpenSettings={() => setSettingsOpen(true)}
           startResize={startSidebarResize}
           resizeWithKeyboard={resizeSidebarWithKeyboard}
@@ -685,6 +691,10 @@ export default function App() {
 
       <Suspense fallback={null}>
         {capsOpen && <CapabilitiesPanel onClose={() => setCapsOpen(false)} toolCounts={toolCounts} skillCounts={skillCounts} />}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        {costOpen && <CostPanel onClose={closeCost} />}
       </Suspense>
 
       <Suspense fallback={null}>

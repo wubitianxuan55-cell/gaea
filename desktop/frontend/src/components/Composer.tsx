@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ClipboardEvent, DragEvent, KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
-import { ArrowUp, Check, ChevronDown, FolderGit2, FolderPlus, Search, Square, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, FolderGit2, FolderPlus, Paperclip, Search, Square, X } from "lucide-react";
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
 import { clearLayoutSize, loadOptionalLayoutSize, saveLayoutSize } from "../lib/layoutPreferences";
@@ -219,6 +219,25 @@ export function Composer({
   const onDragLeave = () => setDragOver(false);
 
   const handleCancel = () => { queueRef.current = []; setQueueLen(0); const restored = onCancel(); if (typeof restored === "string") setTextCaretEnd(restored); };
+
+  // 导入文件：通过原生对话框选择文件
+  const handlePickFiles = async () => {
+    try {
+      const files = await app.PickFiles();
+      if (!files || files.length === 0) return;
+      for (const f of files) {
+        if (f.type === "image") {
+          setAttachments((prev) => [...prev, { path: f.path, previewUrl: f.previewUrl ?? "", type: "image" as const }]);
+        } else {
+          const atRef = `@${f.path}`;
+          setText((prev) => prev + (prev.endsWith(" ") || prev === "" ? "" : " ") + atRef + " ");
+          if (taRef.current) { taRef.current.focus(); taRef.current.selectionStart = taRef.current.selectionEnd = (text + " " + atRef + " ").length; }
+        }
+      }
+    } catch {
+      // 静默处理（旧后端不支持）
+    }
+  };
 
   const pickCommand = (c: CommandInfo) => setTextCaretEnd("/" + c.name + " ");
   const pickEntry = (e: DirEntry) => {
@@ -456,6 +475,16 @@ export function Composer({
               </button>
             </div>
           )}
+
+          {/* 导入文件按钮 */}
+          <button
+            className={`inline-flex items-center justify-center w-[28px] h-[28px] border-0 rounded-md bg-transparent text-fg-dim cursor-pointer transition-[color,background] duration-[var(--dur-fast)] hover:text-fg hover:bg-bg-soft disabled:cursor-default disabled:opacity-40 shrink-0 ${pendingPaste > 0 ? "pointer-events-none opacity-40" : ""}`}
+            onClick={() => void handlePickFiles()}
+            disabled={running}
+            title={running ? t("common.busyHint") : t("composer.importFile")}
+          >
+            <Paperclip size={14} />
+          </button>
 
           {/* 权限级别选择器：询问 / 自动 / YOLO */}
           <div className="flex gap-[3px]">

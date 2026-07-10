@@ -46,7 +46,7 @@ var compactDesc = map[string]string{
 	"format_convert": "文档格式转换(docx/xlsx/pdf→Markdown，含OCR扫描件回退)",
 	"chart_gen":      "matplotlib图表生成(bar/line/pie/scatter)",
 	"run_template":   "加载运行工具链模板(参数替换)",
-	"cost_query":     "工程成本数据查询(造价/人工/材料/机械)",
+	"cost_query":     "工程成本数据查询(造价/人工/材料/机械/估算/统计)",
 	"knowledge_search": "搜索工程知识库(关键词+分类+标签过滤)",
 	"knowledge_add":    "向知识库添加条目(标题+分类+正文)",
 }
@@ -140,7 +140,7 @@ var compactSchema = map[string]json.RawMessage{
 	"run_template": json.RawMessage(
 		`{"type":"object","properties":{"name":{"type":"string"},"params":{"type":"object"}},"required":["name"]}`),
 	"cost_query": json.RawMessage(
-		`{"type":"object","properties":{"keyword":{"type":"string"},"category":{"type":"string"},"region":{"type":"string"},"kind":{"type":"string","enum":["cost","labor","material","machine"]}}}}`),
+		`{"type":"object","properties":{"keyword":{"type":"string"},"category":{"type":"string"},"region":{"type":"string"},"kind":{"type":"string","enum":["cost","labor","material","machine"]},"action":{"type":"string","enum":["estimate","stats","regions"]},"codes":{"type":"array","items":{"type":"string"}},"quantities":{"type":"array","items":{"type":"number"}}}}`),
 	"knowledge_search": json.RawMessage(
 		`{"type":"object","properties":{"query":{"type":"string"},"category":{"type":"string"},"tag":{"type":"string"}}}}`),
 	"knowledge_add": json.RawMessage(

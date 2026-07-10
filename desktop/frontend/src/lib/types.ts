@@ -281,7 +281,12 @@ export interface KnowledgeEntry extends KnowledgeSummary {
   source: string;
   version: number;
   author: string;
+  reviewer: string;
+  createdAt: string;
 }
+
+/** Alias for clarity when saving. */
+export type KnowledgeSaveRequest = KnowledgeEntry;
 
 // Settings panel payloads (desktop/settings_app.go).
 export interface ProviderView {
@@ -454,5 +459,101 @@ export interface TraceStep {
   label: string;         // 简短描述（如 "规划阶段"、"read_file"、"压缩上下文"）
   detail?: string;       // 详细内容（展开时显示）
   status?: "pending" | "running" | "done" | "error";  // 当前状态
-  duration?: number;     // 耗时（ms，完成时设置）
+}
+
+// ── 成本库类型 ───────────────────────────────────────────────────────────
+
+export interface CostItemView {
+  code: string;
+  name: string;
+  category: string;
+  unit: string;
+  basePrice: number;
+  laborCost: number;
+  materialCost: number;
+  machineCost: number;
+  overheadRate: number;
+  profitRate: number;
+  taxRate: number;
+  wasteFactor: number;
+  source: string;
+  confidence: number;
+  region: string;
+  validFrom: string;
+  validTo?: string;
+  remark?: string;
+}
+
+export interface LaborItemView {
+  tradeType: string;
+  unit: string;
+  price: number;
+  region: string;
+  priceDate: string;
+  source: string;
+}
+
+export interface MaterialItemView {
+  code: string;
+  nameSpec: string;
+  unit: string;
+  price: number;
+  source: string;
+  priceDate: string;
+  region: string;
+}
+
+export interface MachineItemView {
+  code: string;
+  nameSpec: string;
+  unit: string;
+  purchasePrice: number;
+  hourlyRate: number;
+  fuelRate: number;
+  operatorLabor: number;
+  region: string;
+}
+
+export interface RegionFactorView {
+  region: string;
+  adjustmentFactor: number;
+  validFrom: string;
+}
+
+export interface CostDBView {
+  items: CostItemView[];
+  labor: LaborItemView[];
+  materials: MaterialItemView[];
+  machines: MachineItemView[];
+  regions: RegionFactorView[];
+}
+
+export interface EstimateResultItemView {
+  code: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface EstimateResultView {
+  total: number;
+  breakdown: EstimateResultItemView[];
+}
+
+export interface ImportResultView {
+  added: number;
+  skipped: number;
+  errors?: string[];
+}
+
+
+/** FilePickResult 描述从原生对话框选取的一个文件 */
+export interface FilePickResult {
+  path: string;
+  /** 仅图片文件有 previewUrl（data: URL） */
+  previewUrl?: string;
+  type: "image" | "file";
+  name: string;
 }

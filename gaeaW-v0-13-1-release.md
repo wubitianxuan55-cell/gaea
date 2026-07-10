@@ -2,7 +2,7 @@
 
 - **版本**: v0.13.1
 - **发布日期**: 2026-07-20
-- **Git 提交**: `f60bc0d` — release: v0.13.1 — costdb + knowledge + KnowledgePanel
+- **Git 提交**: `41f41f0` — release: v0.13.1 — costdb + knowledge + KnowledgePanel
 - **Git tag**: `v0.13.1`
 
 ## 产物路径

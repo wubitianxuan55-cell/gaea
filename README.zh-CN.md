@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="gaeaW" width="200"/>
+  <img src="docs/logo.svg" alt="gaea" width="200"/>
 </p>
 
 <h3 align="center">gaeaW — 土壤修复工程办公AI助手</h3>
