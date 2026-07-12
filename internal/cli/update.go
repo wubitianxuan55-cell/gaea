@@ -12,7 +12,7 @@ import (
 
 func updateCommand(args []string, currentVersion string) int {
 	fs := flag.NewFlagSet("update", flag.ContinueOnError)
-	repo := fs.String("repo", "gaeaWX/gaeaW", "GitHub 仓库（owner/repo）")
+	repo := fs.String("repo", "wubitianxuan55-cell/gaea", "GitHub 仓库（owner/repo）")
 	tag := fs.String("tag", "", "指定版本标签（默认最新）")
 	check := fs.Bool("check", false, "仅检查更新，不下载")
 	if err := fs.Parse(args); err != nil {
