@@ -16,7 +16,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
-	// Blank imports wire compile-time built-ins into their registries, exactly as
+	"gaeaW/internal/crash"
+
+	// Blank imports wire compile-time built-ins
 	// cmd/gaeaW does — boot.Build resolves providers/tools from these registries.
 	_ "gaeaW/internal/provider/anthropic"
 	_ "gaeaW/internal/provider/openai"
@@ -38,6 +40,8 @@ var assets embed.FS
 var version = "dev"
 
 func main() {
+	defer crash.Handle()
+
 	app := NewApp()
 
 	// Restore saved window size, or fall back to the default.

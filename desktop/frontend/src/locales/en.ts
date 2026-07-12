@@ -28,6 +28,7 @@ export const en = {
   "topbar.startupError": "startup error: {msg}",
   "topbar.knowledge": "Knowledge",
   "topbar.cost": "Cost DB",
+  "topbar.imagegen": "Image Gen",
 
   // knowledge base panel
   "knowledge.all": "All",
@@ -58,7 +59,6 @@ export const en = {
   "cost.tab.estimate": "Estimate",
   "cost.estimate.calculate": "Calculate",
   "cost.estimate.total": "Total",
-  // sidebar
   // sidebar
   "sidebar.recent": "Recent",
   "sidebar.conversations": "Chats",
@@ -294,8 +294,6 @@ export const en = {
   "memory.promoteToFeedback": "Set as feedback",
 
   // settings drawer
-
-  // settings drawer
   "settings.title": "Settings",
   "settings.loading": "Loading…",
   "settings.modelsProviders": "Models & providers",
@@ -305,9 +303,11 @@ export const en = {
   "settings.tab.sandbox": "Sandbox",
   "settings.tab.agent": "Agent",
   "settings.tab.appearance": "Appearance",
+  "settings.tab.imagegen": "Image Gen",
   "settings.tab.updates": "Updates",
   "settings.providerCount": "{n} providers",
   "settings.agentMeta": "temp {temp} · steps {steps}",
+  "settings.imagegenMeta": "backend · model",
   "settings.appearanceMeta": "theme · language",
   "settings.updatesMeta": "version · config",
   "settings.manageProviders": "Manage providers",

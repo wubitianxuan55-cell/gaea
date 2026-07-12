@@ -19,6 +19,8 @@ import type {
   EstimateResultView,
   ImportResultView,
   HistoryMessage,
+  ImageGenResponse,
+  ComfyUIStatus,
   JobView,
   KnowledgeEntry,
   KnowledgeSaveRequest,
@@ -54,7 +56,6 @@ export interface AppBindings {
   Cancel(): Promise<void>;
   Approve(id: string, allow: boolean, session: boolean): Promise<void>;
   AnswerQuestion(id: string, answers: QuestionAnswer[]): Promise<void>;
-  SetAgentMode(mode: string): Promise<void>;
   SetAgentMode(mode: string): Promise<void>;
   AgentMode(): Promise<string>;
   Compact(): Promise<void>;
@@ -120,7 +121,6 @@ export interface AppBindings {
   SaveDoc(path: string, body: string): Promise<string>;
   UpdateFact(name: string, body: string): Promise<string>;
   ChangeFactType(name: string, type: string): Promise<string>;
-  MemorySuggestions(): Promise<MemorySuggestionsView>;
   MemorySuggestions(): Promise<MemorySuggestionsView>;
   AcceptMemorySuggestion(candidate: MemorySuggestion): Promise<string>;
   AcceptSkillSuggestion(candidate: SkillSuggestion): Promise<string>;
@@ -188,6 +188,16 @@ export interface AppBindings {
   CostDBRestore(filename: string): Promise<void>;
   // PickFiles opens a native file dialog and imports selected files.
   PickFiles(): Promise<FilePickResult[]>;
+  // Image generation — 绘梦功能（从 wubigork 移植）
+  GenerateFreeImage(prompt: string, negative: string, size: string, model: string, seed: number, n: number): Promise<ImageGenResponse>;
+  StartComfyUI(): Promise<void>;
+  StopComfyUI(): Promise<void>;
+  GetComfyUIStatus(): Promise<ComfyUIStatus>;
+  // ComfyUI 配置和历史持久化
+  SaveComfyUIConfig(comfyUIURL: string, imageModel: string, comfyUIPath: string, comfyUIPythonPath: string): Promise<void>;
+  GetComfyUIConfig(): Promise<{url: string; model: string; path: string; pythonPath: string}>;
+  SaveImageResults(results: Record<string, unknown>[]): Promise<void>;
+  LoadImageResults(): Promise<Record<string, unknown>[]>;
 
 }
 

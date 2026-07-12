@@ -15,6 +15,7 @@ import (
 	"gaeaW/internal/control"
 	"gaeaW/internal/event"
 	"gaeaW/internal/i18n"
+	"gaeaW/internal/imagegen"
 	"gaeaW/internal/provider"
 )
 
@@ -58,6 +59,10 @@ type App struct {
 	ready          bool   // true once boot.Build completes (success or failure)
 	disabledMCP map[string]ServerView
 	mcpOrder    []string
+
+	// --- image generation ---
+	comfyProc  *imagegen.ComfyUIProcess
+	imgBackend imagegen.ImageBackend
 }
 
 // NewApp constructs the bound object. The controller is built later, in startup,
@@ -157,6 +162,15 @@ func (a *App) buildController() {
 				a.plannerLabel = plannerEntry.Name
 			}
 		}
+		// 初始化 ComfyUI 进程管理器和图片后端
+		a.comfyProc = imagegen.NewComfyUIProcess(
+			cfg.ComfyUI.ComfyUIPath,
+			cfg.ComfyUI.ComfyUIPythonPath,
+			cfg.ComfyUI.ComfyUIURL,
+		)
+		if cfg.ComfyUI.ComfyUIURL != "" {
+			a.imgBackend = imagegen.NewComfyUIBackend(cfg.ComfyUI.ComfyUIURL)
+		}
 	}
 
 	a.mu.Lock()
@@ -255,7 +269,14 @@ func (a *App) shutdown(context.Context) {
 			tab.Ctrl.Close()
 		}
 	}
+
+	// gaeaW 启动的 ComfyUI 退出时同步关闭（接管的保持运行）
+	if a.comfyProc != nil {
+		a.comfyProc.Shutdown()
+	}
 }
+
+// eventSink is the controller's event.Sink
 
 // eventSink is the controller's event.Sink in desktop mode: it forwards every
 // agent event to the webview as one runtime event, JSON-shaped by toWire. It is a

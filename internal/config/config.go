@@ -35,6 +35,25 @@ type Config struct {
 	Network      NetworkConfig     `toml:"network"`
 	Bot          BotConfig         `toml:"bot"`
 	Serve        ServeConfig       `toml:"serve"`
+	ComfyUI      ComfyUIConfig     `toml:"comfyui"`
+}
+
+// ComfyUIConfig 配置 ComfyUI 本地图片生成后端
+type ComfyUIConfig struct {
+	ImageBackend      string `toml:"image_backend"`       // "comfyui"（固定，不再支持 xAI）
+	ImageModel        string `toml:"image_model"`         // 默认模型: "flux" 或 "z-image-turbo"
+	ComfyUIURL        string `toml:"comfyui_url"`         // ComfyUI 服务地址，默认 http://127.0.0.1:8188
+	ComfyUIPath       string `toml:"comfyui_path"`        // ComfyUI 安装目录（含 main.py）
+	ComfyUIPythonPath string `toml:"comfyui_python_path"` // Python 解释器路径（可选，自动检测）
+}
+
+// DefaultComfyUIConfig 返回 ComfyUI 配置的默认值
+func DefaultComfyUIConfig() ComfyUIConfig {
+	return ComfyUIConfig{
+		ImageBackend: "comfyui",
+		ImageModel:   "flux",
+		ComfyUIURL:   "http://127.0.0.1:8188",
+	}
 }
 
 // SearchConfig configures web search engines. Resolution order: local SearXNG
